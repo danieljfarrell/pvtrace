@@ -25,3 +25,10 @@ Overview of features:
 
 pvtrace is written entirely in Python. Using the numpy and scipy libraries. This was chosen to enable rapid development, learning and collaboration rather than speed of execution. On a single core machine pvtrace takes a few minutes to produce sensible results which for me is an acceptable trade-off considering the pleasure it was to write in Python!
 
+Authors:
+Daniel J Farrell -- Original author and benevolent dictator
+Carl Poelking -- Constructive Solid Geometry
+Karl Godel -- Convex object
+Markus Fuhrer -- povray and multiprocessing
+
+
