@@ -1,0 +1,27 @@
+pvtrace -- Optical ray tracing for photovoltaic devices and luminescent materials
+-------
+
+pvtrace was originally written to simulate luminescent solar concentrators during my PhD studies. However it has grown in to a much more powerful tooL, capable of optical ray tracing through complicated shapes, and the collection of statistical data to enable characterisation of optics useful for photovoltaics and solar energy conversion.
+
+Overview of features:
+* Constructive Solid Geometry
+* Generalised 3D ray intersections (ray optics):
+  - ray-box
+  - ray-cylinder
+  - ray-CSG object
+* Arbitrary 3D object transformations:
+  - translation
+  - rotation
+  - scaling and skewing
+*Photon path visualiser
+*Statistical collection of photonic properties:
+  - wavelength
+  - direction
+* Automatic Fresnel reflection and refraction
+* Sampling from statistical distributions:
+  - optical absorption coefficient
+  - emission spectrum
+  - wavelength and angular reflectivity
+
+pvtrace is written entirely in Python. Using the numpy and scipy libraries. This was chosen to enable rapid development, learning and collaboration rather than speed of execution. On a single core machine pvtrace takes a few minutes to produce sensible results which for me is an acceptable trade-off considering the pleasure it was to write in Python!
+
