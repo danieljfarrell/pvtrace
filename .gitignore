@@ -1,0 +1,22 @@
+
+# UNIX files
+*.[oa]
+*~
+
+# MacOS files -- damn DS_Stores!
+.DS_Store
+*.swp
+*~.nib
+
+# Xcode files and directories
+build/
+.xcodeproj/ !*.xcodeproj/project.pbxproj
+*.pbxuser
+*.perspective
+*.perspectivev3
+*.mode1v3
+*.mode2v3
+
+# Python complication files
+*.pyc
+
