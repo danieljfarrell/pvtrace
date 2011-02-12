@@ -13,8 +13,8 @@ Overview of features:
   - translation
   - rotation
   - scaling and skewing
-*Photon path visualiser
-*Statistical collection of photonic properties:
+* Photon path visualiser
+* Statistical collection of photonic properties:
   - wavelength
   - direction
 * Automatic Fresnel reflection and refraction
@@ -28,7 +28,7 @@ pvtrace is written entirely in Python. Using the numpy and scipy libraries. This
 Authors:
 Daniel J Farrell -- Original author and benevolent dictator
 Carl Poelking -- Constructive Solid Geometry
-Karl Godel -- Convex object
-Markus Fuhrer -- povray and multiprocessing
+Karl C Godel -- Convex objects, Faces, and Polygons
+Markus Fuhrer -- povray scene rendering and multiprocessing
 
 
