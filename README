@@ -1,7 +1,7 @@
 pvtrace -- Optical ray tracing for photovoltaic devices and luminescent materials
 -------
 
-pvtrace was originally written to simulate luminescent solar concentrators during my PhD studies. However it has grown in to a much more powerful tooL, capable of optical ray tracing through complicated shapes, and the collection of statistical data to enable characterisation of optics useful for photovoltaics and solar energy conversion.
+pvtrace was originally written to simulate luminescent solar concentrators during my PhD studies. However it has grown in to a much more powerful tool, capable of optical ray tracing through complicated shapes, and the collection of statistical data to enable characterisation of optics useful for photovoltaics and solar energy conversion.
 
 Overview of features:
 * Constructive Solid Geometry
@@ -30,5 +30,39 @@ Daniel J Farrell -- Original author and benevolent dictator
 Carl Poelking -- Constructive Solid Geometry
 Karl C Godel -- Convex objects, Faces, and Polygons
 Markus Fuhrer -- povray scene rendering and multiprocessing
+
+Installation:
+
+pvtrace is being successfully used on Mac, Linux and Windows. However, it is a new project and currently no in the pip or easy_install systems. For now please follow the instructions below.
+
+Linux (Ubuntu 10.10 32-bit):
+
+1. Install the packages
+$ apt-get install git python python-numpy python-scipy python-visual
+
+2. Clone pvtrace
+Change to a directory where you want to install pvtrace, say DIR=~/code
+$ cd DIR
+$ git clone git@github.com:danieljfarrell/pvtrace.git
+
+3. Update PYTHONPATH
+Add the path to the pvtrace directory to you PYTHONPATH variable e.g. add this to you .profile or .bashrc,
+export PYTHONPATH=“/home/<username>/<DIR>/pvtrace”
+
+4. Done.
+Now try and run an example script e.g.
+$ cd pvtrace/scripts/examples
+$ python homogen.py
+
+MacOS (10.6)
+
+To come...
+
+Window
+
+To come...
+  
+
+
 
 
