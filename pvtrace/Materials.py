@@ -245,8 +245,7 @@ class Spectrum(object):
         b2 = type(nanometers) == IntType
         b3 = type(nanometers) == np.float32
         b4 = type(nanometers) == np.float64
-        b5 = type(nanometers) == np.float128
-        if b1 or b2 or b3 or b4 or b5:
+        if b1 or b2 or b3 or b4:
             return np.float(self.value(nanometers))
         return self.value(nanometers)
     
@@ -395,7 +394,7 @@ class Material(object):
         return self.absorption_data.value(photon.wavelength)
     
     def emission_direction(self):
-        """Returns a 3 component direction vector with is choosen isotropically. 
+        """Returns a 3 component direction vector with is chosen isotropically. 
         NB. This method is overridden by subclasses to provide custom emission 
         direction properties."""
         
@@ -463,7 +462,7 @@ class Material(object):
 class CompositeMaterial(Material):
     """A material that is composed from a homogeneous mix of multiple materials. For example, a plastic plate doped with a blue and red absorbing dyes has the absorption coefficient of plastic as well as the absorption and emission properties of the dyes."""
     def __init__(self, materials, refractive_index=1.5):
-        '''Initalised by a list or array of material objects.'''
+        '''Initialised by a list or array of material objects.'''
         super(CompositeMaterial, self).__init__()
         self.materials = materials
         self.refractive_index = refractive_index
