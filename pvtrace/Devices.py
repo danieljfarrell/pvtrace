@@ -227,13 +227,13 @@ class Coating(Register):
        Rather than using Fresnel equation to determine the reflectivity of 
        
        """
-    def __init__(self, reflectivity=None, shape=None, refractive_index=1.5):
+    def __init__(self, reflectivity, shape, refractive_index=1., lambertian=False):
         super(Coating, self).__init__()
-        self.reflectivity = reflectivity
-        self.refractive_index = refractive_index
-        self.shape = shape
         self.name = "COATING"
-        self.material = ReflectiveMaterial(reflectivity, refractive_index=refractive_index)
+        self.shape = shape
+        self.refractive_index = refractive_index
+        self.reflectivity = ReflectiveMaterial(reflectivity, refractive_index=refractive_index, lambertian=lambertian)
+        self.material = SimpleMaterial(555) # This create a material with absorption_coefficient = 0.
         if not isinstance(self.shape, Polygon):
             self.origin = self.shape.origin
             self.size = np.abs(self.shape.extent - self.shape.origin)
@@ -285,23 +285,24 @@ class LSC(Register):
         """
         self.index_matched_surfaces = []
 
-class Collector(Register):
-    """Collector implementation."""
-    def __init__(self, bandgap=555, origin=(0,0,0), size=(1,1,1)):
-        super(Collector, self).__init__()
-        self.origin = np.array(origin)
-        self.size = np.array(size)
-        self.shape = Box(origin=origin, extent=np.array(origin) + np.array(size))
-        self.material = SimpleMaterial(bandgap)
-        self.name = "LSC"
+#class Collector(Register):
+#    """Collector implementation."""
+#    def __init__(self, bandgap=555, origin=(0,0,0), size=(1,1,1)):
+#        super(Collector, self).__init__()
+#        self.origin = np.array(origin)
+#        self.size = np.array(size)
+#        self.shape = Box(origin=origin, extent=np.array(origin) + np.array(size))
+#        self.material = SimpleMaterial(bandgap)
+#        self.name = "LSC"
 
-class RayBin(Collector):
+class RayBin(Register):
     """An class for erasing the ray if it hits this device. --> e.g. a solar cell!"""
     def __init__(self, bandgap=555, origin=(0,0,0), size=(1,1,1)):
         super(RayBin, self).__init__()
         self.origin = np.array(origin)
         self.size = np.array(size)
         self.shape = Box(origin=origin, extent=np.array(origin) + np.array(size))
+        #import pdb; pdb.set_trace()
         self.material = SimpleMaterial(bandgap)
         self.name = "RayBin"
 

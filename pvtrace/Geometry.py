@@ -13,8 +13,7 @@
 
 from  __future__ import division
 import numpy as np
-import scipy as sp
-import scipy.linalg
+import numpy.linalg
 from external.transformations import translation_matrix, rotation_matrix
 import external.transformations as tf
 from external.quickhull import qhull3d
@@ -115,8 +114,14 @@ def norm(vector):
 
 def angle(normal, vector):
     assert cmp_floats(magnitude(normal), 1.0), "The normal vector is not normalised."
+    if np.allclose(normal, vector):
+        return 0.
+    if np.allclose(-normal, vector):
+        return np.pi
     dot = np.dot(normal, vector)
-    return np.arccos(dot / magnitude(vector))
+    arg = dot / magnitude(vector)
+    assert -1. <= arg <= 1., "Argument is out of range. normal=%s, vector=%s" % (normal, vector)
+    return np.arccos(arg)
 
 def reflect_vector(normal, vector):
     d = np.dot(normal, vector)
@@ -132,10 +137,21 @@ def closest_point(reference, point_list):
     return point_list[sort_index[0]]
     
 def transform_point(point, transform):
-    return np.array(np.dot(transform, np.matrix(np.concatenate((point, [1.]))).transpose()).transpose()[0,0:3]).squeeze()
+    # return np.array(np.dot(transform, np.matrix(np.concatenate((point, [1.]))).transpose()).transpose()[0,0:3]).squeeze()
+    # assert isinstance( transform, np.matrix )
+    transform = np.asmatrix( transform )
+    homogeneous_point = np.matrix( [ point[0], point[1], point[2],   1. ] ).transpose()
+    homogeneous_point = transform * homogeneous_point
+    transformed_point = np.asarray( homogeneous_point )
+    return transformed_point[0:3,0]
     
 def transform_direction(direction, transform):
-    angle, axis, point = tf.rotation_from_matrix(transform)
+    try:
+        angle, axis, point = tf.rotation_from_matrix(transform)
+    except ValueError:
+        if tf.is_same_transform( tf.identity_matrix() * -1, transform ):
+            # The ray direction needs to be reversed
+            return np.array(direction) * -1.
     rotation_transform = tf.rotation_matrix(angle, axis)
     return np.array(np.dot(rotation_transform, np.matrix(np.concatenate((direction, [1.]))).transpose()).transpose()[0,0:3]).squeeze()
 
@@ -150,6 +166,13 @@ def rotation_matrix_from_vector_alignment(before, after):
     True
     >>> # Catch the special case in which we cannot take the cross product
     >>> V1 = [0,0,1]
+    >>> V2 = [0,0,1]
+    >>> R = rotation_matrix_from_vector_alignment(V1, V2)
+    >>> V3 = transform_direction(V1, R)
+    >>> cmp_points(V2, V3)
+    True
+    >>> # Catch the special case in which we cannot take the cross product
+    >>> V1 = [0,0,1]
     >>> V2 = [0,0,-1]
     >>> R = rotation_matrix_from_vector_alignment(V1, V2)
     >>> V3 = transform_direction(V1, R)
@@ -157,6 +180,7 @@ def rotation_matrix_from_vector_alignment(before, after):
     True
     """
     # The angle between the vectors must not be 0 or 180 (i.e. so we can take a cross product)
+    #import pdb; pdb.set_trace()
     thedot = np.dot(before, after)
     if cmp_floats(thedot, 1.) == True:
         # Vectors are parallel
@@ -164,7 +188,8 @@ def rotation_matrix_from_vector_alignment(before, after):
         
     if cmp_floats(thedot, -1.) == True:
         # Vectors are anti-parallel
-        print "Vectors are anti-parallel this might crash."
+        # print "Vectors are anti-parallel this might crash."
+        return tf.identity_matrix() * -1.
         
     axis = np.cross(before, after)            # get the axis of rotation
     angle = np.arccos(np.dot(before, after))  # get the rotation angle
@@ -193,13 +218,35 @@ class Ray(object):
         self.position = self.position + distance * self.direction
     
     def behind(self, point):
-        # Create vector from position to point, if the angle is 
-        # greater than 90 degrees then the point is behind the ray.
-        v = np.array(point) - np.array(self.position)
-        if cmp_points([0,0,0], v):
-            # The ray is at the point
-            return False
-        if angle(self.direction, v) > np.pi*.5:
+        """Returns True is if 'point' is behind the ray location.
+
+        Arguments:
+            point -- a cartesian point
+            
+        Disussion:
+        The equation of a plane is ax + by + cz + d = 0.
+        Let point O, lie on the plane.
+        The normal of the plane is, n = [a, b, c], thus
+        d = -n dot O
+        If n.p + d < 0, the point is behind the plane
+        >>> point = np.array((-1,-1,-1))
+        >>> ray = Ray(position=(1,1,1), direction=(1,1,1))
+        >>> ray.behind(point)
+        True
+        >>> point = np.array((-2,1,1))
+        >>> ray = Ray(position=(1,1,1), direction=(1,1,1))
+        >>> ray.behind(point)
+        True
+        >>> point = np.array((2,2,2))
+        >>> ray = Ray(position=(1,1,1), direction=(1,1,1))
+        >>> ray.behind(point)
+        False
+        >>> point = np.array((4,2,2))
+        >>> ray = Ray(position=(1,1,1), direction=(1,1,1))
+        >>> ray.behind(point)
+        False
+        """
+        if np.dot(self.direction, np.array(point)) - np.dot(self.direction, self.position) < 0:
             return True
         return False
         
@@ -595,7 +642,7 @@ class Box(object):
         >>> box.on_surface(ray.position)
         True
         """
-
+        
         if self.contains(point) == True:
             return False
         
@@ -603,8 +650,7 @@ class Box(object):
         local_point = transform_point(point, tf.inverse_matrix(self.transform))
         # the local point must have at least one common point with the surface definition points
         def_points = np.concatenate((np.array(self.origin), np.array(self.extent)))
-
-                
+        
         bool1 = False
         bool2 = False
         bool3 = False
@@ -615,18 +661,17 @@ class Box(object):
                 for j in range(0,3):
                     if intervalcheck(def_points[j],local_point[j],def_points[j+3]):
                         boolarray[j] = True
-                   
+                        
             if cmp_floats(def_points[i+3], local_point[i]):
                 for j in range(0,3):
                     if intervalcheck(def_points[j],local_point[j],def_points[j+3]):
-                        boolarray[j] = True                        
-                                                 
+                        boolarray[j] = True
+                        
         if boolarray[0] == boolarray[1] == boolarray[2] == True:
             return True
-
+            
         return False
-                            
-             
+        
     def surface_normal(self, ray, acute=True):
         """
         Returns the normalised vector of which is the acute surface normal (0<~ theta <~ 90) 
@@ -1125,6 +1170,135 @@ class Cylinder(object):
                 return world_points
             return None
 
+class Sphere(object):
+    """A sphere.
+    >>> s = Sphere()
+    """
+    def __init__(self, centre=(0.,0.,0.), radius=1.):
+        super(Sphere, self).__init__()
+        self.centre = np.array(centre)
+        self.radius = radius
+        
+    def on_surface(self, point):
+        """Returns True is point is on surface, False otherwise.
+        >>> s = Sphere()
+        >>> s.on_surface( (0.,0.,0.) )
+        False
+        >>> s.on_surface( (0.,0.,10.) )
+        False
+        >>> s.on_surface( (0.,0.,1.) )
+        True
+        """
+        d = separation(point, self.centre)
+        return cmp_floats(d, self.radius)
+    
+    def surface_normal(self, ray, acute=True):
+        """Returns the surface normal for a ray which is on the surface.
+        
+        >>> s = Sphere()
+        >>> r = Ray(position=(0,0,1), direction=(0,0,1))
+        >>> s.surface_normal(r)
+        array([ 0.,  0.,  1.])
+        """
+        normal = norm(ray.position - self.centre)
+        if acute:
+            if angle(normal, ray.direction) > np.pi/2:
+                normal = normal * -1.0
+        return normal
+    
+    def surface_identifier(self, surface_point, assert_on_surface=True):
+        """docstring for surface_identifer"""
+        return "SPHERE"
+    
+    def intersection(self, ray):
+        """Returns a list of intersection points that ray makes with the sphere.
+        Credit: http://www.cs.umbc.edu/~olano/435f02/ray-sphere.html
+        Credit: http://wiki.cgsociety.org/index.php/Ray_Sphere_Intersection
+        
+        Test inside
+        >>> s = Sphere()
+        >>> r = Ray(position=(0,0,0), direction=(0,0,1))
+        >>> s.intersection(r)
+        [array([ 0.,  0.,  1.])]
+        
+        Test outside touch
+        >>> s = Sphere()
+        >>> r = Ray(position=(1,0,0), direction=(0,0,1))
+        >>> s.intersection(r)
+        [array([ 1.,  0.,  0.])]
+        
+        Test outside hit
+        >>> s = Sphere()
+        >>> r = Ray(position=(0,0,-2), direction=(0,0,1))
+        >>> s.intersection(r)
+        [array([ 0.,  0., -1.]), array([ 0.,  0.,  1.])]
+        
+        Test outside miss
+        >>> s = Sphere()
+        >>> r = Ray(position=(-2,0,0), direction=(0,0,1))
+        >>> s.intersection(r)
+        
+        Test inside off centre
+        >>> s = Sphere(centre=(1,1,1), radius=1)
+        >>> r = Ray(position=(1,1,1), direction=(0,0,1))
+        >>> s.intersection(r)
+        [array([ 1.,  1.,  2.])]
+        """
+        
+        #inv_transform = tf.inverse_matrix(self.transform)
+        #rpos = transform_point(ray.position, inv_transform)
+        #rdir = transform_direction(ray.direction, inv_transform)
+        rpos = ray.position
+        rdir = ray.direction
+        
+        # Compute a, b and b coefficients
+        a = np.dot(rdir, rdir)
+        b = 2. * np.dot(rdir, rpos - self.centre)
+        c = np.dot(rpos - self.centre, rpos - self.centre) - self.radius**2
+        
+        # Find discriminant
+        discriminant = b**2 - 4 * a * c
+        
+        # if discriminant is negative there are no real roots
+        if discriminant < 0:
+            return None
+        
+        # if discriminant is zero then there is only one solution, if positive there are two
+        if cmp_floats( discriminant, 0. ):
+            t = np.array( [ -b / (2 * a)] )
+        else:
+            t = np.array([  (-b - np.sqrt(discriminant))/(2*a),  (-b + np.sqrt(discriminant))/(2*a)  ])
+        t.sort()
+        
+        hits = []
+        for distance in t:
+            if distance >= 0.:
+                point = rpos + distance * rdir
+                hits.append(point)
+        return hits
+    
+    def contains(self, point):
+        """Returns True is the point is inside the sphere, and False otherwise.
+        >>> s = Sphere()
+        >>> s.contains((0,0,0))
+        True
+        >>> s.contains((1,1,1))
+        False
+        >>> s.contains((2,2,2))
+        False
+        >>> s = Sphere(centre=(1,1,1))
+        >>> s.contains((1,1,1))
+        True
+        >>> s.contains((1,1,2))
+        False
+        >>> s.contains((3,3,3))
+        False"""
+        point_radius_sq = (point[0]-self.centre[0])**2 + (point[1]-self.centre[1])**2 + (point[2]-self.centre[2])**2
+        cmp_value = cmp_floats_range(point_radius_sq, self.radius**2)
+        if cmp_value == -1:
+            return True
+        return False
+            
 class Convex(object):
     """docstring for Convex"""
     def __init__(self, points):
@@ -1211,7 +1385,7 @@ class Convex(object):
         
 if __name__ == "__main__":
     import doctest
-    #doctest.testmod()
+    doctest.testmod()
     
     if False:
         # Catch the special case in which we cannot take the cross product
@@ -1223,4 +1397,4 @@ if __name__ == "__main__":
         V3 = transform_direction(V1, R)
         print R2
         print cmp_points(V2, V3)
-
+    

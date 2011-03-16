@@ -36,10 +36,10 @@ def random_spherecial_vector():
         
 class SimpleSource(object):
     """A light source that will generate photons of a single colour, direction and position."""
-    def __init__(self, position=[0,0,0], direction=[0,0,1], wavelength=555, use_random_polarisation=False):
+    def __init__(self, position=[0.,0.,0.], direction=[0.,0.,1.], wavelength=555., use_random_polarisation=False):
         super(SimpleSource, self).__init__()
-        self.position = position
-        self.direction = direction
+        self.position = np.array(position)
+        self.direction = np.array(direction)
         self.wavelength = wavelength
         self.use_random_polarisation = use_random_polarisation
         self.throw = 0
@@ -62,7 +62,7 @@ class SimpleSource(object):
             vec = random_spherecial_vector()
             vec[2] = 0.
             vec = norm(vec)
-            R = rotation_matrix_from_vector_alignment(self.direction, [0,0,1])
+            R = rotation_matrix_from_vector_alignment(self.direction, [0.,0.,1.])
             photon.polarisation = transform_direction(vec, R)
             
         else:

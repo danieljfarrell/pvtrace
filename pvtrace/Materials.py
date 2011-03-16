@@ -14,21 +14,20 @@
 from __future__ import division
 import numpy as np
 
-try:
-    import scipy as sp
-    from scipy import interpolate
-except Exception as exception:
-    print exception
-    try:
-        print "SciPy not installed."
-        import interpolate
-    except Exception as exception:
-        print exception
-        print "It seems that you don't have interpolate... bugger... Python FAIL."
+#try:
+    #import scipy as sp
+    #from scipy import interpolate
+#except Exception as exception:
+#    try:
+#        print "SciPy not installed."
+#        import interpolate
+#    except Exception as exception:
+#        print exception
+#        print "It seems that you don't have interpolate... bugger... Python FAIL."
 
 from Geometry import *
 from ConstructiveGeometry import CSGadd, CSGint, CSGsub
-from Interpolation import BilinearInterpolation
+from Interpolation import interp1d, BilinearInterpolation
 from types import *
 import os
 from external.transformations import translation_matrix, rotation_matrix
@@ -223,7 +222,7 @@ class Spectrum(object):
             self.y[indx] = yval
         
         # Make the 'spectrum'
-        self.spectrum = interpolate.interp1d(self.x, self.y, bounds_error=False, fill_value=0.0)
+        self.spectrum = interp1d(self.x, self.y, bounds_error=False, fill_value=0.0)
         
         # Make the pdf for wavelength lookups
         try:
@@ -235,8 +234,8 @@ class Spectrum(object):
         cdf  = np.cumsum(self.y)
         pdf  = cdf/max(cdf)
         pdf  = np.hstack([0,pdf[:]])
-        self.pdf_lookup = interpolate.interp1d(bins, pdf, bounds_error=False, fill_value=0.0)
-        self.pdfinv_lookup = interpolate.interp1d(pdf, bins, bounds_error=False, fill_value=0.0)
+        self.pdf_lookup = interp1d(bins, pdf, bounds_error=False, fill_value=0.0)
+        self.pdfinv_lookup = interp1d(pdf, bins, bounds_error=False, fill_value=0.0)
     
     def __call__(self, nanometers):
         """Returns the values of the Spectrum at the 'nanometers' value(s). An number is returned if nanometers is a number and numpy array is returned if nanometers if a list of a numpy array."""
@@ -245,7 +244,8 @@ class Spectrum(object):
         b2 = type(nanometers) == IntType
         b3 = type(nanometers) == np.float32
         b4 = type(nanometers) == np.float64
-        if b1 or b2 or b3 or b4:
+        b5 = type(nanometers) == np.float128
+        if b1 or b2 or b3 or b4 or b5:
             return np.float(self.value(nanometers))
         return self.value(nanometers)
     
@@ -394,7 +394,7 @@ class Material(object):
         return self.absorption_data.value(photon.wavelength)
     
     def emission_direction(self):
-        """Returns a 3 component direction vector with is chosen isotropically. 
+        """Returns a 3 component direction vector with is choosen isotropically. 
         NB. This method is overridden by subclasses to provide custom emission 
         direction properties."""
         
@@ -432,6 +432,10 @@ class Material(object):
     def trace(self, photon, free_pathlength):
         '''Will apply absorption and emission probabilities to the photon along its free path in the present geometrical container and return the result photon for tracing. The free_pathlength is the distance travelled in metres until the photon reaches the edge of the present container. It is for the calling object to decided how to proceed with the returned photon. For example, if the returned photon is in the volume of the container the same tracing procedure should be applied. However, if the photon reaches a face, reflection, refraction calculation should be applied etc. If the photon is lost, the photons active instance variables is set to False. It is for the calling object to check this parameter and act accordingly e.g. recording the lost photon and great a new photon to trace.'''
         
+        # Clear state using for collecting statistics
+        photon.absorber_material = None
+        photon.emitter_material = None
+        
         # Assuming the material has a uniform absorption coefficient we generated a random path length weigthed by the material absorption coefficient.
         sampled_pathlength = -np.log(1 - np.random.uniform())/self.absorption(photon)
         
@@ -462,7 +466,7 @@ class Material(object):
 class CompositeMaterial(Material):
     """A material that is composed from a homogeneous mix of multiple materials. For example, a plastic plate doped with a blue and red absorbing dyes has the absorption coefficient of plastic as well as the absorption and emission properties of the dyes."""
     def __init__(self, materials, refractive_index=1.5):
-        '''Initialised by a list or array of material objects.'''
+        '''Initalised by a list or array of material objects.'''
         super(CompositeMaterial, self).__init__()
         self.materials = materials
         self.refractive_index = refractive_index
@@ -477,6 +481,10 @@ class CompositeMaterial(Material):
     
     def trace(self, photon, free_pathlength):
         '''Will apply absorption and emission probabilities to the photon along its free path in the present geometrical container and return the result photon for tracing. See help(material.trace) for how this is done for a single material because the same principle applies. The ensemble absorption coefficient is found for the specified photon to determine if absorption occurs. The absorbed material its self is found at random from a distrubution weighted by each of the component absorption coefficients. The resultant photon is returned with possibily with a new position, direction and wavelength. If the photon is absorbed and not emitted the photon is retuned but its active property is set to False. '''
+        
+        # Clear state using for collecting statistics
+        photon.absorber_material = None
+        photon.emitter_material = None
         
         absorptions = self.all_absorption_coefficients(photon.wavelength)
         absorption_coefficient = absorptions.sum()
@@ -494,10 +502,11 @@ class CompositeMaterial(Material):
             cdf  = np.cumsum(absorptions)
             pdf  = cdf/max(cdf)
             pdf  = np.hstack([0,pdf[:]])
-            pdfinv_lookup = interpolate.interp1d(pdf, bins, bounds_error=False, fill_value=0.0)
+            pdfinv_lookup = interp1d(pdf, bins, bounds_error=False, fill_value=0.0)
             absorber_index = int(np.floor(pdfinv_lookup(np.random.uniform())))
             material = self.materials[absorber_index]
             photon.material = material
+            photon.absorber_material = material
             self.emission = material.emission
             self.absorption = material.absorption
             self.quantum_efficiency = material.quantum_efficiency
@@ -507,6 +516,7 @@ class CompositeMaterial(Material):
             if (np.random.uniform() < material.quantum_efficiency):
                 print "   * Re-emitted *"
                 photon.reabs = photon.reabs + 1
+                photon.emitter_material = material
                 photon = material.emission(photon) # Generates a new photon with red-shifted wavelength, new direction and polariation (if included in simulation)
                 return photon
                 
@@ -522,28 +532,52 @@ class CompositeMaterial(Material):
             photon.position = photon.position + free_pathlength * photon.direction
             return photon
             
+
+def hemispherical_vector():
+    LOOP = True
+    while LOOP:
+        x = -1. + 2. * np.random.uniform()
+        y = -1. + 2. * np.random.uniform()
+        s = x**2 + y**2
+        if s <= 1.0:
+            LOOP = False
         
+    z = -1. + 2. * s
+    a = 2 * np.sqrt(1 - s)
+    x = a * x
+    y = a * y
+    return np.array([x,y,abs(z)])
+    
 class ReflectiveMaterial(object):
     """A Material that reflects photons rather an absorbing photons.
-
-    reflectivity: Spectrum or AngularSpectrum object that defines the
+    
+    Initalization:
+    
+    reflectivity -- A Spectrum, AngularSpectrum or number that defines the
     material reflectivity (i.e. zero to one) over the wavelength 
-    range (in nanometers).
+    range (in nanometers), and optionally over an anglular range in rads.
+    
+    refractive_index -- the refractive index of the coating, if unsure set to the
+    refractive_index of the substrate. Or is an isolated mirrors in air set to one.
+    
+    lambertian -- If True then the material reflects as a Lambertian surface, other
+    reflection is specular. NB This option should only be used with reflectivity=
+    constant, or reflectivity=Spectrum.
+    
     """
-    def __init__(self, reflectivity, refractive_index=1.):
+    def __init__(self, reflectivity, refractive_index=1., lambertian=False):
         super(ReflectiveMaterial, self).__init__()
         self.reflectivity = reflectivity
         self.refractive_index = refractive_index
+        self.lambertian = lambertian
     
-    def trace(self, photon, normal, free_pathlength):
-        """Move the photon one Monte-Carlo step forward by considering material reflections."""
-        
-        # Absorption is not defined for this material (we assume dielectrics)
-        # Therefore is random number is less than reflectivty: photon reflected.
+    def __call__(self, photon):
+        """Returns the reflectivity of the coating for the incident photon."""
         
         if isinstance(self.reflectivity, Spectrum):
-            R = self.reflectivity.value(photon.wavelength)
-        if isinstance(self.reflectivity, AngularSpectrum):
+            return self.reflectivity.value(photon.wavelength)
+            
+        elif isinstance(self.reflectivity, AngularSpectrum):
             # DJF 8/5/2010
             # 
             # The internal incident angle (substate-coating) will not correspond to the same value of 
@@ -564,67 +598,26 @@ class ReflectiveMaterial(object):
             else:
                 rads = angle(normal, photon.direction)
                 
-            R = self.reflectivity.value(photon.wavelength, rads)
+            return self.reflectivity.value(photon.wavelength, rads)
+            
         else:
-            R = self.reflectivity
+            # Assume it's a number
+            return self.reflectivity
         
-        rn = np.random.uniform()
-        if rn < R:
-            # Reflected
-            photon.direction = reflect_vector(normal, photon.direction)
-        else:
-            photon.position = photon.position + free_pathlength * photon.direction
-        return photon
-
-def hemispherical_vector():
-    LOOP = True
-    while LOOP:
-        x = -1. + 2. * np.random.uniform()
-        y = -1. + 2. * np.random.uniform()
-        s = x**2 + y**2
-        if s <= 1.0:
-            LOOP = False
-        
-    z = -1. + 2. * s
-    a = 2 * np.sqrt(1 - s)
-    x = a * x
-    y = a * y
-    return np.array([x,y,abs(z)])
-
-class DiffuseReflectiveMaterial(object):
-    """A Material that reflects diffusively rather an absorbing photons.
-    
-    reflectivity: Spectrum or AngularSpectrum object that defines the
-    material reflectivity (i.e. zero to one) over the wavelength 
-    range (in nanometers).
-    """
-    def __init__(self, reflectivity, refractive_index=1.):
-        super(DiffuseReflectiveMaterial, self).__init__()
-        self.reflectivity = reflectivity
-        self.refractive_index = refractive_index
-        
-    def trace(self, photon, normal, free_pathlength):
+    def reflected_direction(self, photon, normal):
         """Move the photon one Monte-Carlo step forward by considering material reflections."""
         
-        # Absorption is not defined for this material (we assume dielectrics)
-        # Therefore if random number is less than reflectivty: photon reflected.
-        
-        if isinstance(self.reflectivity, Spectrum):
-            R = self.reflectivity.value(photon.wavelength)
-        if isinstance(self.reflectivity, AngularSpectrum):
+        if self.lambertian:
+            # Make sure that the surface normal points towards the photon
             rads = angle(normal, photon.direction)
-            R = self.reflectivity.value(photon.wavelength, rads)
-            
-        rn = np.random.uniform()
-        if rn < R:
-            # SANDY:
-            # CHANGE THIS LINE SO THAT RATHER THAN HAVE SPECULAR REFLECTION YOU 
-            # HAVE ISOTROPIC REFLECTION OVER A HEMISPHERE WITH THE 'NORMAL' 
-            # VECTOR AT THE CENTRE.
-            photon.direction = hemispherical_vector()
-        else:
-            photon.position = photon.position + free_pathlength * photon.direction
-        return photon
+            if rads < np.pi/2.:
+                normal= normal * -1.
+            lambertian_emission_direction_into_positive_z = hemispherical_vector()
+            rot_matrix = rotation_matrix_from_vector_alignment(np.array([0,0,1]), normal)
+            return transform_direction(lambertian_emission_direction_into_positive_z, rot_matrix)
+        
+        return reflect_vector(normal, photon.direction)
+
 
 class SimpleMaterial(Material):
     """SimpleMaterial is a subclass of Material. It simply implements a material with a square absorption and emission spectra that sligtly overlap. The absorption coefficient is set to 10 per metre."""

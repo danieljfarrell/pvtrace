@@ -2,7 +2,7 @@
 # transformations.py
 
 # Copyright (c) 2006, Christoph Gohlke
-# Copyright (c) 2006-2010, The Regents of the University of California
+# Copyright (c) 2006-2011, The Regents of the University of California
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -41,14 +41,14 @@ functions to decompose transformation matrices.
   `Christoph Gohlke <http://www.lfd.uci.edu/~gohlke/>`__,
   Laboratory for Fluorescence Dynamics, University of California, Irvine
 
-:Version: 20091230
+:Version: 2011.01.25
 
 Requirements
 ------------
 
-* `Python 2.6 <http://www.python.org>`__
-* `Numpy 1.4 <http://numpy.scipy.org>`__
-* `transformations.c 20091230 <http://www.lfd.uci.edu/~gohlke/>`__
+* `Python 2.6 or 3.1 <http://www.python.org>`__
+* `Numpy 1.5 <http://numpy.scipy.org>`__
+* `transformations.c 2010.04.10 <http://www.lfd.uci.edu/~gohlke/>`__
   (optional implementation of some functions in C)
 
 Notes
@@ -171,15 +171,21 @@ True
 >>> M1 = compose_matrix(scale, shear, angles, trans, persp)
 >>> is_same_transform(M, M1)
 True
-
+>>> v0, v1 = random_vector(3), random_vector(3)
+>>> M = rotation_matrix(angle_between_vectors(v0, v1), vector_product(v0, v1))
+>>> v2 = numpy.dot(v0, M[:3,:3].T)
+>>> numpy.allclose(unit_vector(v1), unit_vector(v2))
+True
 """
 
-from __future__ import division
+from __future__ import division, print_function
 
+import sys
+import os
 import warnings
 import math
+
 import numpy
-import numpy as np
 
 
 def identity_matrix():
@@ -262,14 +268,14 @@ def reflection_from_matrix(matrix):
     """
     M = numpy.array(matrix, dtype=numpy.float64, copy=False)
     # normal: unit eigenvector corresponding to eigenvalue -1
-    l, V = numpy.linalg.eig(M[:3, :3])
-    i = numpy.where(abs(numpy.real(l) + 1.0) < 1e-8)[0]
+    w, V = numpy.linalg.eig(M[:3, :3])
+    i = numpy.where(abs(numpy.real(w) + 1.0) < 1e-8)[0]
     if not len(i):
         raise ValueError("no unit eigenvector corresponding to eigenvalue -1")
     normal = numpy.real(V[:, i[0]]).squeeze()
     # point: any unit eigenvector corresponding to eigenvalue 1
-    l, V = numpy.linalg.eig(M)
-    i = numpy.where(abs(numpy.real(l) - 1.0) < 1e-8)[0]
+    w, V = numpy.linalg.eig(M)
+    i = numpy.where(abs(numpy.real(w) - 1.0) < 1e-8)[0]
     if not len(i):
         raise ValueError("no unit eigenvector corresponding to eigenvalue 1")
     point = numpy.real(V[:, i[-1]]).squeeze()
@@ -278,7 +284,7 @@ def reflection_from_matrix(matrix):
 
 
 def rotation_matrix(angle, direction, point=None):
-    """Return matrix to rotate (clockwise) about axis defined by point and direction.
+    """Return matrix to rotate about axis defined by point and direction.
 
     >>> R = rotation_matrix(math.pi/2.0, [0, 0, 1], [1, 0, 0])
     >>> numpy.allclose(numpy.dot(R, [0, 0, 0, 1]), [ 1., -1.,  0.,  1.])
@@ -319,7 +325,8 @@ def rotation_matrix(angle, direction, point=None):
     M[:3, :3] = R
     if point is not None:
         # rotation not around origin
-        M[:3, 3] = point - np.dot(R, point)
+        point = numpy.array(point[:3], dtype=numpy.float64, copy=False)
+        M[:3, 3] = point - numpy.dot(R, point)
     return M
 
 
@@ -339,14 +346,14 @@ def rotation_from_matrix(matrix):
     R = numpy.array(matrix, dtype=numpy.float64, copy=False)
     R33 = R[:3, :3]
     # direction: unit eigenvector of R33 corresponding to eigenvalue of 1
-    l, W = numpy.linalg.eig(R33.T)
-    i = numpy.where(abs(numpy.real(l) - 1.0) < 1e-8)[0]
+    w, W = numpy.linalg.eig(R33.T)
+    i = numpy.where(abs(numpy.real(w) - 1.0) < 1e-8)[0]
     if not len(i):
         raise ValueError("no unit eigenvector corresponding to eigenvalue 1")
     direction = numpy.real(W[:, i[-1]]).squeeze()
     # point: unit eigenvector of R33 corresponding to eigenvalue of 1
-    l, Q = numpy.linalg.eig(R)
-    i = numpy.where(abs(numpy.real(l) - 1.0) < 1e-8)[0]
+    w, Q = numpy.linalg.eig(R)
+    i = numpy.where(abs(numpy.real(w) - 1.0) < 1e-8)[0]
     if not len(i):
         raise ValueError("no unit eigenvector corresponding to eigenvalue 1")
     point = numpy.real(Q[:, i[-1]]).squeeze()
@@ -423,8 +430,8 @@ def scale_from_matrix(matrix):
     factor = numpy.trace(M33) - 2.0
     try:
         # direction: unit eigenvector corresponding to eigenvalue factor
-        l, V = numpy.linalg.eig(M33)
-        i = numpy.where(abs(numpy.real(l) - factor) < 1e-8)[0][0]
+        w, V = numpy.linalg.eig(M33)
+        i = numpy.where(abs(numpy.real(w) - factor) < 1e-8)[0][0]
         direction = numpy.real(V[:, i]).squeeze()
         direction /= vector_norm(direction)
     except IndexError:
@@ -432,8 +439,8 @@ def scale_from_matrix(matrix):
         factor = (factor + 2.0) / 3.0
         direction = None
     # origin: any eigenvector corresponding to eigenvalue 1
-    l, V = numpy.linalg.eig(M)
-    i = numpy.where(abs(numpy.real(l) - 1.0) < 1e-8)[0]
+    w, V = numpy.linalg.eig(M)
+    i = numpy.where(abs(numpy.real(w) - 1.0) < 1e-8)[0]
     if not len(i):
         raise ValueError("no eigenvector corresponding to eigenvalue 1")
     origin = numpy.real(V[:, i[-1]]).squeeze()
@@ -537,22 +544,22 @@ def projection_from_matrix(matrix, pseudo=False):
     """
     M = numpy.array(matrix, dtype=numpy.float64, copy=False)
     M33 = M[:3, :3]
-    l, V = numpy.linalg.eig(M)
-    i = numpy.where(abs(numpy.real(l) - 1.0) < 1e-8)[0]
+    w, V = numpy.linalg.eig(M)
+    i = numpy.where(abs(numpy.real(w) - 1.0) < 1e-8)[0]
     if not pseudo and len(i):
         # point: any eigenvector corresponding to eigenvalue 1
         point = numpy.real(V[:, i[-1]]).squeeze()
         point /= point[3]
         # direction: unit eigenvector corresponding to eigenvalue 0
-        l, V = numpy.linalg.eig(M33)
-        i = numpy.where(abs(numpy.real(l)) < 1e-8)[0]
+        w, V = numpy.linalg.eig(M33)
+        i = numpy.where(abs(numpy.real(w)) < 1e-8)[0]
         if not len(i):
             raise ValueError("no eigenvector corresponding to eigenvalue 0")
         direction = numpy.real(V[:, i[0]]).squeeze()
         direction /= vector_norm(direction)
         # normal: unit eigenvector of M33.T corresponding to eigenvalue 0
-        l, V = numpy.linalg.eig(M33.T)
-        i = numpy.where(abs(numpy.real(l)) < 1e-8)[0]
+        w, V = numpy.linalg.eig(M33.T)
+        i = numpy.where(abs(numpy.real(w)) < 1e-8)[0]
         if len(i):
             # parallel projection
             normal = numpy.real(V[:, i[0]]).squeeze()
@@ -563,7 +570,7 @@ def projection_from_matrix(matrix, pseudo=False):
             return point, direction, None, None, False
     else:
         # perspective projection
-        i = numpy.where(abs(numpy.real(l)) > 1e-8)[0]
+        i = numpy.where(abs(numpy.real(w)) > 1e-8)[0]
         if not len(i):
             raise ValueError(
                 "no eigenvector not corresponding to eigenvalue 0")
@@ -676,17 +683,17 @@ def shear_from_matrix(matrix):
     M = numpy.array(matrix, dtype=numpy.float64, copy=False)
     M33 = M[:3, :3]
     # normal: cross independent eigenvectors corresponding to the eigenvalue 1
-    l, V = numpy.linalg.eig(M33)
-    i = numpy.where(abs(numpy.real(l) - 1.0) < 1e-4)[0]
+    w, V = numpy.linalg.eig(M33)
+    i = numpy.where(abs(numpy.real(w) - 1.0) < 1e-4)[0]
     if len(i) < 2:
-        raise ValueError("no two linear independent eigenvectors found %s" % l)
+        raise ValueError("no two linear independent eigenvectors found %s" % w)
     V = numpy.real(V[:, i]).squeeze().T
     lenorm = -1.0
     for i0, i1 in ((0, 1), (0, 2), (1, 2)):
         n = numpy.cross(V[i0], V[i1])
-        l = vector_norm(n)
-        if l > lenorm:
-            lenorm = l
+        w = vector_norm(n)
+        if w > lenorm:
+            lenorm = w
             normal = n
     normal /= lenorm
     # direction and angle
@@ -695,8 +702,8 @@ def shear_from_matrix(matrix):
     direction /= angle
     angle = math.atan(angle)
     # point: eigenvector corresponding to eigenvalue 1
-    l, V = numpy.linalg.eig(M)
-    i = numpy.where(abs(numpy.real(l) - 1.0) < 1e-8)[0]
+    w, V = numpy.linalg.eig(M)
+    i = numpy.where(abs(numpy.real(w) - 1.0) < 1e-8)[0]
     if not len(i):
         raise ValueError("no eigenvector corresponding to eigenvalue 1")
     point = numpy.real(V[:, i[-1]]).squeeze()
@@ -951,9 +958,9 @@ def superimposition_matrix(v0, v1, scaling=False, usesvd=True):
              (zx-xz, xy+yx, -xx+yy-zz, 0.0),
              (xy-yx, zx+xz, yz+zy, -xx-yy+zz))
         # quaternion: eigenvector corresponding to most positive eigenvalue
-        l, V = numpy.linalg.eigh(N)
-        q = V[:, numpy.argmax(l)]
-        q /= vector_norm(q) # unit quaternion
+        w, V = numpy.linalg.eigh(N)
+        q = V[:, numpy.argmax(w)]
+        q /= vector_norm(q)  # unit quaternion
         # homogeneous transformation matrix
         M = quaternion_matrix(q)
 
@@ -993,7 +1000,7 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
     try:
         firstaxis, parity, repetition, frame = _AXES2TUPLE[axes]
     except (AttributeError, KeyError):
-        _ = _TUPLE2AXES[axes]
+        _TUPLE2AXES[axes]
         firstaxis, parity, repetition, frame = axes
 
     i = firstaxis
@@ -1050,13 +1057,13 @@ def euler_from_matrix(matrix, axes='sxyz'):
     >>> for axes in _AXES2TUPLE.keys():
     ...    R0 = euler_matrix(axes=axes, *angles)
     ...    R1 = euler_matrix(axes=axes, *euler_from_matrix(R0, axes))
-    ...    if not numpy.allclose(R0, R1): print axes, "failed"
+    ...    if not numpy.allclose(R0, R1): print(axes, "failed")
 
     """
     try:
         firstaxis, parity, repetition, frame = _AXES2TUPLE[axes.lower()]
     except (AttributeError, KeyError):
-        _ = _TUPLE2AXES[axes]
+        _TUPLE2AXES[axes]
         firstaxis, parity, repetition, frame = axes
 
     i = firstaxis
@@ -1117,7 +1124,7 @@ def quaternion_from_euler(ai, aj, ak, axes='sxyz'):
     try:
         firstaxis, parity, repetition, frame = _AXES2TUPLE[axes.lower()]
     except (AttributeError, KeyError):
-        _ = _TUPLE2AXES[axes]
+        _TUPLE2AXES[axes]
         firstaxis, parity, repetition, frame = axes
 
     i = firstaxis + 1
@@ -1277,8 +1284,8 @@ def quaternion_from_matrix(matrix, isprecise=False):
                          (m21-m12, m02-m20, m10-m01, m00+m11+m22)))
         K /= 3.0
         # quaternion is eigenvector of K that corresponds to largest eigenvalue
-        l, V = numpy.linalg.eigh(K)
-        q = V[[3, 0, 1, 2], numpy.argmax(l)]
+        w, V = numpy.linalg.eigh(K)
+        q = V[[3, 0, 1, 2], numpy.argmax(w)]
 
     if q[0] < 0.0:
         q *= -1.0
@@ -1556,7 +1563,7 @@ def arcball_map_to_sphere(point, center, radius):
                      0.0), dtype=numpy.float64)
     n = v[0]*v[0] + v[1]*v[1]
     if n > 1.0:
-        v /= math.sqrt(n) # position outside of sphere
+        v /= math.sqrt(n)  # position outside of sphere
     else:
         v[2] = math.sqrt(1.0 - n)
     return v
@@ -1566,7 +1573,7 @@ def arcball_constrain_to_axis(point, axis):
     """Return sphere point perpendicular to axis."""
     v = numpy.array(point, dtype=numpy.float64, copy=True)
     a = numpy.array(axis, dtype=numpy.float64, copy=True)
-    v -= a * numpy.dot(a, v) # on plane
+    v -= a * numpy.dot(a, v)  # on plane
     n = vector_norm(v)
     if n > _EPS:
         if v[2] < 0.0:
@@ -1610,7 +1617,6 @@ _AXES2TUPLE = {
 
 _TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
 
-# helper functions
 
 def vector_norm(data, axis=None, out=None):
     """Return length, i.e. eucledian norm, of ndarray along axis.
@@ -1710,6 +1716,57 @@ def random_vector(size):
     return numpy.random.random(size)
 
 
+def vector_product(v0, v1, axis=0):
+    """Return vector perpendicular to vectors.
+
+    >>> v = vector_product([2, 0, 0], [0, 3, 0])
+    >>> numpy.allclose(v, [0, 0, 6])
+    True
+    >>> v0 = [[2, 0, 0, 2], [0, 2, 0, 2], [0, 0, 2, 2]]
+    >>> v1 = [[3], [0], [0]]
+    >>> v = vector_product(v0, v1)
+    >>> numpy.allclose(v, [[0, 0, 0, 0], [0, 0, 6, 6], [0, -6, 0, -6]])
+    True
+    >>> v0 = [[2, 0, 0], [2, 0, 0], [0, 2, 0], [2, 0, 0]]
+    >>> v1 = [[0, 3, 0], [0, 0, 3], [0, 0, 3], [3, 3, 3]]
+    >>> v = vector_product(v0, v1, axis=1)
+    >>> numpy.allclose(v, [[0, 0, 6], [0, -6, 0], [6, 0, 0], [0, -6, 6]])
+    True
+    """
+    return numpy.cross(v0, v1, axis=axis)
+
+
+def angle_between_vectors(v0, v1, directed=True, axis=0):
+    """Return angle between vectors.
+
+    If directed is False, the input vectors are interpreted as undirected axes,
+    i.e. the maximum angle is pi/2.
+
+    >>> a = angle_between_vectors([1, -2, 3], [-1, 2, -3])
+    >>> numpy.allclose(a, math.pi)
+    True
+    >>> a = angle_between_vectors([1, -2, 3], [-1, 2, -3], directed=False)
+    >>> numpy.allclose(a, 0)
+    True
+    >>> v0 = [[2, 0, 0, 2], [0, 2, 0, 2], [0, 0, 2, 2]]
+    >>> v1 = [[3], [0], [0]]
+    >>> a = angle_between_vectors(v0, v1)
+    >>> numpy.allclose(a, [0., 1.5708, 1.5708, 0.95532])
+    True
+    >>> v0 = [[2, 0, 0], [2, 0, 0], [0, 2, 0], [2, 0, 0]]
+    >>> v1 = [[0, 3, 0], [0, 0, 3], [0, 0, 3], [3, 3, 3]]
+    >>> a = angle_between_vectors(v0, v1, axis=1)
+    >>> numpy.allclose(a, [1.5708, 1.5708, 1.5708, 0.95532])
+    True
+
+    """
+    v0 = numpy.array(v0, dtype=numpy.float64, copy=False)
+    v1 = numpy.array(v1, dtype=numpy.float64, copy=False)
+    dot = numpy.sum(v0 * v1, axis=axis)
+    dot /= vector_norm(v0, axis=axis) * vector_norm(v1, axis=axis)
+    return numpy.arccos(dot if directed else numpy.fabs(dot))
+
+
 def inverse_matrix(matrix):
     """Return inverse of square transformation matrix.
 
@@ -1720,7 +1777,7 @@ def inverse_matrix(matrix):
     >>> for size in range(1, 7):
     ...     M0 = numpy.random.rand(size, size)
     ...     M1 = inverse_matrix(M0)
-    ...     if not numpy.allclose(M1, numpy.linalg.inv(M0)): print size
+    ...     if not numpy.allclose(M1, numpy.linalg.inv(M0)): print(size)
 
     """
     return numpy.linalg.inv(matrix)
@@ -1767,12 +1824,15 @@ def _import_module(module_name, warn=True, prefix='_py_', ignore='_'):
     Return True on successful import.
 
     """
+    sys.path.append(os.path.dirname(__file__))
     try:
         module = __import__(module_name)
     except ImportError:
+        sys.path.pop()
         if warn:
             warnings.warn("failed to import module " + module_name)
     else:
+        sys.path.pop()
         for attr in dir(module):
             if ignore and attr.startswith(ignore):
                 continue
@@ -1785,12 +1845,13 @@ def _import_module(module_name, warn=True, prefix='_py_', ignore='_'):
         return True
 
 
-#_import_module('_transformations')
-#__docformat__ = "restructuredtext en"
+_import_module('_transformations')
+
+# Documentation in HTML format can be generated with Epydoc
+__docformat__ = "restructuredtext en"
 
 if __name__ == "__main__":
-    #import doctest
-    #import random
-    #numpy.set_printoptions(suppress=True, precision=5)
-    #doctest.testmod()
-    pass
+    import doctest
+    import random  # used in doctests
+    numpy.set_printoptions(suppress=True, precision=5)
+    doctest.testmod()

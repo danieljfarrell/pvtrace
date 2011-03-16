@@ -65,6 +65,9 @@ class Photon (object):
         self.propagate = False
         self.visualiser = None
         self.polarisation = None
+        self.absorber_material = None
+        self.emitter_material = None
+        self.on_surface_object = None
         self.show_log = show_log
         self.reabs = 0
         self.id = 0
@@ -86,6 +89,14 @@ class Photon (object):
         copy.visualiser = self.visualiser
         copy.absorption_counter = self.absorption_counter
         copy.intersection_counter = self.intersection_counter
+        copy.polarisation = self.polarisation
+        copy.show_log = self.show_log
+        copy.reabs = self.reabs
+        copy.id = self.id
+        copy.source = self.source
+        copy.absorber_material = self.absorber_material
+        copy.emitter_material = self.emitter_material
+        copy.on_surface_object = self.on_surface_object
         return copy
     
     def __deepcopy__(self):
@@ -118,20 +129,10 @@ class Photon (object):
      
     def trace(self):
         """The ray can trace its self through the scene."""
-
-                
+        
         assert self.scene != None, "The photon's scene variable is not set."
         
         intersection_points, intersection_objects = self.scene.intersection(self.ray)
-
-        """
-        #DIAGNOSTICS
-        print "\nnew\n"
-        print self.position, self.direction, "\n"
-        print intersection_points, "\n"
-        for i in range(0, len(intersection_objects)):
-            print "Object: ", intersection_objects[i].name, " - Intersection: ", intersection_points[i]
-        """
         
         assert intersection_points != None, "The ray must intersect with something in the scene to be traced."
         
@@ -140,7 +141,6 @@ class Photon (object):
         assert self.container != None, "Container of ray cannot be found."
             
         #import pdb; pdb.set_trace()
-        #import pudb; pudb.set_trace()
         intersection_points, intersection_objects = Scene.sort(intersection_points, intersection_objects, self, container=self.container, show_log=self.show_log)
                         
         # find current intersection point and object -- should be zero if the list is sorted!
@@ -155,46 +155,46 @@ class Photon (object):
         assert intersection_object != None, "No intersection points can be found with the scene."
         
         
-        """
-        #DIAGNOSTICS
-        print "\n", intersection, "\n"
-        print intersection_object.name   
-        """     
-        
         
         # Reached scene boundaries?
         if intersection_object is self.scene.bounds:
             self.active = False
             self.previous_container = self.container
-            self.container = self.scene.bounds
+            self.container = intersection_object
             return self
-
-
+        
+        
         # Reached a RayBin (kind of perfect absorber)?
         if isinstance(intersection_object, RayBin):
             self.active = False
             self.previous_container = self.container
-            self.container = self.scene.bounds
+            self.container = intersection_object
             return self
         
         
         # Here we trace the ray through a Coating
-        if isinstance(self.container, Coating):
-            normal = intersection_object.shape.surface_normal(self.ray)
-            self = self.container.material.trace(self, normal, separation(self.position, intersection))
-            self.exit_device = self.container
-            self.previous_container = self.container
-            self.container = self.scene.container(self)
-            return self
+        #if isinstance(self.container, Coating):
+        #    if self.container.material.lambertian:
+        #        # If a lambertian coating we need the normal to the hemisphere that light will be reflected into
+        #        normal = intersection_object.shape.surface_normal(self.ray, acute=False)
+        #    else:
+        #        normal = intersection_object.shape.surface_normal(self.ray)
+        #    
+        #    # For the coating the normal must be facing the ray
+        #    self = self.container.material.trace(self, normal, separation(self.position, intersection))
+        #    self.exit_device = self.container
+        #    self.previous_container = self.container
+        #    self.container = self.scene.container(self)
+        #    return self
         
         
         # Here we determine if the Coating has been hit
-        if isinstance(intersection_object, Coating) and intersection_object.shape.on_surface(self.position):
-            self.previous_container = self.container
-            self.container = intersection_object
-            self.exit_device = intersection_object
-            assert self.exit_device != self.scene.bounds, "The object the ray hit before hitting the bounds is the bounds, this can't be right."
-            return self
+        #if isinstance(intersection_object, Coating) and intersection_object.shape.on_surface(self.position):
+        #    self.previous_container = self.container
+        #    self.container = intersection_object
+        #    self.exit_device = intersection_object
+        #    assert self.exit_device != self.scene.bounds, "The object the ray hit before hitting the bounds is the bounds, this can't be right."
+        #    return self
         
         
         # Here we trace the ray through a Material
@@ -207,25 +207,28 @@ class Photon (object):
             #01/04/10: Unification --> Next two lines came from older Trace version
             self.exit_device = self.container
             self.exit_material = self.container.material
-            return self        
+            self.on_surface_object = None # Impossible to be non-radiatively lost by a surface
+            return self
                 
         # Reaches interface
         # Photon has been re-absorbed AND re-emitted, i.e. is still active
         ray_on_surface = intersection_object.shape.on_surface(self.position)
-        if not ray_on_surface:            
+        if not ray_on_surface and self.active:
             self.exit_device = self.container
+            self.on_surface_object = None
             return self
             
-        # Ray has reached a surface of some description, increment the intersection counter
+        # Ray has reached a surface of some description, set some state variables
+        self.on_surface_object = intersection_object
         self.intersection_counter += 1
         
         # If we reach an reflective material then we don't need to follow 
         # this logic we can just return
-        if ray_on_surface and isinstance(intersection_object, Coating):
-            self.previous_container = self.container
-            self.container = intersection_object
-            self.exit_device = intersection_object
-            return self
+        #if ray_on_surface and isinstance(intersection_object, Coating):
+        #    self.previous_container = self.container
+        #    self.container = intersection_object
+        #    self.exit_device = intersection_object
+        #    return self
         
         # KARLG NEW CODE HERE
         #import pudb; pudb.set_trace()
@@ -244,10 +247,6 @@ class Photon (object):
                 # Loss
                 self.active = False
             return self
-            
-        # Fresnel details
-        normal = intersection_object.shape.surface_normal(self.ray)
-        rads = angle(normal, self.direction)
         
         # material-air or material-material interface
         # Are there duplicates intersection_points that are equal to the ray position?
@@ -262,76 +261,111 @@ class Photon (object):
         if len(same_pt_indices) == 2:
             intersection_object = self.container
         
+        
+        #
+        #
+        # Calculate the reflectivity of surface
+        #
+        #
+        
+        
+        # Reflection and refraction require the surface normal
+        normal = intersection_object.shape.surface_normal(self.ray)
+        rads = angle(normal, self.direction)
+        
+        # Hit order: from inside or outside?
         if self.container == intersection_object:
             
-            # hitting internal interface -- for the case we are at an material-material interface (i.e. not travelling through air)
+            # hitting internal interface
             initialised_internally = True
             
             if len(same_pt_indices) == 2:
-                
+                # Internal interface for the case for 2 material-material interfaces which are touching (i.e. not travelling through air)
                 for obj in intersection_objects:
                     if obj.shape.on_surface(intersection) and obj != self.container:
-                    #if obj != self.container:
                         next_containing_object = obj
-                        
-                
             else:
-                # hitting internal interface -- for the case we are not at an interface
+                # hitting internal interface -- for the case where the boundary materials are NOT touching (i.e. we are leaving an material embedded in another)
                 next_containing_object = self.scene.container(self)
+            
             
             assert self.container != next_containing_object, "The current container cannot also be the next containing object after the ray is propagated."
             
-            # Fresnel details
-            normal = intersection_object.shape.surface_normal(self.ray)
-            rads = angle(normal, self.direction)
-            if self.polarisation == None:
-                reflection = fresnel_reflection(rads, self.container.material.refractive_index, next_containing_object.material.refractive_index)
-            else:
-                reflection = fresnel_reflection_with_polarisation(normal, self.direction, self.polarisation, self.container.material.refractive_index, next_containing_object.material.refractive_index)
             
+            # Calculate interface reflectivity
+            if isinstance(intersection_object, Coating):
+                # CONVENTION: The internal reflectivity of Coating objects is zero. 
+                # This avoids multiple reflections within these structures.
+                # reflection = intersection_object.reflectivity(self)
+                reflection = 0.
+            elif not isinstance(intersection_object, Coating) and isinstance(next_containing_object, Coating):
+                # Catches the case when a Coating is touching an interface, forcing it to use the Coatings 
+                # reflectivity rather than standard Fresnel reflection
+                reflection = next_containing_object.reflectivity(self)
+            else:
+                # Fresnel reflection
+                if self.polarisation is None:
+                    reflection = fresnel_reflection(rads, self.container.material.refractive_index, next_containing_object.material.refractive_index)
+                else:
+                    reflection = fresnel_reflection_with_polarisation(normal, self.direction, self.polarisation, self.container.material.refractive_index, next_containing_object.material.refractive_index)
+                    
         else:
             # hitting external interface
-            initialised_internally = False           
+            initialised_internally = False
             
-                        
             if len(same_pt_indices) == 2:
+                # External interface which are touching (i.e. not travelling through air)
                 for obj in intersection_objects:
                     if obj != self.container:
                         intersection_object = obj
                         next_containing_object = obj
             else:
+                # External interfaces NOT touching (i.e. travelling through air)
                 next_containing_object = intersection_object
             
-            #import pdb; pdb.set_trace()
-            normal = intersection_object.shape.surface_normal(self.ray)
-            rads = angle(normal, self.direction)
-            if self.polarisation == None:
-                reflection = fresnel_reflection(rads, self.container.material.refractive_index, next_containing_object.material.refractive_index)
+            # Calculate interface reflectivity
+            if isinstance(intersection_object, Coating):
+                # Coating has special reflectivity
+                reflection = intersection_object.reflectivity(self)
             else:
-                reflection = fresnel_reflection_with_polarisation(normal, self.direction, self.polarisation, self.container.material.refractive_index, next_containing_object.material.refractive_index)
-                
-        if isinstance(next_containing_object, Collector):
-            # If the photon hits an interface with e.g. a cell index-matched to it, then no reflection is to occur at this interface.
-            reflection = 0.
-        
-        if np.random.random_sample() < reflection:
-            # photon is reflected
-            before = copy(self.direction)
-            self.direction = reflect_vector(normal, self.direction)
-            ang = angle(before, self.direction)
-            
-            if self.polarisation != None:
-                    
-                #import pdb; pdb.set_trace()
-                if cmp_floats(ang, np.pi):
-                    # Anti-parallel
-                    self.polarisation = self.polarisation
+                # Fresnel reflection
+                if self.polarisation is None:
+                    reflection = fresnel_reflection(rads, self.container.material.refractive_index, next_containing_object.material.refractive_index)
                 else:
-                    # apply the rotation transformation the photon polarisation which aligns the before and after directions
-                    R = rotation_matrix_from_vector_alignment(before, self.direction)
-                    self.polarisation = transform_direction(self.polarisation, R)
+                    reflection = fresnel_reflection_with_polarisation(normal, self.direction, self.polarisation, self.container.material.refractive_index, next_containing_object.material.refractive_index)
+        
+        #
+        #
+        # Does reflection or refraction occur?
+        #
+        #
+        
+        if np.random.uniform() < reflection:
+            # Reflection occurs
+            
+            # Cache old direction for later use by polarisation code
+            old_direction = copy(self.direction)
+            
+            if isinstance(intersection_object, Coating):
+                # Coating reflection (can be specular or lambertian)
+                self.direction = intersection_object.reflectivity.reflected_direction(self, normal)
+            else:
+                # Specular reflection
+                self.direction = reflect_vector(normal, self.direction)
+                
+                # Currently, polaristaion code only runs with Fresnel reflection.
+                if self.polarisation is not None:
+                
+                    ang = angle(old_direction, self.direction)
+                    if cmp_floats(ang, np.pi):
+                        # Anti-parallel
+                        self.polarisation = self.polarisation
+                    else:
+                        # apply the rotation transformation the photon polarisation which aligns the before and after directions
+                        R = rotation_matrix_from_vector_alignment(before, self.direction)
+                        self.polarisation = transform_direction(self.polarisation, R)
                     
-                assert cmp_floats(angle(self.direction, self.polarisation), np.pi/2), "Exit Pt. #1: Angle between photon direction and polarisation must be 90 degrees: theta=%s" % str(np.degrees(angle(self.direction, self.polarisation)))
+                    assert cmp_floats(angle(self.direction, self.polarisation), np.pi/2), "Exit Pt. #1: Angle between photon direction and polarisation must be 90 degrees: theta=%s" % str(np.degrees(angle(self.direction, self.polarisation)))
             
             self.propagate = False
             self.exit_device = self.container
@@ -346,7 +380,7 @@ class Photon (object):
                         self.polarisation = self.polarisation * -1.
                     else:
                         # apply the rotation transformation the photon polarisation which aligns the before and after directions
-                        R = rotation_matrix_from_vector_alignment(before, self.direction)
+                        R = rotation_matrix_from_vector_alignment(old_direction, self.direction)
                         self.polarisation = transform_direction(self.polarisation, R)
                     
                     assert cmp_floats(angle(self.direction, self.polarisation), np.pi/2), "Exit Pt. #2: Angle between photon direction and polarisation must be 90 degrees: theta=%s" % str(angle(self.direction, self.polarisation))
@@ -355,52 +389,53 @@ class Photon (object):
                 self.exit_device = intersection_object
             assert self.exit_device != self.scene.bounds, "The object the ray hit before hitting the bounds is the bounds, this can't be right"
             return self
+        
         else:
             # photon is refracted through interface
             self.propagate = True
             before = copy(self.direction)
             ang = angle(before, self.direction)
+            
             if initialised_internally:
-                if not isinstance(next_containing_object, Collector):
-                    self.direction = fresnel_refraction(normal, self.direction, self.container.material.refractive_index, next_containing_object.material.refractive_index )
-                    
-                    if self.polarisation != None:
-                        if cmp_floats(ang, np.pi):
-                            # Anti-parallel
-                            self.polarisation = self.polarisation
-                        else:
-                            # apply the rotation transformation the photon polarisation which aligns the before and after directions
-                            R = rotation_matrix_from_vector_alignment(before, self.direction)
-                            self.polarisation = transform_direction(self.polarisation, R)
-                        assert cmp_floats(angle(self.direction, self.polarisation), np.pi/2), "Exit Pt. #3: Angle between photon direction and polarisation must be 90 degrees: theta=%s" % str(angle(self.direction, self.polarisation))
-                        
-                self.exit_device = self.container #LSC is the exit_device
-                self.previous_container = self.container
-                self.container = next_containing_object #Bounds is the container
-                return self
-            else:
-                if not isinstance(next_containing_object, Collector):
-                    self.direction = fresnel_refraction(normal, self.direction, self.container.material.refractive_index, intersection_object.material.refractive_index )
-                    
-                    if self.polarisation != None:
-                        
-                        if cmp_floats(ang, np.pi):
-                            # Anti-parallel
-                            self.polarisation = self.polarisation
-                        else:
+                # Is initialised internally
+                self.direction = fresnel_refraction(normal, self.direction, self.container.material.refractive_index, next_containing_object.material.refractive_index )
+                if self.polarisation != None:
+                    if cmp_floats(ang, np.pi):
+                        # Anti-parallel
+                        self.polarisation = self.polarisation
+                    else:
                         # apply the rotation transformation the photon polarisation which aligns the before and after directions
-                            R = rotation_matrix_from_vector_alignment(before, self.direction)
-                            self.polarisation = transform_direction(self.polarisation, R)
-                            # apply the rotation transformation the photon polarisation which aligns the before and after directions
-
-                        assert cmp_floats(angle(self.direction, self.polarisation), np.pi/2), "Exit Pt. #4: Angle between photon direction and polarisation must be 90 degrees: theta=%s" % str(angle(self.direction, self.polarisation))
+                        R = rotation_matrix_from_vector_alignment(before, self.direction)
+                        self.polarisation = transform_direction(self.polarisation, R)
+                    assert cmp_floats(angle(self.direction, self.polarisation), np.pi/2), "Exit Pt. #3: Angle between photon direction and polarisation must be 90 degrees: theta=%s" % str(angle(self.direction, self.polarisation))
                     
-                # DJF 13.5.2010: This was crashing the statisical collection because it meant that an incident ray, hitting and transmitted, then lost would have bounds as the exit_device.
-                #self.exit_device = self.container
-                self.exit_device = intersection_object
+                self.exit_device = self.container
                 self.previous_container = self.container
-                self.container = intersection_object
+                self.container = next_containing_object
                 return self
+                
+            else:
+                # Initalised externally
+                self.direction = fresnel_refraction(normal, self.direction, self.container.material.refractive_index, intersection_object.material.refractive_index )
+                
+                if self.polarisation is not None:
+                    
+                    if cmp_floats(ang, np.pi):
+                        # Anti-parallel
+                        self.polarisation = self.polarisation
+                    else:
+                        # apply the rotation transformation the photon polarisation which aligns the before and after directions
+                        R = rotation_matrix_from_vector_alignment(before, self.direction)
+                        self.polarisation = transform_direction(self.polarisation, R)
+                        # apply the rotation transformation the photon polarisation which aligns the before and after directions
+                    assert cmp_floats(angle(self.direction, self.polarisation), np.pi/2), "Exit Pt. #4: Angle between photon direction and polarisation must be 90 degrees: theta=%s" % str(angle(self.direction, self.polarisation))
+                
+            # DJF 13.5.2010: This was crashing the statisical collection because it meant that an incident ray, hitting and transmitted, then lost would have bounds as the exit_device.
+            #self.exit_device = self.container
+            self.exit_device = intersection_object
+            self.previous_container = self.container
+            self.container = intersection_object
+            return self
                 
 
 def povObj(obj, colour = None):
@@ -502,6 +537,19 @@ class Scene(object):
         self.objects  = [self.bounds]
         
     def add_object(self, object):
+        "Adds a new object to the scene. NB the new object must have a unique name otherwise this operation will fail."
+        if len(object.name) == 0:
+            raise ValueError('The name of the object being added to the scene is blanck, please give you scene (i.e. Devices) a name by doing: my_device.name="my unique name".')
+            
+        names = []
+        for obj in self.objects:
+            names.append(obj.name)
+        names = set(names)
+        count = len(names)
+        names.add(object.name)
+        if count == len(names):
+            # The name of the new object is a duplicate
+            raise ValueError("The name of the object being added, '%s' is not unique. All seem objects (i.e. Devices) must have unique name. You can change the name easily by doing: my_device.name='my unique name'.", object.name)
         self.objects.append(object)
     
     def intersection(self, ray):
@@ -535,9 +583,15 @@ class Scene(object):
         for i in range(0,len(points)):
             
             if remove_ray_intersection:
-                if ray.ray.behind(points[i]) or cmp_points(ray.position, points[i]):
-                    points[i] = None
-                    objects[i] = None
+                try:
+                    if ray.ray.behind(points[i]) or cmp_points(ray.position, points[i]):
+                        points[i] = None
+                        objects[i] = None
+                except:
+                    #import pdb; pdb.set_trace()
+                    ray.ray.behind(points[i])
+                    cmp_points(ray.position, points[i])
+                    exit(1)
             else:
                 if ray.ray.behind(points[i]):
                     points[i] = None
@@ -671,7 +725,7 @@ class Scene(object):
 
 class Tracer(object):
     """An object that will fire multiple photons through the scene."""
-    def __init__(self, scene=None, source=None, throws=1, steps=50, seed=None, use_visualiser=True, show_log=True, background=(0.957, 0.957, 1), ambient=0.5):
+    def __init__(self, scene=None, source=None, throws=1, steps=50, seed=None, use_visualiser=True, show_log=False, background=(0.957, 0.957, 1), ambient=0.5, database_file="/tmp/pvtracedb.sql"):
         super(Tracer, self).__init__()
         self.scene = scene
         from LightSources import SimpleSource, PlanarSource, CylindricalSource, PointSource, RadialSource
@@ -681,7 +735,7 @@ class Tracer(object):
         self.totalsteps = 0
         self.seed = seed
         self.killed = 0
-        self.database = PhotonDatabase.PhotonDatabase()
+        self.database = PhotonDatabase.PhotonDatabase(database_file)
         self.stats = dict()
         self.show_log = show_log
         np.random.seed(self.seed)
@@ -695,27 +749,62 @@ class Tracer(object):
             if obj != scene.bounds:
                 if not isinstance(obj.shape, CSGadd) and not isinstance(obj.shape, CSGint) and not isinstance(obj.shape, CSGsub):
                 
-                    if isinstance(obj.material, SimpleMaterial):
+                    #import pdb; pdb.set_trace()
+                    if isinstance(obj, RayBin):
+                        #checkerboard = ( (0,0.01,0,0.01), (0.01,0,0.01,0), (0,0.01,0,1), (0.01,0,0.01,0) )
+                        #checkerboard = ( (0,1,0,1), (1,0,1,0), (0,1,0,1), (1,0,1,0) )
+                        #material = visual.materials.texture(data=checkerboard, mapping="rectangular", interpolate=False)
+                        material = visual.materials.wood
+                        colour = visual.color.blue
+                        opacity=1.
+                    
+                    elif isinstance(obj, Coating):
+                        
+                        colour = visual.color.white
+                        opacity = 0.5
+                        material = visual.materials.plastic
+                        
+                        if hasattr(obj.reflectivity, 'lambertian'):
+                            if obj.reflectivity.lambertian is True:
+                                # The material is a diffuse reflector
+                                colour = visual.color.white
+                                opacity = 1.
+                                material = visual.materials.plastic
+                                
+                    elif isinstance(obj.material, SimpleMaterial):
+                        #import pdb; pdb.set_trace()
                         wavelength = obj.material.bandgap
+                        colour = norm(wav2RGB(wavelength))
+                        opacity = 0.5
+                        material = visual.materials.plastic
                     else:
                         
                         if not hasattr(obj.material, 'all_absorption_coefficients'):
-                            maxindex = obj.material.emission_data.y.argmax()
-                            wavelength = obj.material.emission_data.x[maxindex]
-                            colour = wav2RGB(wavelength)
+                            try:
+                                maxindex = obj.material.emission_data.y.argmax()
+                                wavelength = obj.material.emission_data.x[maxindex]
+                                colour = norm(wav2RGB(wavelength))
+                            except:
+                                colour = (0.2,0.2,0.2)
+                            
+                            opacity = 0.5
+                            material = visual.materials.plastic
                         else:
                             # It is possible to processes the most likley colour of a spectrum in a better way than this!
-                            colour = [0.1,0.1,0.1]
+                            colour = (0.2,0.2,0.2)
+                            opacity = 0.5
+                            material = visual.materials.plastic
                         
                         if colour[0] == np.nan or colour[1] == np.nan or colour[2] == np.nan:
-                            colour = [0.1,0.1,0.1]
+                            colour = (0.2,0.2,0.2)
                         
-                        self.visualiser.addObject(obj.shape, colour=colour)
+                    self.visualiser.addObject(obj.shape, colour=colour, opacity=opacity, material=material)
                         
         self.show_lines = True#False
         self.show_exit = True
         self.show_path = True#False
         self.show_start = True
+        self.show_normals = False
         
         
     def start(self):
@@ -723,6 +812,8 @@ class Tracer(object):
         logged = 0
         
         for throw in range(0, self.throws):
+            
+            #import pdb; pdb.set_trace()
             
             # Delete last ray from visualiser
             if Visualiser.VISUALISER_ON:
@@ -766,7 +857,7 @@ class Tracer(object):
                             bound = "In"
                             #print "IN"
                         
-                        self.database.log(photon, surface_normal=photon.exit_device.shape.surface_normal(photon), surface_id=photon.exit_device.shape.surface_identifier(photon.position), ray_direction_bound=bound)
+                        self.database.log(photon, surface_normal=photon.exit_device.shape.surface_normal(photon), on_surface_obj=photon.on_surface_object, surface_id=photon.exit_device.shape.surface_identifier(photon.position), ray_direction_bound=bound, emitter_material=photon.emitter_material, absorber_material=photon.absorber_material)
                         
                 else:
                     self.database.log(photon)
@@ -792,10 +883,12 @@ class Tracer(object):
                 if self.show_path and photon.active == True:
                     self.visualiser.addSmallSphere(b)
                 
+                
                 #import pdb; pdb.set_trace()
                 
                 if photon.active == False and photon.container == self.scene.bounds:
                     
+                    #import pdb; pdb.set_trace()
                     if self.show_exit:
                         self.visualiser.addSmallSphere(a, colour=[.33,.33,.33])
                         self.visualiser.addLine(a, a + 0.01*photon.direction, colour=wav2RGB(wavelength))

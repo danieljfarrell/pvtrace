@@ -36,7 +36,7 @@ class Visualiser (object):
         super(Visualiser, self).__init__()
         if not Visualiser.VISUALISER_ON:
             return
-        self.display = visual.display(title='PVTrace', x=0, y=0, width=800, height=600, background=background, ambient=ambient)
+        self.display = visual.display(title='PVTrace', x=0, y=0, width=800, height=600, background=(0.957, 0.957, 1), ambient=0.5)
         self.display.exit = False
         visual.curve(pos=[(0,0,0), (.2,0,0)], radius=0.001, color=visual.color.red)
         visual.curve(pos=[(0,0,0), (0,.2,0)], radius=0.001, color=visual.color.green)
@@ -44,8 +44,9 @@ class Visualiser (object):
         visual.label(pos=(.22, 0, 0), text='X', linecolor=visual.color.red)
         visual.label(pos=(0, .22, 0), text='Y', linecolor=visual.color.green)
         visual.label(pos=(0, 0, .22), text='Z', linecolor=visual.color.blue)
+        
     
-    def addBox(self, box, colour=None):
+    def addBox(self, box, colour=None, opacity=1., material=visual.materials.plastic):
         if not Visualiser.VISUALISER_ON:
             return
         if isinstance(box, geo.Box):
@@ -60,12 +61,25 @@ class Visualiser (object):
             print "Visualiser: box position=%s, size=%s" % (str(pos), str(size))
             angle, direction, point = tf.rotation_from_matrix(box.transform)
             print "colour,", colour
-            if colour == [0,0,0]:
-                visual.box(pos=pos, size=size, opacity=0.3, material=visual.materials.plastic)
+            if np.allclose(np.array(colour), np.array([0,0,0])):
+                visual.box(pos=pos, size=size, material=material, opacity=opacity)
             else:
-                visual.box(pos=pos, size=size, color=geo.norm(colour), opacity=0.5)
+                visual.box(pos=pos, size=size, color=colour, materials=material, opacity=opacity)
     
-    def addFinitePlane(self, plane, colour=None, opacity=0.):
+    def addSphere(self, sphere, colour=None, opacity=1., material=visual.materials.plastic):
+        """docstring for addSphere"""
+        if not Visualiser.VISUALISER_ON:
+            return
+        
+        if isinstance(sphere, geo.Sphere):
+            if colour == None:
+                colour = visual.color.red
+            if np.allclose(np.array(colour), np.array([0,0,0])):
+                visual.sphere(pos=sphere.centre, radius=sphere.radius, opacity=opacity, material=material)
+            else:
+                visual.sphere(pos=sphere.centre, radius=sphere.radius, color=geo.norm(colour), opacity=opacity, material=material)
+            
+    def addFinitePlane(self, plane, colour=None, opacity=1., material=visual.materials.plastic):
         if not Visualiser.VISUALISER_ON:
             return
         if isinstance(plane, geo.FinitePlane):
@@ -77,31 +91,31 @@ class Visualiser (object):
             pos = geo.transform_point(pos, plane.transform)
             size = (plane.length, plane.width, H)
             axis = geo.transform_direction((0,0,1), plane.transform)
-            visual.box(pos=pos, size=size, color=colour, opacity=0)
+            visual.box(pos=pos, size=size, color=colour, opacity=opacity, material=material)
 
-    def addPolygon(self, polygon, colour=None):
+    def addPolygon(self, polygon, colour=None, opacity=1., material=visual.materials.plastic):
         if not Visualiser.VISUALISER_ON:
             return
         if isinstance(polygon, geo.Polygon):
             if colour == None:
-                visual.convex(pos=polygon.pts, color=geo.norm([0.1,0.1,0.1]), material=visual.materials.plastic)
+                visual.convex(pos=polygon.pts, color=geo.norm([0.1,0.1,0.1]), material=material)
             else:
-                visual.convex(pos=convex.points, color=geo.norm(colour), opacity=0.5)
+                visual.convex(pos=polygon.pts, color=geo.norm(colour), material=material)
     
-    def addConvex(self, convex, colour=None):
+    def addConvex(self, convex, colour=None, opacity=1., material=visual.materials.plastic):
         """docstring for addConvex"""
         if not Visualiser.VISUALISER_ON:
             return
         if isinstance(convex, geo.Convex):
             if colour == None:
                 print "Color is none"
-                visual.convex(pos=polygon.pts, color=geo.norm([0.1,0.1,0.1]), material=visual.materials.plastic)
+                visual.convex(pos=convex.points, color=geo.norm([0.1,0.1,0.1]), material=material)
             else:
-                import pdb; pdb.set_trace()
+                #import pdb; pdb.set_trace()
                 print "Colour is", geo.norm(colour)
-                visual.convex(pos=convex.points, color=geo.norm(colour), material=visual.materials.plastic)
-            
-    def addRay(self, ray, colour=None):
+                visual.convex(pos=convex.points, color=geo.norm(colour), material=material)
+                
+    def addRay(self, ray, colour=None, opacity=1., material=None):
         if not Visualiser.VISUALISER_ON:
             return
         if isinstance(ray, geo.Ray):
@@ -109,26 +123,26 @@ class Visualiser (object):
                 colour = visual.color.white
             pos = ray.position
             axis = ray.direction * 5
-            visual.cylinder(pos=pos, axis=axis, radius=0.0001, color=geo.norm(colour))
+            visual.cylinder(pos=pos, axis=axis, radius=0.0001, color=geo.norm(colour), opacity=opacity, material=material)
     
-    def addSmallSphere(self, point, colour=None):
+    def addSmallSphere(self, point, colour=None, opacity=1., material=None):
         if not Visualiser.VISUALISER_ON:
             return
         if colour == None:
             colour = visual.color.blue
-        visual.sphere(pos=point, radius=0.00012, color=geo.norm(colour))
+        visual.sphere(pos=point, radius=0.00012, color=geo.norm(colour), opacity=opacity, materiall=material)
         #visual.curve(pos=[point], radius=0.0005, color=geo.norm(colour))
         
         
-    def addLine(self, start, stop, colour=None):
+    def addLine(self, start, stop, colour=None, opacity=1., material=None):
         if not Visualiser.VISUALISER_ON:
             return
         if colour == None:
             colour = visual.color.white
         axis = np.array(stop) - np.array(start)
-        visual.cylinder(pos=start, axis=axis, radius=0.0001, color=geo.norm(colour))
+        visual.cylinder(pos=start, axis=axis, radius=0.0001, color=geo.norm(colour), opacity=opacity, material=material)
     
-    def addCylinder(self, cylinder, colour=None):
+    def addCylinder(self, cylinder, colour=None, opacity=1., material=None):
         if not Visualiser.VISUALISER_ON:
             return
         if colour == None:
@@ -142,10 +156,10 @@ class Visualiser (object):
         print axis, "Cylinder:axis"
         print colour, "Cylinder:colour"
         print cylinder.radius, "Cylinder:radius"
-        visual.cylinder(pos=position, axis=axis, color=colour, radius=cylinder.radius, opacity=0.5, length = cylinder.length)
+        visual.cylinder(pos=position, axis=axis, color=colour, radius=cylinder.radius, opacity=opacity, length = cylinder.length, material=material)
 
 
-    def addCSG(self, CSGobj, res,origin,extent,colour=None):
+    def addCSG(self, CSGobj, res,origin,extent, colour=None, opacity=1., material=None):
         """
         Visualise a CSG structure in a space subset defined by xmin, xmax, ymin, .... with division factor (i.e. ~ resolution) res
         """
@@ -207,7 +221,7 @@ class Visualiser (object):
                         origin = (pt[0]-pex[0]/2, pt[1]-pex[1]/2, pt[2]-pex[2]/2)
                         extent = (pt[0]+pex[0]/2, pt[1]+pex[1]/2, pt[2]+pex[2]/2)
                         voxel = geo.Box(origin = origin, extent = extent)
-                        self.addCSGvoxel(voxel, colour=colour)                
+                        self.addCSGvoxel(voxel, colour=colour, opacity=1., material=material)                
                     
                     z = z + res*(zmax-zmin)
 
@@ -219,7 +233,7 @@ class Visualiser (object):
         print 'Complete.'
     
                 
-    def addCSGvoxel(self, box, colour):
+    def addCSGvoxel(self, box, colour, material=None, opacity=1.):
         """
         16/03/10: To visualise CSG objects
         """
@@ -234,7 +248,7 @@ class Visualiser (object):
             
         pos = org + 0.5*size                      
             
-        visual.box(pos=pos, size=size, color=colour, opacity=0.2)
+        visual.box(pos=pos, size=size, color=colour, opacity=opacity, material=material)
         
     def addPhoton(self, photon):
         """Draws a smallSphere with direction arrow and polariation (if data is avaliable)."""
@@ -243,23 +257,25 @@ class Visualiser (object):
         if photon.polarisation != None:
             visual.arrow(pos=photon.position, axis=photon.polarisation * 0.0005, shaftwidth=0.0003, color=visual.color.white, opacity=0.4 )
         
-    def addObject(self, obj, colour=None, opacity=0.5, res=0.05, origin=(-0.02,-0.02,0.), extent = (0.02,0.02,1.)):
+    def addObject(self, obj, colour=None, opacity=0.5, res=0.05, material=None):
         if not Visualiser.VISUALISER_ON:
             return
         if isinstance(obj, geo.Box):
-            self.addBox(obj, colour=colour)
+            self.addBox(obj, colour=colour, material=material, opacity=opacity)
         if isinstance(obj, geo.Ray):
-            self.addRay(obj, colour=colour)
+            self.addRay(obj, colour=colour, material=material, opacity=opacity)
         if isinstance(obj, geo.Cylinder):
-            self.addCylinder(obj, colour=colour)
+            self.addCylinder(obj, colour=colour, material=material, opacity=opacity)
         if isinstance(obj, geo.FinitePlane):
-            self.addFinitePlane(obj, colour, opacity)
+            self.addFinitePlane(obj, colour, opacity, material=material, opacity=opacity)
         if isinstance(obj, csg.CSGadd) or isinstance (obj, csg.CSGint) or isinstance (obj, csg.CSGsub):
-            self.addCSG(obj, res, origin, extent, colour)
+            self.addCSG(obj, res, origin, extent, colour, material=material, opacity=opacity)
         if isinstance(obj, geo.Polygon):
-            self.addPolygon(obj, colour=colour)
+            self.addPolygon(obj, colour=colour, material=material, opacity=opacity)
         if isinstance(obj, geo.Convex):
-            self.addConvex(obj, colour=colour)
+            self.addConvex(obj, colour=colour, material=material, opacity=opacity)
+        if isinstance(obj, geo.Sphere):
+            self.addSphere(obj, colour=colour, material=material, opacity=opacity)
         
 
 if False:
