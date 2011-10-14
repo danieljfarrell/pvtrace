@@ -193,23 +193,23 @@ class Spectrum(object):
                 print e
                 exit(1)
             
-            self.x = data[:,0]
-            self.y = data[:,1]
+            self.x = np.array(data[:,0], dtype=np.float32)
+            self.y = np.array(data[:,1], dtype=np.float32)
         
         elif (x != None and y != None):
-            self.x = np.array(x)
-            self.y = np.array(y)
+            self.x = np.array(x, dtype=np.float32)
+            self.y = np.array(y, dtype=np.float32)
         
         else:
             # We need to make some data up -- i.e. flat over the full model range
-            self.x = np.array([200, 500, 750, 4000])
-            self.y = np.array([0, 0, 0, 0])
+            self.x = np.array([200, 500, 750, 4000], dtype=np.float32)
+            self.y = np.array([0, 0, 0, 0], dtype=np.float32)
         
         
         if len(self.x) == 0:
             # We need to make some data up -- i.e. flat over the full model range
-            self.x = np.array([200, 500, 750, 4000])
-            self.y = np.array([0, 0, 0, 0])
+            self.x = np.array([200, 500, 750, 4000], dtype=np.float32)
+            self.y = np.array([0, 0, 0, 0], dtype=np.float32)
             
         elif len(self.x) == 1:
             # We have a harder time at making up some data
@@ -217,9 +217,9 @@ class Spectrum(object):
             yval = self.y[0]
             bins = np.arange(np.floor( self.x[0] - 1), np.ceil(self.x[0] + 2))
             indx = np.where(bins==xval)[0][0]
-            self.x = np.array(bins)
-            self.y = np.zeros(len(self.x))
-            self.y[indx] = yval
+            self.x = np.array(bins, dtype=np.float32)
+            self.y = np.zeros(len(self.x), dtype=np.float32)
+            self.y[indx] = np.array(yval, dtype=np.float32)
         
         # Make the 'spectrum'
         self.spectrum = interp1d(self.x, self.y, bounds_error=False, fill_value=0.0)
@@ -244,8 +244,7 @@ class Spectrum(object):
         b2 = type(nanometers) == IntType
         b3 = type(nanometers) == np.float32
         b4 = type(nanometers) == np.float64
-        b5 = type(nanometers) == np.float128
-        if b1 or b2 or b3 or b4 or b5:
+        if b1 or b2 or b3 or b4:
             return np.float(self.value(nanometers))
         return self.value(nanometers)
     
