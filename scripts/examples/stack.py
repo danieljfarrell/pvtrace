@@ -21,22 +21,22 @@ W = 0.05
 H = 0.0025
 
 # 2) Create light source from AM1.5 data, truncate to 400 -- 800nm range
-file = PVTDATA + "sources/AM1.5g-full.txt"
+file = os.path.join(PVTDATA, 'sources', 'AM1.5g-full.txt')
 oriel = load_spectrum(file, xbins=np.arange(400,800))
 source = PlanarSource(direction=(0,0,-1), spectrum=oriel, length=L, width=W) # Incident light AM1.5g spectrum
 source.translate((0,0,0.05))
 
 # 3) Load dye absorption and emission data, and create material
-file = PVTDATA + "dyes/lr300.abs.txt"
+file = os.path.join(PVTDATA, 'dyes', 'lr300.abs.txt')
 abs = load_spectrum(file)
-file = PVTDATA + "dyes/lr300.ems.txt"
+file = os.path.join(PVTDATA, 'dyes', 'lr300.ems.txt')
 ems = load_spectrum(file)
 red_layer = Material(absorption_data=abs, emission_data=ems, quantum_efficiency=0.95, refractive_index=1.5)
 
-file = PVTDATA + "dyes/ly240.abs.txt"
+file = os.path.join(PVTDATA, 'dyes', 'ly240.abs.txt')
 abs = load_spectrum(file)
 abs = Spectrum(x=abs.x, y=abs.y*1000) # "dyes/ly240.abs.txt" is normalised, so scale to resonable units of absorption coefficient [1/m].
-file = PVTDATA + "dyes/ly240.ems.txt"
+file = os.path.join(PVTDATA, 'dyes', 'ly240.ems.txt')
 ems = load_spectrum(file)
 green_layer = Material(absorption_data=abs, emission_data=ems, quantum_efficiency=0.95, refractive_index=1.5)
 
@@ -54,10 +54,14 @@ lsc_top = LSC(origin=(0,0,H+0.001), size=(L,W,H))
 lsc_top.material = CompositeMaterial([pmma, green_layer])
 lsc_top.name = "LSC TOP"
 
+# Ask python that the directory of this script file is and use it as the location of the database file
+pwd = os.getcwd()
+dbfile = os.path.join(pwd, 'stack_db1.sql') # <--- the name of the database file
+
 scene = Scene()
 scene.add_object(lsc_bottom)
 scene.add_object(lsc_top)
-trace = Tracer(scene=scene, source=source, seed=1, throws=250, use_visualiser=True, show_log=False)
+trace = Tracer(scene=scene, source=source, seed=None, database_file=dbfile, throws=250, use_visualiser=True, show_log=False)
 trace.show_lines = True
 trace.show_path = True
 import time

@@ -12,14 +12,14 @@ S = 0.01
 
 
 # Load light source date
-file = PVTDATA + "sources/oriel-fit.lamp.txt"
+file = os.path.join(PVTDATA,"sources", "oriel-fit.lamp.txt")
 oriel = load_spectrum(file, xbins=np.arange(400,800))
 source = PlanarSource(direction=(0,0,1), spectrum=oriel, length=L, width=W) # Incident light 3000K spectrum
 
 # Load dye absorption and emission data, and create material
-file = PVTDATA + "dyes/fluro-red.abs.txt"
+file = os.path.join(PVTDATA, "dyes", "fluro-red.abs.txt")
 abs = load_spectrum(file)
-file = PVTDATA + "dyes/fluro-red-fit.ems.txt"
+file = os.path.join(PVTDATA, "dyes","fluro-red-fit.ems.txt")
 ems = load_spectrum(file)
 fluro_red = Material(absorption_data=abs, emission_data=ems, quantum_efficiency=0.95, refractive_index=1.5)
 

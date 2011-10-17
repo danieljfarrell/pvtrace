@@ -11,7 +11,7 @@ D = 0.001
 S = 0.01
 T = 0.0001
 lsc = LSC(origin=(0,0,S), size=(L,W,T))
-absorption_data = np.loadtxt(PVTDATA + "dyes/lr300.abs.txt")
+absorption_data = np.loadtxt(os.path.join(PVTDATA,"dyes", "lr300.abs.txt"))
 T_need = 0.05 # Want to transmit 5% of the light at the peak absorption wavelength
 ap = absorption_data[:,1].max()
 phi = -1/(ap*(T)) * np.log(T_need)
@@ -20,7 +20,7 @@ print "Absorption data scaled to peak, ", absorption_data[:,1].max()
 print "Therefore transmission at peak = ", np.exp(-absorption_data[:,1].max() * T)
 
 absorption = Spectrum(x=absorption_data[:,0], y=absorption_data[:,1])
-emission_data = np.loadtxt(PVTDATA + "dyes/lr300.ems.txt")
+emission_data = np.loadtxt(os.path.join(PVTDATA,"dyes", "lr300.ems.txt"))
 emission = Spectrum(x=emission_data[:,0], y=emission_data[:,1])
 linbackgrd = Material(absorption_data=Spectrum(x=[300.,1000.], y=[0.3,0.3]), refractive_index = 1.5, quantum_efficiency=0.)
 dopant = Material(absorption_data=absorption, emission_data=emission, quantum_efficiency=.95, refractive_index=1.5)

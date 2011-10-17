@@ -28,5 +28,12 @@ from Trace import *
 from Interpolation import *
 
 import os
+import sys
 # Module constants -- location of the data folder
-PVTDATA = os.path.split(os.path.split(os.path.abspath( __file__ ))[0])[0] + "/data/"
+for path in sys.path:
+    if path.find('pvtrace') != -1:
+        pvtrace_directory = path
+        break
+PVTDATA = os.path.join(pvtrace_directory, 'data')
+print "pvtrace data directory:"
+print PVTDATA

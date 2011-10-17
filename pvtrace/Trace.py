@@ -725,7 +725,7 @@ class Scene(object):
 
 class Tracer(object):
     """An object that will fire multiple photons through the scene."""
-    def __init__(self, scene=None, source=None, throws=1, steps=50, seed=None, use_visualiser=True, show_log=False, background=(0.957, 0.957, 1), ambient=0.5, database_file="/tmp/pvtracedb.sql"):
+    def __init__(self, scene=None, source=None, throws=1, steps=50, seed=None, use_visualiser=True, show_log=False, background=(0.957, 0.957, 1), ambient=0.5, database_file="pvtracedb.sql"):
         super(Tracer, self).__init__()
         self.scene = scene
         from LightSources import SimpleSource, PlanarSource, CylindricalSource, PointSource, RadialSource

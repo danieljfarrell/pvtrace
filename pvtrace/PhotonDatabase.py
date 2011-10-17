@@ -8,7 +8,7 @@ import pvtrace
 
 
 # The database schema lives inside the pvtrace module directory
-DB_SCHEMA = os.path.dirname(pvtrace.__file__) + "/dbschema.sql"
+DB_SCHEMA = os.path.join(os.path.dirname(pvtrace.__file__), "dbschema.sql")
 
 def counted(fn):
     def wrapper(*args, **kwargs):
@@ -56,9 +56,10 @@ class PhotonDatabase(object):
             
             # Delete this dbfile and start again
             if os.path.exists(self.file):
-                if self.file == "/tmp/pvtracedb.sql":
+                if os.path.split(self.file)[1] == "pvtracedb.sql":
                     os.remove(self.file)
-                raise ValueError("A database already exist at '%s', please rename your new database to something else." % self.file )
+                else:
+                    raise ValueError("A database already exist at '%s', please rename your new database to something else." % self.file )
             
             
             print "Attempting to creating database dbfile...", self.file
@@ -301,7 +302,12 @@ class PhotonDatabase(object):
 
 if __name__ == "__main__":
     import PhotonDatabase
-    db = PhotonDatabase.PhotonDatabase('/tmp/pvtracedb.sql')
+    import os
+    drive = os.path.splitdrive(os.path.expanduser("~"))[0]
+    database_file = os.path.join(drive, "tmp", "pvtracedb.sql")
+    if not os.path.exists(os.path.split(database_file)[0]): 
+        os.makedirs(os.path.split(database_file)[0])
+    db = PhotonDatabase.PhotonDatabase(database_file)
     uid = db.uids_nonradiative_losses()
     print uid
     print db.wavelengthForUid(uid)
@@ -318,7 +324,7 @@ if __name__ == "__main__":
     data = db.wavelengthForUid(uid)
     hist = np.histogram(data, bins=np.linspace(300,800,num=100))
     pylab.hist(data, bins=np.linspace(300,800,num=100), histtype='stepfilled')
-    pylab.savefig('/tmp/plot-test.pdf')
+    pylab.savefig(os.path.join(drive,"tmp","plot-test.pdf"))
     pylab.clf()
     
     print "Plotting edge"
@@ -327,7 +333,7 @@ if __name__ == "__main__":
     data = db.wavelengthForUid(uid)
     hist = np.histogram(data, bins=np.linspace(300,800,num=100))
     pylab.hist(data, 100, histtype='stepfilled')
-    pylab.savefig('/tmp/plot-edge.pdf')
+    pylab.savefig(os.path.join(drive,"tmp","plot-edge.pdf"))
     pylab.clf()
     
     print "Plotting polar"
@@ -346,7 +352,7 @@ if __name__ == "__main__":
     bins = np.linspace(0,360,num=100)
     hist = np.histogram(data, bins=bins)
     pylab.hist(data, 100, histtype='stepfilled')
-    pylab.savefig('/tmp/plot-polar.pdf')
+    pylab.savefig(os.path.join(drive,"tmp",'plot-polar.pdf'))
     pylab.clf()
     
     print "Plotting escape"
@@ -355,7 +361,7 @@ if __name__ == "__main__":
     data = db.wavelengthForUid(uid)
     hist, bin_edges = np.histogram(data, bins=np.linspace(300,800,num=10))
     pylab.hist(data, len(bin_edges), histtype='stepfilled')
-    pylab.savefig('/tmp/plot-escape.pdf')
+    pylab.savefig(os.path.join(drive,"tmp",'plot-escape.pdf'))
     pylab.clf()
     
     print "Plotting reflected"
@@ -363,14 +369,14 @@ if __name__ == "__main__":
     data = db.wavelengthForUid(uid)
     hist, bin_edges = np.histogram(data, bins=np.linspace(300,800,num=10))
     pylab.hist(data, len(bin_edges), histtype='stepfilled')
-    pylab.savefig('/tmp/plot-reflected.pdf')
+    pylab.savefig(os.path.join(drive,"tmp",'plot-reflected.pdf'))
     pylab.clf()
     
     uid = db.uids_out_bound_on_surface('top', solar=True)
     data = db.wavelengthForUid(uid)
     hist, bin_edges = np.histogram(data, bins=np.linspace(300,800,num=10))
     pylab.hist(data, len(bin_edges), histtype='stepfilled')
-    pylab.savefig('/tmp/plot-transmitted.pdf')
+    pylab.savefig(os.path.join(drive,"tmp",'plot-transmitted.pdf'))
     pylab.clf()
     
     
