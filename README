@@ -1,7 +1,7 @@
 pvtrace -- Optical ray tracing for photovoltaic devices and luminescent materials
 -------
 
-pvtrace was originally written to simulate luminescent solar concentrators during my PhD studies. However it has grown in to a much more powerful tool, capable of optical ray tracing through complicated shapes, and the collection of statistical data to enable characterisation of optics useful for photovoltaics and solar energy conversion.
+pvtrace was originally written to simulate luminescent solar concentrators during my PhD studies. However it has grown into a much more powerful tool, capable of optical ray tracing complicated structures, and the collection of statistical data to enable characterisation of optics useful for photovoltaics and solar energy conversion.
 
 Overview of features:
 * Constructive Solid Geometry
@@ -23,7 +23,7 @@ Overview of features:
   - emission spectrum
   - wavelength and angular reflectivity
 
-pvtrace is written entirely in Python. Using the numpy and scipy libraries. This was chosen to enable rapid development, learning and collaboration rather than speed of execution. On a single core machine pvtrace takes a few minutes to produce sensible results which for me is an acceptable trade-off considering the pleasure it was to write in Python!
+pvtrace is written entirely in Python. Using the numpy library. This was chosen to emphasis rapid development, learning and collaboration rather than speed of execution. On a single core machine pvtrace takes a few minutes to produce sensible results which for me is an acceptable trade-off considering the pleasure it was to write in Python!
 
 Authors:
 Daniel J Farrell -- Original author and benevolent dictator
@@ -34,36 +34,8 @@ Amanda Chatten -- Windows friendly
 
 Installation:
 
-pvtrace is being successfully used on Mac, Linux and Windows. However, it is a new project and currently no in the pip or easy_install systems. For now please follow the instructions below.
-
-Linux (Ubuntu 10.10 32-bit):
-
-1. Install the packages
-$ apt-get install git python python-numpy python-scipy python-visual
-
-2. Clone pvtrace
-Change to a directory where you want to install pvtrace, say DIR=~/code
-$ cd DIR
-$ git clone git@github.com:danieljfarrell/pvtrace.git
-
-3. Update PYTHONPATH
-Add the path to the pvtrace directory to you PYTHONPATH variable e.g. add this to you .profile or .bashrc,
-export PYTHONPATH="/home/<username>/<DIR>/pvtrace"
-
-4. Done.
-Now try and run an example script e.g.
-$ cd pvtrace/scripts/examples
-$ python homogen.py
-
-MacOS (10.6)
-
-To come...
-
-Window
-
-To come...
-  
-
+For detailed installation instructions see the wiki,
+http://github.com/danieljfarrell/pvtrace/wiki
 
 
 
