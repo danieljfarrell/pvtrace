@@ -464,10 +464,17 @@ class Material(object):
 
 class CompositeMaterial(Material):
     """A material that is composed from a homogeneous mix of multiple materials. For example, a plastic plate doped with a blue and red absorbing dyes has the absorption coefficient of plastic as well as the absorption and emission properties of the dyes."""
-    def __init__(self, materials, refractive_index=1.5):
+    def __init__(self, materials, refractive_index=None):
         '''Initalised by a list or array of material objects.'''
         super(CompositeMaterial, self).__init__()
         self.materials = materials
+        if refractive_index is None:
+            print ""
+            print "CompositeMaterial must be created with a value of refractive index which is an estimate of the effective medium of all materials which it contains. The individual refractive index of each material is ignored when grouping mutiple material together using a composite material."
+            print ""
+            print "For example try using, CompositeMaterial([pmma, dye1, dye2], refractive_index=1.5])."
+            print ""
+            raise ValueError
         self.refractive_index = refractive_index
     
     def all_absorption_coefficients(self, nanometers):
