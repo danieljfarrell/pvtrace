@@ -1,9 +1,12 @@
 [![DOI](https://zenodo.org/badge/7342/danieljfarrell/pvtrace.png)](http://dx.doi.org/10.5281/zenodo.12820)
 
-pvtrace -- Optical ray tracing for photovoltaic devices and luminescent materials
+pvtrace - Optical ray tracing for photovoltaic devices and luminescent materials
 -------
 
 pvtrace was originally written to simulate luminescent solar concentrators during my PhD studies. However it has grown into a much more powerful tool, capable of optical ray tracing complicated structures, and the collection of statistical data to enable characterisation of optics useful for photovoltaics and solar energy conversion.
+
+If you use pvtrace please use the following citation,
+Daniel J Farrell, "pvtrace: optical ray tracing for photovoltaic devices and luminescent materials", http://dx.doi.org/10.5281/zenodo.12820
 
 Overview of features:
 * Constructive Solid Geometry
