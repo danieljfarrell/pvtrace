@@ -130,7 +130,7 @@ class PhotonDatabase(object):
         self.uid = self.uid + 1
         
         # Every 100 times write data to dbfile
-        if not self.uid % 1:
+        if not self.uid % 100:
             self.connection.commit()
         
     def __del__(self):
