@@ -37,7 +37,6 @@ Carl Poelking -- Constructive Solid Geometry
 Karl C Godel -- Convex objects, Faces, and Polygons
 Markus Fuhrer -- povray scene rendering and multiprocessing
 Amanda Chatten -- Windows friendly
-Jose JH Videira -- parallelisation with parallelpython
 
 Installation:
 
