@@ -32,6 +32,43 @@ import external.transformations as tf
 import pdb
 from copy import copy
 import logging
+import time
+
+# ---- For parallelising: ---- #
+""" You must download the Parallel Python module:
+http://www.parallelpython.com/
+"""
+
+sys.path.append("C:\python27")
+sys.path.append("C:\python27\pp-1.6.4")
+import pp
+import sqlite3 as sql
+import pickle
+# ---------------------------- #
+
+def _pickle_method(method):
+    func_name = method.im_func.__name__
+    obj = method.im_self
+    cls = method.im_class
+    if func_name.startswith('__') and not func_name.endswith('__'):
+        cls_name = cls.__name__.lstrip('_')
+        if cls_name:
+            func_name = '_' + cls_name + func_name
+    return _unpickle_method, (func_name, obj, cls)
+
+def _unpickle_method(func_name, obj, cls):
+    for cls in cls.mro():
+        try:
+            func = cls.__dict__[func_name]
+        except KeyError:
+            pass
+        else:
+            break
+    return func.__get__(obj, cls)
+
+import copy_reg
+import types
+copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
 
 def remove_duplicates(the_list):
     l = list(the_list)
@@ -724,8 +761,12 @@ class Scene(object):
             return containers[min_index]
 
 class Tracer(object):
-    """An object that will fire multiple photons through the scene."""
-    def __init__(self, scene=None, source=None, throws=1, steps=50, seed=None, use_visualiser=True, show_log=False, background=(0.957, 0.957, 1), ambient=0.5, database_file="pvtracedb.sql"):
+    """An object that will fire multiple photons through the scene.
+    
+    parallel-pvtrace edit: Even when selected False, the visualiser is still communicated with, confusing parallelpython. Hence lots of try/except cases to overlook the comm issues.
+    
+    """
+    def __init__(self, scene=None, source=None, throws=1, steps=2000, seed=None, use_visualiser=False, show_log=False, background=(0.957, 0.957, 1), ambient=0.5, database_file="/tmp/pvtracedb.sql", combined_database_file = "/tmp/pvtracedbCombined.sql", parts = 1):
         super(Tracer, self).__init__()
         self.scene = scene
         from LightSources import SimpleSource, PlanarSource, CylindricalSource, PointSource, RadialSource
@@ -735,16 +776,24 @@ class Tracer(object):
         self.totalsteps = 0
         self.seed = seed
         self.killed = 0
-        self.database = PhotonDatabase.PhotonDatabase(database_file)
+        self.database_file_path =  database_file
+        self.database = None#PhotonDatabase.PhotonDatabase(database_file)
+        self.combined_database_file=combined_database_file
         self.stats = dict()
         self.show_log = show_log
         np.random.seed(self.seed)
-        if not use_visualiser:
-            Visualiser.VISUALISER_ON = False
-        else:
-            Visualiser.VISUALISER_ON = True
-        self.visualiser = Visualiser(background=background, ambient=ambient)
-        
+
+        self.parts = parts # Parts = number of cores. 8 cores = photon count will be split into 8 parts.
+	self.chunk = int((throws)/parts) # Number of photons which feeds into the sub-simulations.
+
+        if use_visualiser: # parallel-pvtrace: without this clause the visualiser still appears on parallelised runs even when False
+            if not use_visualiser:
+                Visualiser.VISUALISER_ON = False
+            else:
+                Visualiser.VISUALISER_ON = True
+            self.visualiser = Visualiser(background=background, ambient=ambient)
+                            
+                    
         for obj in scene.objects:
             if obj != scene.bounds:
                 if not isinstance(obj.shape, CSGadd) and not isinstance(obj.shape, CSGint) and not isinstance(obj.shape, CSGsub):
@@ -798,8 +847,11 @@ class Tracer(object):
                         if colour[0] == np.nan or colour[1] == np.nan or colour[2] == np.nan:
                             colour = (0.2,0.2,0.2)
                         
-                    self.visualiser.addObject(obj.shape, colour=colour, opacity=opacity, material=material)
-                        
+                    try:
+                        self.visualiser.addObject(obj.shape, colour=colour, opacity=opacity, material=material)
+                    except:
+                        pass
+    
         self.show_lines = True#False
         self.show_exit = True
         self.show_path = True#False
@@ -807,37 +859,53 @@ class Tracer(object):
         self.show_normals = False
         
         
-    def start(self):
+    def start(self, job_id=0):
+        print job_id, "JOB ID"
+        sys.path.append(os.getcwd() + "\\pvtrace")
+        from Geometry import *
+        from copy import copy
+
+        import PhotonDatabase
+        my_database_file=self.database_file_path%job_id
+        self.database = PhotonDatabase.PhotonDatabase(my_database_file)
         
         logged = 0
-        
-        for throw in range(0, self.throws):
-            
+        # Range is 0 to chunk, as opposed to 0 to throws in order to accommodate potential parallelisation.
+        # Start would be threaded through (self.part) number of times. Default setting on Tracer is parts = 1 (aka no parallelisation)
+        for throw in range(0, self.chunk):
             #import pdb; pdb.set_trace()
             
             # Delete last ray from visualiser
-            if Visualiser.VISUALISER_ON:
-                for obj in self.visualiser.display.objects:
-                    if obj.__class__ is visual.cylinder: # can say either box or 'box'
-                        if obj.radius < 0.001:
-                            obj.visible = False
-                
+            try:
+                if Visualiser.VISUALISER_ON:
+                    for obj in self.visualiser.display.objects:
+                        if obj.__class__ is visual.cylinder: # can say either box or 'box'
+                            if obj.radius < 0.001:
+                                obj.visible = False
+            except:
+                pass              
             if self.show_log:
-                print "Photon number:", throw
+                if throw%1000==0:
+                    print "Photon number:", throw
             else:
-                print "Photon number:", throw, "\r",
-                sys.stdout.flush()
+                if throw%1000==0:
+                    print "Photon number:", throw, "\r",
+                    sys.stdout.flush()
             
             photon = self.source.photon()
-            photon.visualiser = self.visualiser
+            try:
+                photon.visualiser = self.visualiser
+	    except:
+                photon.visualiser = None
             photon.scene = self.scene
             photon.material = self.source
             photon.show_log = self.show_log
-            
             a = list(photon.position)
             if self.show_start:
-                self.visualiser.addSmallSphere(a)
-            
+                try:
+                    self.visualiser.addSmallSphere(a)
+                except:
+                    pass
             step = 0
             while photon.active and step < self.steps:
                 
@@ -866,7 +934,7 @@ class Tracer(object):
                 wavelength = photon.wavelength
                 #photon.visualiser.addPhoton(photon)
                 photon = photon.trace()
-                
+
                 if step == 0:
                     # The ray has hit the first object. 
                     # Cache this for later use. If the ray is not 
@@ -876,22 +944,25 @@ class Tracer(object):
                 
                 #print "Step number:", step
                 b = list(photon.position)                
-                
-                if self.show_lines and photon.active == True:
-                    self.visualiser.addLine(a,b, colour=wav2RGB(photon.wavelength))
-                
-                if self.show_path and photon.active == True:
-                    self.visualiser.addSmallSphere(b)
-                
-                
+                try:
+                    if self.show_lines and photon.active == True:
+                        self.visualiser.addLine(a,b, colour=wav2RGB(photon.wavelength))
+                    
+                    if self.show_path and photon.active == True:
+                        self.visualiser.addSmallSphere(b)
+                except:
+                    pass
                 #import pdb; pdb.set_trace()
                 
                 if photon.active == False and photon.container == self.scene.bounds:
                     
                     #import pdb; pdb.set_trace()
-                    if self.show_exit:
-                        self.visualiser.addSmallSphere(a, colour=[.33,.33,.33])
-                        self.visualiser.addLine(a, a + 0.01*photon.direction, colour=wav2RGB(wavelength))
+                    try:
+                        if self.show_exit:
+                            self.visualiser.addSmallSphere(a, colour=[.33,.33,.33])
+                            self.visualiser.addLine(a, a + 0.01*photon.direction, colour=wav2RGB(wavelength))
+                    except:
+                        pass
                     
                     # Record photon that has made it to the bounds
                     if step == 0:
@@ -921,7 +992,6 @@ class Tracer(object):
                     #assert logged == throw, "Logged (%s) and thorw (%s) not equal" % (str(logged), str(throw))
                     logged = logged + 1
                 
-                
                 a = b
                 step = step + 1
                 self.totalsteps = self.totalsteps + 1
@@ -933,7 +1003,65 @@ class Tracer(object):
                     if self.show_log: 
                         print "   * Reached Max Steps *"
 
+        return my_database_file
 
+    def ppstart(self,number_of_jobs=16):
+        ######## parallelisation starts ######
+
+        """
+        Thought path for parallelisation is to split a large photon count simulation into many small separate simulations, each with it's own SQL database. Once all small sims finish, data from all the SQL files get gathered into one larger SQL file.
+        The fastest parallelisation when the number of sub-simulations = number of cores (including hyperthreading).
+        E.g. 4 cores + hyperthreading = 8 cores, therefore 8 sub-simulations
+        """
+        
+        job_server = pp.Server()
+        all_jobs = []
+        
+        print "total number of photons \t \t", self.throws
+        print "number of cores to be used \t \t", self.parts
+        print "number of photons for each core \t", self.chunk
+        
+        for job_id in range(number_of_jobs):
+            time.sleep(1)# Start sub-simulations at different times in order to generate different seeds for each.
+            print "chunk is:", self.chunk
+            all_jobs.append(job_server.submit(self.start, (job_id,), tuple(), ("copy",)))
+        job_server.wait()
+
+        # Now merge the SQL files into one.
+        
+        combined = PhotonDatabase.PhotonDatabase(self.combined_database_file)
+        global_uid_offset = 0
+        global_photon_id = 0
+
+        for job in all_jobs:
+            db_segment_path = job()
+            connection = sql.connect(db_segment_path)
+            cursor = connection.cursor()
+            for photon_uid, photon_id, wavelength in cursor.execute("SELECT * FROM photon"):
+                photon_uid += global_uid_offset
+                photon_id +=  global_photon_id
+                combined.cursor.execute('INSERT INTO photon VALUES (?, ?, ?)', (photon_uid, photon_id, wavelength))
+            for x, y, z, uid  in cursor.execute("SELECT * FROM position"):
+                combined.cursor.execute('INSERT INTO position VALUES (?, ?, ?, ?)', (x,y,z,uid+global_uid_offset))
+            for x, y, z, uid  in cursor.execute("SELECT * FROM direction"):
+                combined.cursor.execute('INSERT INTO direction VALUES (?, ?, ?, ?)', (x,y,z,uid+global_uid_offset))
+            for x, y, z, uid  in cursor.execute("SELECT * FROM polarisation"):
+                combined.cursor.execute('INSERT INTO polarisation VALUES (?, ?, ?, ?)', (x,y,z,uid+global_uid_offset))
+            for x, y, z, uid  in cursor.execute("SELECT * FROM surface_normal"):
+                combined.cursor.execute('INSERT INTO surface_normal VALUES (?, ?, ?, ?)', (x,y,z,uid+global_uid_offset))
+            for values in cursor.execute("SELECT * FROM state"):
+                combined.cursor.execute('INSERT INTO state VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (values[:-1]+(values[-1]+global_uid_offset,)))
+
+            global_uid_offset += photon_uid+1
+            global_photon_id = photon_id+1
+
+        combined.connection.commit()
+        combined.cursor.close()
+        
+        self.database = combined
+
+        print "jobs finished"
+		
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
