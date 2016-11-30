@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+import pvtrace
 from pvtrace.external import transformations as tf
 from pvtrace import *
 
@@ -40,7 +41,7 @@ pmma = Material(absorption_data=abs, emission_data=ems, quantum_efficiency=0.0, 
 
 # 5) Make the LSC and give it both dye and pmma materials
 lsc = LSC(origin=(0,0,0), size=(L,W,H))
-lsc.material = CompositeMaterial([pmma, fluro_red])
+lsc.material = CompositeMaterial([pmma, fluro_red], refractive_index=1.5)
 lsc.name = "LSC"
 scene = Scene()
 scene.add_object(lsc)

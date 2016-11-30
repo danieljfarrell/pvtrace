@@ -21,7 +21,13 @@ from ConstructiveGeometry import *
 from Materials import *
 from Devices import *
 from Visualise import Visualiser
-import visual
+VISUAL_INSTALLED = False
+try:
+    import visual
+    VISUAL_INSTALLED = True
+except:
+    VISUAL_INSTALLED = False
+    print 'visual is not installed'
 from itertools import ifilter
 import subprocess
 import os
@@ -743,62 +749,65 @@ class Tracer(object):
             Visualiser.VISUALISER_ON = False
         else:
             Visualiser.VISUALISER_ON = True
+
         self.visualiser = Visualiser(background=background, ambient=ambient)
         
-        for obj in scene.objects:
-            if obj != scene.bounds:
-                if not isinstance(obj.shape, CSGadd) and not isinstance(obj.shape, CSGint) and not isinstance(obj.shape, CSGsub):
+        # This should not happen here in the tracer... refactor this non-sense
+        if VISUAL_INSTALLED:
+            for obj in scene.objects:
+                if obj != scene.bounds:
+                    if not isinstance(obj.shape, CSGadd) and not isinstance(obj.shape, CSGint) and not isinstance(obj.shape, CSGsub):
                 
-                    #import pdb; pdb.set_trace()
-                    if isinstance(obj, RayBin):
-                        #checkerboard = ( (0,0.01,0,0.01), (0.01,0,0.01,0), (0,0.01,0,1), (0.01,0,0.01,0) )
-                        #checkerboard = ( (0,1,0,1), (1,0,1,0), (0,1,0,1), (1,0,1,0) )
-                        #material = visual.materials.texture(data=checkerboard, mapping="rectangular", interpolate=False)
-                        material = visual.materials.wood
-                        colour = visual.color.blue
-                        opacity=1.
-                    
-                    elif isinstance(obj, Coating):
-                        
-                        colour = visual.color.white
-                        opacity = 0.5
-                        material = visual.materials.plastic
-                        
-                        if hasattr(obj.reflectivity, 'lambertian'):
-                            if obj.reflectivity.lambertian is True:
-                                # The material is a diffuse reflector
-                                colour = visual.color.white
-                                opacity = 1.
-                                material = visual.materials.plastic
-                                
-                    elif isinstance(obj.material, SimpleMaterial):
                         #import pdb; pdb.set_trace()
-                        wavelength = obj.material.bandgap
-                        colour = norm(wav2RGB(wavelength))
-                        opacity = 0.5
-                        material = visual.materials.plastic
-                    else:
+                        if isinstance(obj, RayBin):
+                            #checkerboard = ( (0,0.01,0,0.01), (0.01,0,0.01,0), (0,0.01,0,1), (0.01,0,0.01,0) )
+                            #checkerboard = ( (0,1,0,1), (1,0,1,0), (0,1,0,1), (1,0,1,0) )
+                            #material = visual.materials.texture(data=checkerboard, mapping="rectangular", interpolate=False)
+                            material = visual.materials.wood
+                            colour = visual.color.blue
+                            opacity=1.
+                    
+                        elif isinstance(obj, Coating):
                         
-                        if not hasattr(obj.material, 'all_absorption_coefficients'):
-                            try:
-                                maxindex = obj.material.emission_data.y.argmax()
-                                wavelength = obj.material.emission_data.x[maxindex]
-                                colour = norm(wav2RGB(wavelength))
-                            except:
-                                colour = (0.2,0.2,0.2)
-                            
+                            colour = visual.color.white
+                            opacity = 0.5
+                            material = visual.materials.plastic
+                        
+                            if hasattr(obj.reflectivity, 'lambertian'):
+                                if obj.reflectivity.lambertian is True:
+                                    # The material is a diffuse reflector
+                                    colour = visual.color.white
+                                    opacity = 1.
+                                    material = visual.materials.plastic
+                                
+                        elif isinstance(obj.material, SimpleMaterial):
+                            #import pdb; pdb.set_trace()
+                            wavelength = obj.material.bandgap
+                            colour = norm(wav2RGB(wavelength))
                             opacity = 0.5
                             material = visual.materials.plastic
                         else:
-                            # It is possible to processes the most likley colour of a spectrum in a better way than this!
-                            colour = (0.2,0.2,0.2)
-                            opacity = 0.5
-                            material = visual.materials.plastic
                         
-                        if colour[0] == np.nan or colour[1] == np.nan or colour[2] == np.nan:
-                            colour = (0.2,0.2,0.2)
+                            if not hasattr(obj.material, 'all_absorption_coefficients'):
+                                try:
+                                    maxindex = obj.material.emission_data.y.argmax()
+                                    wavelength = obj.material.emission_data.x[maxindex]
+                                    colour = norm(wav2RGB(wavelength))
+                                except:
+                                    colour = (0.2,0.2,0.2)
+                            
+                                opacity = 0.5
+                                material = visual.materials.plastic
+                            else:
+                                # It is possible to processes the most likley colour of a spectrum in a better way than this!
+                                colour = (0.2,0.2,0.2)
+                                opacity = 0.5
+                                material = visual.materials.plastic
                         
-                    self.visualiser.addObject(obj.shape, colour=colour, opacity=opacity, material=material)
+                            if colour[0] == np.nan or colour[1] == np.nan or colour[2] == np.nan:
+                                colour = (0.2,0.2,0.2)
+                        
+                        self.visualiser.addObject(obj.shape, colour=colour, opacity=opacity, material=material)
                         
         self.show_lines = True#False
         self.show_exit = True
@@ -816,7 +825,7 @@ class Tracer(object):
             #import pdb; pdb.set_trace()
             
             # Delete last ray from visualiser
-            if Visualiser.VISUALISER_ON:
+            if VISUAL_INSTALLED:
                 for obj in self.visualiser.display.objects:
                     if obj.__class__ is visual.cylinder: # can say either box or 'box'
                         if obj.radius < 0.001:
