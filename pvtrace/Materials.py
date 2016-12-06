@@ -436,7 +436,7 @@ class Material(object):
         photon.emitter_material = None
         
         # Assuming the material has a uniform absorption coefficient we generated a random path length weigthed by the material absorption coefficient.
-        sampled_pathlength = -np.log(1 - np.random.uniform())/self.absorption(photon)
+        sampled_pathlength = -np.log10(1 - np.random.uniform())/self.absorption(photon)
         
         # Photon absorbed.
         if (sampled_pathlength < free_pathlength):
@@ -494,7 +494,7 @@ class CompositeMaterial(Material):
         
         absorptions = self.all_absorption_coefficients(photon.wavelength)
         absorption_coefficient = absorptions.sum()
-        sampled_pathlength = -np.log(1 - np.random.uniform())/absorption_coefficient
+        sampled_pathlength = -np.log10(1 - np.random.uniform())/absorption_coefficient
         
         #Absorption occurs.
         if (sampled_pathlength < free_pathlength):
