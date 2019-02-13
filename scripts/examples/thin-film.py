@@ -1,4 +1,4 @@
-from __future__ import division
+
 import numpy as np
 from pvtrace import *
 from pvtrace.external import transformations as tf
@@ -16,15 +16,15 @@ T_need = 0.05 # Want to transmit 5% of the light at the peak absorption waveleng
 ap = absorption_data[:,1].max()
 phi = -1/(ap*(T)) * np.log(T_need)
 absorption_data[:,1] = absorption_data[:,1]*phi
-print "Absorption data scaled to peak, ", absorption_data[:,1].max()
-print "Therefore transmission at peak = ", np.exp(-absorption_data[:,1].max() * T)
+print("Absorption data scaled to peak, ", absorption_data[:,1].max())
+print("Therefore transmission at peak = ", np.exp(-absorption_data[:,1].max() * T))
 
 absorption = Spectrum(x=absorption_data[:,0], y=absorption_data[:,1])
 emission_data = np.loadtxt(os.path.join(PVTDATA,"dyes", "lr300.ems.txt"))
 emission = Spectrum(x=emission_data[:,0], y=emission_data[:,1])
 linbackgrd = Material(absorption_data=Spectrum(x=[300.,1000.], y=[0.3,0.3]), refractive_index = 1.5, quantum_efficiency=0.)
 dopant = Material(absorption_data=absorption, emission_data=emission, quantum_efficiency=.95, refractive_index=1.5)
-lsc.material = CompositeMaterial([linbackgrd, dopant])
+lsc.material = CompositeMaterial([linbackgrd, dopant], refractive_index=1.5)
 lsc.name = "FILM"
 film = lsc
 scene.add_object(film)

@@ -11,12 +11,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from  __future__ import division
+
 import numpy as np
 import numpy.linalg
-from external.transformations import translation_matrix, rotation_matrix
-import external.transformations as tf
-from external.quickhull import qhull3d
+from pvtrace.external.transformations import translation_matrix, rotation_matrix
+from pvtrace.external import transformations as tf
+from pvtrace.external.quickhull import qhull3d
 import logging
 import pdb
 
@@ -278,7 +278,7 @@ class Plane(object):
         super(Plane, self).__init__()
         
         self.transform = transform
-        if self.transform == None:
+        if self.transform is None:
             self.transform = tf.identity_matrix()
     
     def append_transform(self, new_transform):
@@ -711,7 +711,7 @@ class Box(object):
                         break
         
         exit = False
-        if common_index == None:
+        if common_index is None:
             reference_point = list(self.extent)
             for ref in reference_point:
                 if not exit:
@@ -1305,7 +1305,7 @@ class Convex(object):
         super(Convex, self).__init__()
         self.points = points
         verts, triangles = qhull3d(points)
-        self.faces = range(len(triangles))
+        self.faces = list(range(len(triangles)))
         
         for i in range(len(triangles)):
             a = triangles[i][0]
@@ -1395,6 +1395,6 @@ if __name__ == "__main__":
         R = rotation_matrix_from_vector_alignment(V1, V2)
         R2 = rotation_matrix(np.pi, [1,0,0])
         V3 = transform_direction(V1, R)
-        print R2
-        print cmp_points(V2, V3)
+        print(R2)
+        print(cmp_points(V2, V3))
     

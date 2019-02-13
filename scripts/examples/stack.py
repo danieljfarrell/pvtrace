@@ -1,4 +1,4 @@
-from __future__ import division
+
 import numpy as np
 from pvtrace.external import transformations as tf
 from pvtrace import *
@@ -47,11 +47,11 @@ pmma = Material(absorption_data=abs, emission_data=ems, quantum_efficiency=0.0, 
 
 # 5) Make the LSC and give it both dye and pmma materials
 lsc_bottom = LSC(origin=(0,0,0), size=(L,W,H))
-lsc_bottom.material = CompositeMaterial([pmma, red_layer])
+lsc_bottom.material = CompositeMaterial([pmma, red_layer], refractive_index=1.5)
 lsc_bottom.name = "LSC BOT"
 
 lsc_top = LSC(origin=(0,0,H+0.001), size=(L,W,H))
-lsc_top.material = CompositeMaterial([pmma, green_layer])
+lsc_top.material = CompositeMaterial([pmma, green_layer], refractive_index=1.5)
 lsc_top.name = "LSC TOP"
 
 # Ask python that the directory of this script file is and use it as the location of the database file
@@ -70,40 +70,40 @@ trace.start()
 toc = time.clock()
 
 # 6) Statistics
-print ""
-print "Run Time: ", toc - tic
-print ""
+print("")
+print("Run Time: ", toc - tic)
+print("")
 
-print "Technical details:"
+print("Technical details:")
 generated = len(trace.database.uids_generated_photons())
 killed = len(trace.database.killed())
 thrown = generated - killed
-print "\t Generated \t", generated
-print "\t Killed \t", killed
-print "\t Thrown \t", thrown
+print("\t Generated \t", generated)
+print("\t Killed \t", killed)
+print("\t Thrown \t", thrown)
 
-print "Summary:"
-print "\t Optical efficiency \t", (len(trace.database.uids_out_bound_on_surface('left', luminescent=True)) + len(trace.database.uids_out_bound_on_surface('right', luminescent=True)) + len(trace.database.uids_out_bound_on_surface('near', luminescent=True)) + len(trace.database.uids_out_bound_on_surface('far', luminescent=True))) * 100 / thrown, "%"
-print "\t Photon efficiency \t", (len(trace.database.uids_out_bound_on_surface('left')) + len(trace.database.uids_out_bound_on_surface('right')) + len(trace.database.uids_out_bound_on_surface('near')) + len(trace.database.uids_out_bound_on_surface('far')) + len(trace.database.uids_out_bound_on_surface('top')) + len(trace.database.uids_out_bound_on_surface('bottom'))) * 100 / thrown, "%"
+print("Summary:")
+print("\t Optical efficiency \t", (len(trace.database.uids_out_bound_on_surface('left', luminescent=True)) + len(trace.database.uids_out_bound_on_surface('right', luminescent=True)) + len(trace.database.uids_out_bound_on_surface('near', luminescent=True)) + len(trace.database.uids_out_bound_on_surface('far', luminescent=True))) * 100 / thrown, "%")
+print("\t Photon efficiency \t", (len(trace.database.uids_out_bound_on_surface('left')) + len(trace.database.uids_out_bound_on_surface('right')) + len(trace.database.uids_out_bound_on_surface('near')) + len(trace.database.uids_out_bound_on_surface('far')) + len(trace.database.uids_out_bound_on_surface('top')) + len(trace.database.uids_out_bound_on_surface('bottom'))) * 100 / thrown, "%")
 
-print "Luminescent photons:"
+print("Luminescent photons:")
 edges = ['left', 'near', 'far', 'right']
 apertures = ['top', 'bottom']
 
 for surface in edges:
-    print "\t", surface, "\t", len(trace.database.uids_out_bound_on_surface(surface, luminescent=True))/thrown * 100, "%"
+    print("\t", surface, "\t", len(trace.database.uids_out_bound_on_surface(surface, luminescent=True))/thrown * 100, "%")
 
 for surface in apertures:
-    print "\t", surface, "\t", len(trace.database.uids_out_bound_on_surface(surface, luminescent=True))/thrown * 100, "%"
+    print("\t", surface, "\t", len(trace.database.uids_out_bound_on_surface(surface, luminescent=True))/thrown * 100, "%")
 
-print "\t", len(trace.database.uids_nonradiative_losses())/thrown * 100, "%"
+print("\t", len(trace.database.uids_nonradiative_losses())/thrown * 100, "%")
 
-print "Solar photons (transmitted/reflected):"
+print("Solar photons (transmitted/reflected):")
 for surface in edges:
-    print "\t", surface, "\t", len(trace.database.uids_out_bound_on_surface(surface, solar=True))/thrown * 100, "%"
+    print("\t", surface, "\t", len(trace.database.uids_out_bound_on_surface(surface, solar=True))/thrown * 100, "%")
 
 for surface in apertures:
-    print "\t", surface, "\t", len(trace.database.uids_out_bound_on_surface(surface, solar=True))/thrown * 100, "%"
+    print("\t", surface, "\t", len(trace.database.uids_out_bound_on_surface(surface, solar=True))/thrown * 100, "%")
 
 
 

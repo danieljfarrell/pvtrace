@@ -1,4 +1,4 @@
-from __future__ import division
+
 import numpy as np
 import sqlite3 as sql
 import inspect
@@ -25,7 +25,7 @@ def itemise(array):
     is_points = None
     for item in array:
         
-        if type(item) == types.ListType or type(item) == types.TupleType:
+        if type(item) == list or type(item) == tuple:
             
             if len(item) == 1:
                 # The data is comprised of single values
@@ -38,7 +38,7 @@ def itemise(array):
                 new.append(item)
             
             if is_values == is_points:
-                raise ValueError, "All elements must of the array must be singleton arrays (i.e single elements arrays)."
+                raise ValueError("All elements must of the array must be singleton arrays (i.e single elements arrays).")
     
     return new
         
@@ -62,9 +62,10 @@ class PhotonDatabase(object):
                     raise ValueError("A database already exist at '%s', please rename your new database to something else." % self.file )
             
             
-            print "Attempting to creating database dbfile...", self.file
+            print("Attempting to creating database dbfile...", self.file)
             try:
-                file(self.file, 'w').close()
+                with open(self.file, 'w'):
+                    pass
             except:
                 raise IOError("Could not create file, %s" % self.file)
             
@@ -72,14 +73,14 @@ class PhotonDatabase(object):
             self.cursor = self.connection.cursor()
             
             try:
-                print "Attempting to loading schema into database from dbfile ... ", DB_SCHEMA
+                print("Attempting to loading schema into database from dbfile ... ", DB_SCHEMA)
                 dbfile = open(os.path.abspath(DB_SCHEMA), "r")
                 for line in dbfile:
                     self.cursor.execute(line)
             except Exception as inst:
-                print "Could not load schema dbfile."
-                print type(inst)
-                print inst
+                print("Could not load schema dbfile.")
+                print(type(inst))
+                print(inst)
                 exit(1)
             
     def load(self, dbfile):
@@ -159,7 +160,7 @@ class PhotonDatabase(object):
         elif solar == True:
             return itemise(self.cursor.execute('SELECT MAX(uid) FROM photon GROUP BY pid HAVING uid IN (SELECT uid FROM state WHERE ray_direction_bound = "Out" AND on_surface_obj=? AND surface_id=? AND absorption_counter = 0 GROUP BY uid);', (object, surface)).fetchall())
         else:
-            print "Cannot return any uids for this question. Are you using the function uids_out_bound_on_surface correctly?"
+            print("Cannot return any uids for this question. Are you using the function uids_out_bound_on_surface correctly?")
             return []
             
     def endpoint_uids_for_nonradiative_loss(self):
@@ -184,7 +185,7 @@ class PhotonDatabase(object):
         # When rays are first created they are logged but they don't have a container_obj (it is assigend later).
         # Here we are remove 'None' from the hit object list, and also converting unicode strings to strings.
         for key in objects_keys:
-            if key != 'None' or key != u'None' or key is not None:
+            if key != 'None' or key != 'None' or key is not None:
                 filtered_keys.append(str(key))
         return filtered_keys
         
@@ -196,7 +197,7 @@ class PhotonDatabase(object):
         # Surface record will often be None because event occur away from surface (i.e. absorption emission)
         # Here we are remove 'None' from the list, and also converting unicode strings to strings.
         for key in keys:
-            if key != 'None' or key != u'None':
+            if key != 'None' or key != 'None':
                 filtered_keys.append(str(key))
         return filtered_keys
     
@@ -219,7 +220,7 @@ class PhotonDatabase(object):
         elif solar == True:
             return itemise(self.cursor.execute('SELECT MAX(uid) FROM photon GROUP BY pid HAVING uid IN (SELECT uid FROM state WHERE ray_direction_bound = "Out" AND surface_id=? AND absorption_counter = 0 GROUP BY uid);', (surface_id,)).fetchall())
         else:
-            print "Cannot return any uids for this question. Are you using the function uids_out_bound_on_surface correctly?"
+            print("Cannot return any uids for this question. Are you using the function uids_out_bound_on_surface correctly?")
             return []
         
     def uids_in_bound_on_surface(self, surface_id, luminescent=None, solar=None):
@@ -233,7 +234,7 @@ class PhotonDatabase(object):
         elif solar == True:
             return itemise(self.cursor.execute('SELECT MAX(uid) FROM photon GROUP BY pid HAVING uid IN (SELECT uid FROM state WHERE ray_direction_bound = "In" AND surface_id=? AND absorption_counter = 0 GROUP BY uid);', (surface_id,)).fetchall())
         else:
-            print "Cannot return any uids for this question. Are you using the function uids_in_bound_on_surface correctly?"
+            print("Cannot return any uids for this question. Are you using the function uids_in_bound_on_surface correctly?")
             return []
     
     def uids_first_intersection(self):
@@ -252,9 +253,9 @@ class PhotonDatabase(object):
     def value_for_table_column_uid(self, table, column, uid):
         """Returns values from the database index my table, column and row, where the row is uniquely defined using the photon uid. 
         Column can also be array-like so multiple columns can be specified provided they come from the same table."""
-        if type(column) is types.StringType or types.UnicodeType:
+        if type(column) is bytes or str:
             return self.cursor.execute("SELECT ? FROM ? WHERE uid = ?", (column, table, uid)).fetchall()
-        elif type(column) is types.ListType or types.TupleType:
+        elif type(column) is list or tuple:
             col_headers = ""
             for header in column:
                 col_header += header
@@ -262,46 +263,46 @@ class PhotonDatabase(object):
                     col_header += ', '
             return self.cursor.execute("SELECT (?) FROM ? WHERE uid = ?", (col_headers, table, uid)).fetchall()
         else:
-            print "Cannot return any uids for this question. Are you using the function value_for_table_column_uid correctly?"
+            print("Cannot return any uids for this question. Are you using the function value_for_table_column_uid correctly?")
             return []
         
     def directionForUid(self, uid):
-        if  type(uid) == types.IntType or type(uid) == types.FloatType:
+        if  type(uid) == int or type(uid) == float:
             return np.array(self.cursor.execute("SELECT x,y,z FROM direction WHERE uid = ?", (uid,)).fetchall()[0])
-        elif type(uid) == types.ListType or type(uid) == types.TupleType:
+        elif type(uid) == list or type(uid) == tuple:
             # This has a variable number of items so ignoring the secure way to do this... me bad
             items = str(uid)[1:-1]
             cmd = "SELECT x,y,z FROM direction WHERE uid IN (%s)" % (items,)
             return self.cursor.execute(cmd).fetchall()
     
     def polarisationForUid(self, uid):
-        if type(uid) == types.IntType or type(uid) == types.FloatType:
+        if type(uid) == int or type(uid) == float:
             return np.array(self.cursor.execute("SELECT x,y,z FROM polarisation WHERE uid = ?", (uid,)).fetchall()[0])
-        elif type(uid) == types.ListType or type(uid) == types.TupleType:
+        elif type(uid) == list or type(uid) == tuple:
             items = str(uid)[1:-1]
             cmd = "SELECT x,y,z FROM polarisation WHERE uid IN (%s)" % (items,)
             return self.cursor.execute(cmd).fetchall()
     
     def positionForUid(self, uid):
-        if type(uid) == types.IntType or type(uid) == types.FloatType:
+        if type(uid) == int or type(uid) == float:
             return np.array(self.cursor.execute("SELECT x,y,z FROM position WHERE uid = ?", (uid,)).fetchall()[0])
-        elif type(uid) == types.ListType or type(uid) == types.TupleType:
+        elif type(uid) == list or type(uid) == tuple:
             items = str(uid)[1:-1]
             cmd = "SELECT x,y,z FROM position WHERE uid IN (%s)" % items
             return self.cursor.execute(cmd).fetchall()
             
     def wavelengthForUid(self, uid):
         #import pdb; pdb.set_trace()
-        if type(uid) == types.IntType or type(uid) == types.FloatType:
+        if type(uid) == int or type(uid) == float:
             return np.array(self.cursor.execute("SELECT wavelength FROM photon WHERE uid = ?", (uid,)).fetchall()[0])
-        elif type(uid) == types.ListType or type(uid) == types.TupleType:
+        elif type(uid) == list or type(uid) == tuple:
             items = str(uid)[1:-1]
             cmd = "SELECT wavelength FROM photon WHERE uid IN (%s)" % (items,)
             values = itemise(self.cursor.execute(cmd).fetchall())
             return values
 
 if __name__ == "__main__":
-    import PhotonDatabase
+    from . import PhotonDatabase
     import os
     drive = os.path.splitdrive(os.path.expanduser("~"))[0]
     database_file = os.path.join(drive, "tmp", "pvtracedb.sql")
@@ -309,16 +310,16 @@ if __name__ == "__main__":
         os.makedirs(os.path.split(database_file)[0])
     db = PhotonDatabase.PhotonDatabase(database_file)
     uid = db.uids_nonradiative_losses()
-    print uid
-    print db.wavelengthForUid(uid)
-    print ""
-    print db.positionForUid(uid)
-    print ""
-    print db.directionForUid(uid)
-    print ""
-    print db.polarisationForUid(uid)
+    print(uid)
+    print(db.wavelengthForUid(uid))
+    print("")
+    print(db.positionForUid(uid))
+    print("")
+    print(db.directionForUid(uid))
+    print("")
+    print(db.polarisationForUid(uid))
     
-    print "Plotting Test"
+    print("Plotting Test")
     import numpy as np
     import pylab
     data = db.wavelengthForUid(uid)
@@ -327,20 +328,20 @@ if __name__ == "__main__":
     pylab.savefig(os.path.join(drive,"tmp","plot-test.pdf"))
     pylab.clf()
     
-    print "Plotting edge"
+    print("Plotting edge")
     uid = db.uids_out_bound_on_surface('left', luminescent=True) + db.uids_out_bound_on_surface('right', luminescent=True) + db.uids_out_bound_on_surface('near', luminescent=True) + db.uids_out_bound_on_surface('far', luminescent=True)
-    print uid
+    print(uid)
     data = db.wavelengthForUid(uid)
     hist = np.histogram(data, bins=np.linspace(300,800,num=100))
     pylab.hist(data, 100, histtype='stepfilled')
     pylab.savefig(os.path.join(drive,"tmp","plot-edge.pdf"))
     pylab.clf()
     
-    print "Plotting polar"
+    print("Plotting polar")
     for id in ['left','right', 'near', 'far']:
         data = []
         norm = db.surface_normal_for_surface(id)
-        print "Surface", id, "Normal", norm
+        print("Surface", id, "Normal", norm)
         uids = db.uids_out_bound_on_surface(id, luminescent=True)
         
         for item in uids:
@@ -355,16 +356,16 @@ if __name__ == "__main__":
     pylab.savefig(os.path.join(drive,"tmp",'plot-polar.pdf'))
     pylab.clf()
     
-    print "Plotting escape"
+    print("Plotting escape")
     uid = db.uids_out_bound_on_surface('top', luminescent=True) + db.uids_out_bound_on_surface('bottom', luminescent=True)
-    print uid
+    print(uid)
     data = db.wavelengthForUid(uid)
     hist, bin_edges = np.histogram(data, bins=np.linspace(300,800,num=10))
     pylab.hist(data, len(bin_edges), histtype='stepfilled')
     pylab.savefig(os.path.join(drive,"tmp",'plot-escape.pdf'))
     pylab.clf()
     
-    print "Plotting reflected"
+    print("Plotting reflected")
     uid = db.uids_out_bound_on_surface('bottom', solar=True)
     data = db.wavelengthForUid(uid)
     hist, bin_edges = np.histogram(data, bins=np.linspace(300,800,num=10))

@@ -12,11 +12,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-from external.transformations import translation_matrix, rotation_matrix
-import external.transformations as tf
-from Trace import Photon
-from Geometry import Box, Cylinder, FinitePlane, transform_point, transform_direction, rotation_matrix_from_vector_alignment, norm
-from Materials import Spectrum
+from pvtrace.external.transformations import translation_matrix, rotation_matrix
+from pvtrace.external import transformations as tf
+from pvtrace.Trace import Photon
+from pvtrace.Geometry import Box, Cylinder, FinitePlane, transform_point, transform_direction, rotation_matrix_from_vector_alignment, norm
+from pvtrace.Materials import Spectrum
 
 def random_spherecial_vector():
     # This method of calculating isotropic vectors is taken from GNU Scientific Library

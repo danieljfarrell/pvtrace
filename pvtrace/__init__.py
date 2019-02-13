@@ -10,22 +10,22 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from __future__ import division
-import numpy as np
-from external import transformations
-from external import pov
-from external import quickhull
-from external import mathutils
 
-print "pvtrace pre-flight checks..."
-from Materials import *
-from Devices import *
-from Geometry import *
-from ConstructiveGeometry import *
-from LightSources import *
-from Visualise import *
-from Trace import *
-from Interpolation import *
+import numpy as np
+from .external import transformations
+from .external import pov
+from .external import quickhull
+from .external import mathutils
+
+print("pvtrace pre-flight checks...")
+from .Materials import *
+from .Devices import *
+from .Geometry import *
+from .ConstructiveGeometry import *
+from .LightSources import *
+from .Visualise import *
+from .Trace import *
+from .Interpolation import *
 
 import os
 import sys
@@ -35,5 +35,5 @@ for path in sys.path:
         pvtrace_directory = path
         break
 PVTDATA = os.path.join(pvtrace_directory, 'data')
-print "pvtrace data directory:"
-print PVTDATA
+print("pvtrace data directory:")
+print(PVTDATA)

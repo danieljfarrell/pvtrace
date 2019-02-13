@@ -37,7 +37,7 @@
 #
 # ***** END LICENSE BLOCK *****
 
-from itertools import izip
+
 import logging
 import operator
 
@@ -92,8 +92,8 @@ def getBoundingBox(veclist):
     # find bounding box
     dim = len(veclist[0])
     return (
-        tuple((min(vec[i] for vec in veclist) for i in xrange(dim))),
-        tuple((max(vec[i] for vec in veclist) for i in xrange(dim))))
+        tuple((min(vec[i] for vec in veclist) for i in range(dim))),
+        tuple((max(vec[i] for vec in veclist) for i in range(dim))))
 
 def getCenterRadius(veclist):
     """Calculate center and radius of given list of vectors.
@@ -110,7 +110,7 @@ def getCenterRadius(veclist):
 
     # center is in the center of the bounding box
     center = tuple((minco + maxco) * 0.5
-                   for minco, maxco in izip(vecmin, vecmax))
+                   for minco, maxco in zip(vecmin, vecmax))
 
     # radius is the largest distance from the center
     r2 = 0.0
@@ -123,10 +123,10 @@ def getCenterRadius(veclist):
 
 def vecSub(vec1, vec2):
     """Vector substraction."""
-    return tuple(x - y for x, y in izip(vec1, vec2))
+    return tuple(x - y for x, y in zip(vec1, vec2))
 
 def vecAdd(vec1, vec2):
-    return tuple(x + y for x, y in izip(vec1, vec2))
+    return tuple(x + y for x, y in zip(vec1, vec2))
 
 def vecscalarMul(vec, scalar):
     return tuple(x * scalar for x in vec)
@@ -136,7 +136,7 @@ def vecDotProduct(vec1, vec2):
 
     >>> vecDotProduct((1,2,3),(4,-5,6))
     12"""
-    return sum(x1 * x2 for x1, x2 in izip(vec1, vec2))
+    return sum(x1 * x2 for x1, x2 in zip(vec1, vec2))
 
 def vecDistance(vec1, vec2):
     """Return distance between two vectors (any dimension).
@@ -210,50 +210,50 @@ def matTransposed(mat):
     ((1, 3), (2, 4))"""
     dim = len(mat)
     return tuple( tuple( mat[i][j]
-                         for i in xrange(dim) )
-                  for j in xrange(dim) )
+                         for i in range(dim) )
+                  for j in range(dim) )
 
 def matscalarMul(mat, scalar):
     """Return matrix * scalar."""
     dim = len(mat)
     return tuple( tuple( mat[i][j] * scalar
-                         for j in xrange(dim) )
-                  for i in xrange(dim) )
+                         for j in range(dim) )
+                  for i in range(dim) )
 
 def matvecMul(mat, vec):
     """Return matrix * vector."""
     dim = len(mat)
-    return tuple( sum( mat[i][j] * vec[j] for j in xrange(dim) )
-                  for i in xrange(dim) )
+    return tuple( sum( mat[i][j] * vec[j] for j in range(dim) )
+                  for i in range(dim) )
 
 def matMul(mat1, mat2):
     """Return matrix * matrix."""
     dim = len(mat1)
     return tuple( tuple( sum( mat1[i][k] * mat2[k][j]
-                              for k in xrange(dim) )
-                         for j in xrange(dim) )
-                  for i in xrange(dim) )
+                              for k in range(dim) )
+                         for j in range(dim) )
+                  for i in range(dim) )
 
 def matAdd(mat1, mat2):
     """Return matrix + matrix."""
     dim = len(mat1)
     return tuple( tuple( mat1[i][j] + mat2[i][j]
-                         for j in xrange(dim) )
-                  for i in xrange(dim) )
+                         for j in range(dim) )
+                  for i in range(dim) )
 
 def matSub(mat1, mat2):
     """Return matrix - matrix."""
     dim = len(mat1)
     return tuple( tuple( mat1[i][j] - mat2[i][j]
-                         for j in xrange(dim) )
-                  for i in xrange(dim) )
+                         for j in range(dim) )
+                  for i in range(dim) )
 
 def matCofactor(mat, i, j):
     dim = len(mat)
     return matDeterminant(tuple( tuple( mat[ii][jj]
-                                        for jj in xrange(dim)
+                                        for jj in range(dim)
                                         if jj != j )
-                                 for ii in xrange(dim)
+                                 for ii in range(dim)
                                  if ii != i ))
 
 def matDeterminant(mat):
@@ -270,7 +270,7 @@ def matDeterminant(mat):
     elif dim == 2: return mat[0][0] * mat[1][1] - mat[1][0] * mat[0][1]
     else:
         return sum( (-1 if i&1 else 1) * mat[i][0] * matCofactor(mat, i, 0)
-                    for i in xrange(dim) )
+                    for i in range(dim) )
 
 if __name__ == "__main__":
     import doctest

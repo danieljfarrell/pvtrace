@@ -114,7 +114,7 @@ class interp1d(object):
         if kind in ('linear', 'nearest'):
             # Make a "view" of the y array that is rotated to the interpolation
             # axis.
-            axes = range(y.ndim)
+            axes = list(range(y.ndim))
             del axes[self.axis]
             axes.append(self.axis)
             oriented_y = y.transpose(axes)
@@ -126,7 +126,7 @@ class interp1d(object):
                 self.x_bds = (x[1:] + x[:-1]) / 2.0
                 self._call = self._call_nearest
         else:
-            axes = range(y.ndim)
+            axes = list(range(y.ndim))
             del axes[self.axis]
             axes.insert(0, self.axis)
             oriented_y = y.transpose(axes)
@@ -241,13 +241,13 @@ class interp1d(object):
             return np.asarray(y_new)
         elif self._kind in ('linear', 'nearest'):
             y_new[..., out_of_bounds] = self.fill_value
-            axes = range(ny - nx)
-            axes[self.axis:self.axis] = range(ny - nx, ny)
+            axes = list(range(ny - nx))
+            axes[self.axis:self.axis] = list(range(ny - nx, ny))
             return y_new.transpose(axes)
         else:
             y_new[out_of_bounds] = self.fill_value
-            axes = range(nx, ny)
-            axes[self.axis:self.axis] = range(nx)
+            axes = list(range(nx, ny))
+            axes[self.axis:self.axis] = list(range(nx))
             return y_new.transpose(axes)
             
     def _check_bounds(self, x_new):
@@ -389,5 +389,5 @@ if False:
     # print z.shape
     
     z_i = BilinearInterpolation(x,y,z)
-    print z_i(610,0.1)
+    print(z_i(610,0.1))
     

@@ -11,30 +11,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
+
 import numpy as np
 import multiprocessing
 from multiprocessing import Pool
 cpu_count=multiprocessing.cpu_count()
-from Geometry import *
-from ConstructiveGeometry import *
-from Materials import *
-from Devices import *
-from Visualise import Visualiser
+from pvtrace.Geometry import *
+from pvtrace.ConstructiveGeometry import *
+from pvtrace.Materials import *
+from pvtrace.Devices import *
+from pvtrace.Visualise import Visualiser
 VISUAL_INSTALLED = False
 try:
     import visual
     VISUAL_INSTALLED = True
 except:
     VISUAL_INSTALLED = False
-    print 'visual is not installed'
-from itertools import ifilter
+    print('visual is not installed')
+
 import subprocess
 import os
-import external.pov
+from pvtrace.external import pov
 import sys
-import PhotonDatabase
-import external.transformations as tf
+from pvtrace import PhotonDatabase
+from pvtrace.external import transformations as tf
 import pdb
 from copy import copy
 import logging
@@ -391,7 +391,7 @@ class Photon (object):
                     
                     assert cmp_floats(angle(self.direction, self.polarisation), np.pi/2), "Exit Pt. #2: Angle between photon direction and polarisation must be 90 degrees: theta=%s" % str(angle(self.direction, self.polarisation))
                     
-            if self.exit_device == self.scene.bounds or self.exit_device == None:
+            if self.exit_device == self.scene.bounds or self.exit_device is None:
                 self.exit_device = intersection_object
             assert self.exit_device != self.scene.bounds, "The object the ray hit before hitting the bounds is the bounds, this can't be right"
             return self
@@ -445,10 +445,10 @@ class Photon (object):
                 
 
 def povObj(obj, colour = None):
-   print type(obj)
+   print(type(obj))
    try:
        T = obj.transform
-       white = pov.Texture(pov.Pigment(color="White", transmit = 0.5)) if colour == None else colour
+       white = pov.Texture(pov.Pigment(color="White", transmit = 0.5)) if colour is None else colour
        M = "< %s >"%(", ".join(str(T[:3].transpose().flatten())[1:-1].replace("\n","").split()))    
    except:
        pass
@@ -464,9 +464,9 @@ def povObj(obj, colour = None):
        maxindex = obj.material.emission.y.argmax()
        wavelength = obj.material.emission.x[maxindex]
        colour = wav2RGB(wavelength)
-       print colour
+       print(colour)
        colour = pov.Pigment(color=(colour[0]/255,colour[1]/255,colour[2]/255))
-       print "found lsc"
+       print("found lsc")
        return povObj(obj.shape, colour = colour)
    if type(obj) == Plane:
        return pov.Plane((0,0,1), 0, white, matrix = M)
@@ -603,12 +603,12 @@ class Scene(object):
                     points[i] = None
                     objects[i] = None
         
-        objects = filter(None, objects)
+        objects = [_f for _f in objects if _f]
         points_copy = list(points)
         points = []
         
         for i in range(0,len(points_copy)):
-            if points_copy[i] != None:
+            if points_copy[i] is not None:
                 points.append(points_copy[i])
             
         assert len(points) > 0, "No intersection points can be found with the scene."
@@ -631,13 +631,13 @@ class Scene(object):
         del objects_copy
         
         if show_log:
-            print objects
-            print points
+            print(objects)
+            print(points)
         
         objects, points, separations = Scene.order_duplicates(objects, points, separations)
         
         # Now perform container check on ordered duplicates
-        if container != None:
+        if container is not None:
             if objects[0] != container and len(objects)>1:
                 
                 # The first object in the array must be the container so there is an order problem -- assumes container object is an index 1!
@@ -734,7 +734,7 @@ class Tracer(object):
     def __init__(self, scene=None, source=None, throws=1, steps=50, seed=None, use_visualiser=True, show_log=False, background=(0.957, 0.957, 1), ambient=0.5, database_file="pvtracedb.sql"):
         super(Tracer, self).__init__()
         self.scene = scene
-        from LightSources import SimpleSource, PlanarSource, CylindricalSource, PointSource, RadialSource
+        from .LightSources import SimpleSource, PlanarSource, CylindricalSource, PointSource, RadialSource
         self.source = source
         self.throws = throws
         self.steps = steps
@@ -832,9 +832,9 @@ class Tracer(object):
                             obj.visible = False
                 
             if self.show_log:
-                print "Photon number:", throw
+                print("Photon number:", throw)
             else:
-                print "Photon number:", throw, "\r",
+                print("Photon number:", throw, "\r", end=' ')
                 sys.stdout.flush()
             
             photon = self.source.photon()
@@ -905,9 +905,9 @@ class Tracer(object):
                     
                     # Record photon that has made it to the bounds
                     if step == 0:
-                        if self.show_log: print "   * Photon hit scene bounds without previous intersections *"
+                        if self.show_log: print("   * Photon hit scene bounds without previous intersections *")
                     else:
-                        if self.show_log: print "   * Reached Bounds *"
+                        if self.show_log: print("   * Reached Bounds *")
                         photon.exit_device.log(photon)
                         #self.database.log(photon)
                         
@@ -921,7 +921,7 @@ class Tracer(object):
                     photon.container.log(photon)
                     self.database.log(photon)
                     if entering_photon.container == photon.scene.bounds:
-                        if self.show_log: print "   * Photon hit scene bounds without previous intersections *"
+                        if self.show_log: print("   * Photon hit scene bounds without previous intersections *")
                     else:
                         #try:
                         entering_photon.container.log(entering_photon)
@@ -941,7 +941,7 @@ class Tracer(object):
                     photon.killed = True
                     self.database.log(photon)
                     if self.show_log: 
-                        print "   * Reached Max Steps *"
+                        print("   * Reached Max Steps *")
 
 
 if __name__ == "__main__":

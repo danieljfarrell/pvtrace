@@ -11,7 +11,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import division
+
 import numpy as np
 
 #try:
@@ -25,13 +25,13 @@ import numpy as np
 #        print exception
 #        print "It seems that you don't have interpolate... bugger... Python FAIL."
 
-from Geometry import *
-from ConstructiveGeometry import CSGadd, CSGint, CSGsub
-from Interpolation import interp1d, BilinearInterpolation
+from pvtrace.Geometry import *
+from pvtrace.ConstructiveGeometry import CSGadd, CSGint, CSGsub
+from pvtrace.Interpolation import interp1d, BilinearInterpolation
 from types import *
 import os
-from external.transformations import translation_matrix, rotation_matrix
-import external.transformations as tf
+from pvtrace.external.transformations import translation_matrix, rotation_matrix
+from  pvtrace.external import transformations as tf
 
 def load_spectrum(file, xbins=None):
     assert os.path.exists(file) == True, "File '%s' does not exist." % file
@@ -39,7 +39,7 @@ def load_spectrum(file, xbins=None):
     spectrum = Spectrum(file=file)
     
     # Truncate the spectrum using the xbins
-    if xbins != None:
+    if xbins is not None:
         yvalues = spectrum(xbins)
         return Spectrum(xbins, yvalues)
     return spectrum
@@ -184,19 +184,19 @@ class Spectrum(object):
         super(Spectrum, self).__init__()
         """Initialised with x and y which are array-like data of the same length. x must have units of wavelength (that is in nanometers), y can an arbitrary units. However, if the Spectrum is representing an absorption coefficient y must have units of (1/m)."""
         
-        if file != None:
+        if file is not None:
             
             try:
                 data = np.loadtxt(file)
             except Exception as e:
-                print "Failed to load data from file, %s", str(file)
-                print e
+                print("Failed to load data from file, %s", str(file))
+                print(e)
                 exit(1)
             
             self.x = np.array(data[:,0], dtype=np.float32)
             self.y = np.array(data[:,1], dtype=np.float32)
         
-        elif (x != None and y != None):
+        elif (x is not None and y is not None):
             self.x = np.array(x, dtype=np.float32)
             self.y = np.array(y, dtype=np.float32)
         
@@ -229,7 +229,7 @@ class Spectrum(object):
             # Convert the (x,y) point pairs to a histogram of bins and frequencies
             bins = np.hstack([self.x, 2*self.x[-1] - self.x[-2]])
         except IndexError:
-            print "Index Error from array, ", self.x
+            print("Index Error from array, ", self.x)
         
         cdf  = np.cumsum(self.y)
         pdf  = cdf/max(cdf)
@@ -240,8 +240,8 @@ class Spectrum(object):
     def __call__(self, nanometers):
         """Returns the values of the Spectrum at the 'nanometers' value(s). An number is returned if nanometers is a number and numpy array is returned if nanometers if a list of a numpy array."""
         # Check is the nanometers is a number
-        b1 = type(nanometers) == FloatType
-        b2 = type(nanometers) == IntType
+        b1 = type(nanometers) == float
+        b2 = type(nanometers) == int
         b3 = type(nanometers) == np.float32
         b4 = type(nanometers) == np.float64
         if b1 or b2 or b3 or b4:
@@ -274,28 +274,28 @@ class Spectrum(object):
             np.savetxt(file,data)
             
     def __add__(self, other):
-        if other == None:
+        if other is None:
             return self
         common_x = common_abscissa(self.x, other.x)
         new_y = self.value(common_x) + other.value(common_x)
         return Spectrum(common_x, new_y)
         
     def __sub__(self, other):
-        if other == None:
+        if other is None:
             return self
         common_x = common_abscissa(self.x, other.x)
         new_y = self.value(common_x) - other.value(common_x)
         return Spectrum(common_x, new_y)  
         
     def __mul__(self, other):
-        if other == None:
+        if other is None:
             return self
         common_x = common_abscissa(self.x, other.x)
         new_y = self.value(common_x) * other.value(common_x)
         return Spectrum(common_x, new_y)
       
     def __div__(self, other):
-        if other == None:
+        if other is None:
             return self
         common_x = common_abscissa(self.x, other.x)
         new_y = self.value(common_x) / other.value(common_x)
@@ -365,7 +365,7 @@ class Material(object):
             self.constant_absorption = constant_absorption
             self.absorption_data = Spectrum(x=[200,4000], y=[constant_absorption, constant_absorption])
             
-        elif absorption_data == None:
+        elif absorption_data is None:
             # No data given -- make transparent material
             self.absorption_data = Spectrum(x=[0, 4000], y=[0, 0])
         
@@ -373,7 +373,7 @@ class Material(object):
            self.absorption_data = spectrum_from_data_source(absorption_data)
         
         # Load spectral emission data
-        if emission_data == None:
+        if emission_data is None:
             # Flat emission profile
             self.emission_data = Spectrum(x=[200,4000], y=[1,1])
             
@@ -469,11 +469,11 @@ class CompositeMaterial(Material):
         super(CompositeMaterial, self).__init__()
         self.materials = materials
         if refractive_index is None:
-            print ""
-            print "CompositeMaterial must be created with a value of refractive index which is an estimate of the effective medium of all materials which it contains. The individual refractive index of each material is ignored when grouping mutiple material together using a composite material."
-            print ""
-            print "For example try using, CompositeMaterial([pmma, dye1, dye2], refractive_index=1.5])."
-            print ""
+            print("")
+            print("CompositeMaterial must be created with a value of refractive index which is an estimate of the effective medium of all materials which it contains. The individual refractive index of each material is ignored when grouping mutiple material together using a composite material.")
+            print("")
+            print("For example try using, CompositeMaterial([pmma, dye1, dye2], refractive_index=1.5]).")
+            print("")
             raise ValueError
         self.refractive_index = refractive_index
     
@@ -504,7 +504,7 @@ class CompositeMaterial(Material):
             
             # Find the absorption material
             count = len(self.materials)
-            bins = range(0, count+1)
+            bins = list(range(0, count+1))
             cdf  = np.cumsum(absorptions)
             pdf  = cdf/max(cdf)
             pdf  = np.hstack([0,pdf[:]])
@@ -520,14 +520,14 @@ class CompositeMaterial(Material):
             
             #Emission occurs.
             if (np.random.uniform() < material.quantum_efficiency):
-                print "   * Re-emitted *"
+                print("   * Re-emitted *")
                 photon.reabs = photon.reabs + 1
                 photon.emitter_material = material
                 photon = material.emission(photon) # Generates a new photon with red-shifted wavelength, new direction and polariation (if included in simulation)
                 return photon
                 
             else:
-                print "   * Photon Lost *"
+                print("   * Photon Lost *")
                 #Emission does not occur. Now set active = False ans return
                 photon.active = False
                 return photon

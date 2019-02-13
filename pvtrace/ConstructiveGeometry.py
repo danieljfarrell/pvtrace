@@ -11,9 +11,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from Geometry import Box, Cylinder, Ray, cmp_points, separation
-from external.transformations import translation_matrix, rotation_matrix
-import external.transformations as tf
+from pvtrace.Geometry import Box, Cylinder, Ray, cmp_points, separation
+from pvtrace.external.transformations import translation_matrix, rotation_matrix
+from pvtrace.external import transformations as tf
 import numpy as np
 
 def transform_point(point, transform):
@@ -91,7 +91,7 @@ class CSGadd(object):
         """
         Cover the simpler cases
         """
-        if ADDone__intersections == None and ADDtwo__intersections == None:
+        if ADDone__intersections is None and ADDtwo__intersections is None:
             return None  
 
         """
@@ -333,7 +333,7 @@ class CSGsub(object):
         """
         Cover the simpler cases
         """
-        if SUBplus__intersections == None and SUBminus__intersections == None:
+        if SUBplus__intersections is None and SUBminus__intersections is None:
             return None  
          
         """
@@ -567,7 +567,7 @@ class CSGint(object):
         """
         Cover the simpler cases
         """
-        if INTone__intersections == None and INTtwo__intersections == None:
+        if INTone__intersections is None and INTtwo__intersections is None:
             return None  
                                     
         """
