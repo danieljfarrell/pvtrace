@@ -1,0 +1,27 @@
+name: pvtrace_env
+channels:
+  - defaults
+  - pkgs/main
+  - pkgs/free
+dependencies:
+  - blas=1.0=mkl
+  - ca-certificates=2019.1.23=0
+  - certifi=2018.11.29=py37_0
+  - icc_rt=2019.0.0=h0cc432a_1
+  - intel-openmp=2019.1=144
+  - mkl=2019.1=144
+  - mkl_fft=1.0.10=py37h14836fe_0
+  - mkl_random=1.0.2=py37h343c172_0
+  - numpy=1.15.4=py37h19fb1c0_0
+  - numpy-base=1.15.4=py37hc3f5095_0
+  - openssl=1.1.1a=he774522_0
+  - pip=19.0.1=py37_0
+  - python=3.7.2=h8c8aaf0_2
+  - setuptools=40.7.3=py37_0
+  - sqlite=3.26.0=he774522_0
+  - vc=14.1=h0510ff6_4
+  - vs2015_runtime=14.15.26706=h3a45250_0
+  - wheel=0.32.3=py37_0
+  - wincertstore=0.2=py37_0
+prefix: C:\Users\daniel.farrell\AppData\Local\Continuum\anaconda3\envs\pvtrace_env
+
