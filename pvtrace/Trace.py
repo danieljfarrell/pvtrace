@@ -23,7 +23,7 @@ from pvtrace.Devices import *
 from pvtrace.Visualise import Visualiser
 VISUAL_INSTALLED = False
 try:
-    import visual
+    import vpython as visual
     VISUAL_INSTALLED = True
 except:
     VISUAL_INSTALLED = False
@@ -763,7 +763,7 @@ class Tracer(object):
                             #checkerboard = ( (0,0.01,0,0.01), (0.01,0,0.01,0), (0,0.01,0,1), (0.01,0,0.01,0) )
                             #checkerboard = ( (0,1,0,1), (1,0,1,0), (0,1,0,1), (1,0,1,0) )
                             #material = visual.materials.texture(data=checkerboard, mapping="rectangular", interpolate=False)
-                            material = visual.materials.wood
+                            #material = visual.materials.wood
                             colour = visual.color.blue
                             opacity=1.
                     
@@ -771,21 +771,21 @@ class Tracer(object):
                         
                             colour = visual.color.white
                             opacity = 0.5
-                            material = visual.materials.plastic
+                            #material = visual.materials.plastic
                         
                             if hasattr(obj.reflectivity, 'lambertian'):
                                 if obj.reflectivity.lambertian is True:
                                     # The material is a diffuse reflector
                                     colour = visual.color.white
                                     opacity = 1.
-                                    material = visual.materials.plastic
+                                    #material = visual.materials.plastic
                                 
                         elif isinstance(obj.material, SimpleMaterial):
                             #import pdb; pdb.set_trace()
                             wavelength = obj.material.bandgap
                             colour = norm(wav2RGB(wavelength))
                             opacity = 0.5
-                            material = visual.materials.plastic
+                            #material = visual.materials.plastic
                         else:
                         
                             if not hasattr(obj.material, 'all_absorption_coefficients'):
@@ -797,17 +797,17 @@ class Tracer(object):
                                     colour = (0.2,0.2,0.2)
                             
                                 opacity = 0.5
-                                material = visual.materials.plastic
+                                #material = visual.materials.plastic
                             else:
                                 # It is possible to processes the most likley colour of a spectrum in a better way than this!
                                 colour = (0.2,0.2,0.2)
                                 opacity = 0.5
-                                material = visual.materials.plastic
+                                #material = visual.materials.plastic
                         
                             if colour[0] == np.nan or colour[1] == np.nan or colour[2] == np.nan:
                                 colour = (0.2,0.2,0.2)
                         
-                        self.visualiser.addObject(obj.shape, colour=colour, opacity=opacity, material=material)
+                        self.visualiser.addObject(obj.shape, colour=colour, opacity=opacity)
                         
         self.show_lines = True#False
         self.show_exit = True
@@ -825,11 +825,11 @@ class Tracer(object):
             #import pdb; pdb.set_trace()
             
             # Delete last ray from visualiser
-            if VISUAL_INSTALLED:
-                for obj in self.visualiser.display.objects:
-                    if obj.__class__ is visual.cylinder: # can say either box or 'box'
-                        if obj.radius < 0.001:
-                            obj.visible = False
+            # if VISUAL_INSTALLED:
+            #     for obj in self.visualiser.display.objects:
+            #         if obj.__class__ is visual.cylinder: # can say either box or 'box'
+            #             if obj.radius < 0.001:
+            #                 obj.visible = False
                 
             if self.show_log:
                 print("Photon number:", throw)

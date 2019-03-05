@@ -260,9 +260,9 @@ class Prism(Register):
         h = base*(1/np.tan(alpha) + 1/np.tan(alpha))
         box0 = Box(origin=(0,0,0), extent=(base,h,length))
         box1 = Box(origin=(0,0,0), extent=(h/np.sin(alpha),h,length))
-        box1.append_transform(trans.rotation_matrix(alpha, (0,0,1)))
+        box1.append_transform(tf.rotation_matrix(alpha, (0,0,1)))
         box2 = Box(origin=(base,0,0), extent=(base+h,h/np.sin(beta),h,length))
-        box2.append_transform(trans.rotation_matrix(np.pi/2-beta, (0,0,1)))
+        box2.append_transform(tf.rotation_matrix(np.pi/2-beta, (0,0,1)))
         step1 = CSGsub(box0, box1)
         step2 = CSGsub(step1, box2)
         self.shape = step2
