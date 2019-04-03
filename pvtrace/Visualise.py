@@ -173,8 +173,10 @@ class Visualiser (object):
     def addCylinder(self, cylinder, colour=None, opacity=1.):
         if not Visualiser.VISUALISER_ON:
             return
-        if colour == None:
+        if colour is None:
             colour = visual.color.blue
+        if not isinstance(colour, visual.vec):
+            colour = visual.vec(*colour)
         #angle, direction, point = tf.rotation_from_matrix(cylinder.transform)
         #axis = direction * cylinder.length
         position = transform_point([0,0,0], cylinder.transform)
@@ -184,7 +186,8 @@ class Visualiser (object):
         print(axis, "Cylinder:axis")
         print(colour, "Cylinder:colour")
         print(cylinder.radius, "Cylinder:radius")
-        pos = vec(*tuple(position))
+        pos = visual.vec(*tuple(position))
+        axis = visual.vec(*axis.tolist())
         visual.cylinder(pos=pos, axis=axis, color=colour, radius=cylinder.radius, opacity=opacity, length = cylinder.length)
 
 

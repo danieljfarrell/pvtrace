@@ -1152,8 +1152,8 @@ class Cylinder(object):
                 cap_intersections.append(p3)
             
             for point in cap_intersections:
-                
-                if point[0] != None:
+                #import pdb; pdb.set_trace()
+                if point[0] is None:
                     point = point[0]
                     point_radius = np.sqrt(point[0]**2 + point[1]**2)
                     if point_radius <= self.radius:

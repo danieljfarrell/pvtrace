@@ -857,7 +857,13 @@ class Tracer(object):
                         
                         # Is the ray heading towards or out of a surface?
                         normal = photon.exit_device.shape.surface_normal(photon.ray, acute=False)
-                        rads = angle(normal, photon.ray.direction)
+                        try:
+                            rads = angle(normal, photon.ray.direction)
+                        except AssertionError:
+                            print("Having problems")
+                            print("normal {}".format(normal))
+                            print("direction {}".format(photon.ray.direction))
+                            rads = angle(-normal, photon.ray.direction)
                         #print photon.exit_device.shape.surface_identifier(photon.position), 'normal', normal, 'ray dir', photon.direction, 'angle' , np.degrees(rads)
                         if rads < np.pi/2:
                             bound = "Out"

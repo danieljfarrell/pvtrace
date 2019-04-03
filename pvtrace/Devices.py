@@ -234,7 +234,10 @@ class Coating(Register):
         self.refractive_index = refractive_index
         self.reflectivity = ReflectiveMaterial(reflectivity, refractive_index=refractive_index, lambertian=lambertian)
         self.material = SimpleMaterial(555) # This create a material with absorption_coefficient = 0.
-        if not isinstance(self.shape, Polygon):
+        if isinstance(self.shape, Cylinder):
+            self.radius = self.shape.radius
+            self.length = self.shape.length
+        elif not isinstance(self.shape, Polygon):
             self.origin = self.shape.origin
             self.size = np.abs(self.shape.extent - self.shape.origin)
 

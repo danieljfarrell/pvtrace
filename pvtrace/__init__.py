@@ -29,11 +29,9 @@ from .Interpolation import *
 
 import os
 import sys
-# Module constants -- location of the data folder
-for path in sys.path:
-    if path.find('pvtrace') != -1:
-        pvtrace_directory = path
-        break
-PVTDATA = os.path.join(pvtrace_directory, 'data')
+import pathlib
+PVTDATA = pathlib.Path().resolve().parent.joinpath('data')
+if not PVTDATA.exists():
+    raise FileNotFoundError("Cannot find pvtrace data directory {}".format(PVTDATA))
 print("pvtrace data directory:")
 print(PVTDATA)
