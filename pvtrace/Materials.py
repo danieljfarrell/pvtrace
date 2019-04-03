@@ -299,7 +299,7 @@ class Spectrum(object):
             return self
         common_x = common_abscissa(self.x, other.x)
         new_y = self.value(common_x) / other.value(common_x)
-        return Spectrum(common_x, new_y)        
+        return Spectrum(common_x, new_y)
 
 class AngularSpectrum(object):
     """
