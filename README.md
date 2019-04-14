@@ -6,9 +6,11 @@
 
 pvtrace is a statistical photon path tracer written in Python. It follows photons through a 3D scene and records their interactions with objects to build up statistical information about energy flow. This approach is particularly useful in photovoltaics and non-imaging optics where the goal is to design systems which efficiently transport light to target locations.
 
-## Examples and documentation
+## Documentation
 
-[Examples in the docs directory](docs/) are interactive jupyter notebooks. You can view the static versions of the notebooks at [https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/).
+[Examples in the docs directory](docs/) are interactive jupyter notebooks. Static versions are included in the project documentation.
+
+[https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
 
 ## Capabilities
 
