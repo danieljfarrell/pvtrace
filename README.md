@@ -61,11 +61,11 @@ for ray in light.emit(100):
 ```
 ## Install
 
-Using pip::
+Using pip
 
     pip install pvtrace
 
-or conda::
+or conda
 
     conda install pvtrace
 
