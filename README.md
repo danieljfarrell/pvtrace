@@ -8,9 +8,9 @@ pvtrace is a statistical photon path tracer written in Python. It follows photon
 
 ## Documentation
 
-[Examples in the docs directory](docs/) are interactive jupyter notebooks. Static versions are included in the project documentation.
+[Examples in the docs directory](docs/) are interactive Jupyter notebooks. 
 
-[https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
+Static versions are included in the project documentation, [https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
 
 ## Capabilities
 
