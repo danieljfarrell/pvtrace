@@ -984,30 +984,45 @@ class Cylinder(object):
         
     def surface_identifier(self, surface_point, assert_on_surface = True):
         local_point = transform_point(surface_point, tf.inverse_matrix(self.transform))
+        r = np.sqrt(local_point[0]**2 + local_point[1]**2)
+        z = local_point[2]
         
-        origin_z = 0.
-        xydistance = np.sqrt(local_point[0]**2 + local_point[1]**2)
-        """
-        Assert surface_point on surface
-        """
-        assertbool = False
-               
-        if intervalcheck(origin_z, local_point[2], self.length) == True:
-            if cmp_floats(xydistance, self.radius) == True:                
-                surfacename = 'hull'
-                assertbool = True
-            
-        if smallerequalto(xydistance,self.radius):
-            if cmp_floats(local_point[2], origin_z) == True:
-                surfacename = 'base'
-                assertbool = True
-            if cmp_floats(local_point[2], self.length) == True:
-                surfacename = 'cap'
-                assertbool = True
-
-        if assert_on_surface == True:    
-            assert assertbool, "The assert bool is wrong."
-        return surfacename
+        print("z={}, r={} (length)".format(z, r))
+    
+        if cmp_floats(z, 0.0):
+            print("base {} {}".format(z, 0.0))
+            return "base"
+        elif cmp_floats(z, self.length):
+            print("cap {} {}".format(z, self.length))
+            return "cap"
+        elif cmp_floats(r, self.radius):
+            print("hull")
+            return "hull"
+        #elif assert_on_surface:
+        raise ValueError("Point not on surface.")
+        #
+        # origin_z = 0.
+        # xydistance = np.sqrt(local_point[0]**2 + local_point[1]**2)
+        # """
+        # Assert surface_point on surface
+        # """
+        # assertbool = False
+        # if intervalcheck(origin_z, local_point[2], self.length) == True:
+        #     if cmp_floats(xydistance, self.radius) == True:
+        #         surfacename = 'hull'
+        #         assertbool = True
+        #
+        # if smallerequalto(xydistance, self.radius):
+        #     if cmp_floats(local_point[2], origin_z) == True:
+        #         surfacename = 'base'
+        #         assertbool = True
+        #     if cmp_floats(local_point[2], self.length) == True:
+        #         surfacename = 'cap'
+        #         assertbool = True
+        #
+        # if assert_on_surface == True:
+        #     assert assertbool, "The assert bool is wrong."
+        # return surfacename
         
     
     def intersection(self, ray):
@@ -1071,14 +1086,14 @@ class Cylinder(object):
             p0 = top.intersection(Ray(rpos, rdir))
             p1 = bottom.intersection(Ray(rpos, rdir))
             cap_intersections = []
-            if p0 != None:
+            if p0 is not None:
                 cap_intersections.append(p0)
-            if p1 != None:
+            if p1 is not None:
                 cap_intersections.append(p1)
             points = []
             for point in cap_intersections:
                 
-                if point[0] != None:
+                if point[0] is not None:
                     point = point[0]
                     point_radius = np.sqrt(point[0]**2 + point[1]**2)
                     if point_radius <= self.radius:
