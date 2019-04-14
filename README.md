@@ -8,7 +8,7 @@ pvtrace is a statistical photon path tracer written in Python. It follows photon
 
 ## Documentation
 
-[Examples in the docs directory](docs/) are interactive Jupyter notebooks. 
+Interactive Jupyter notebooks can be found in the [docs directory](docs/).
 
 Static versions are included in the project documentation, [https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
 
@@ -16,9 +16,9 @@ Static versions are included in the project documentation, [https://pvtrace.read
 
 pvtrace was originally written to characterise the performance of Luminescent Solar Concentrators (LSC) and takes a Monte-Carlo approach to ray-tracing. Each ray is independent and can interact with objects in the scene via reflection and refraction. Objects can have different optical properties: refractive index, absorption coefficient, emission spectrum and quantum yield.
 
-One of the key features of pvtrace is the ability to simulate re-absorption of photons in luminescent materials. Moreover, pvtrace's architecture places emphasis on following individual photons as they interact with multiple luminescent absorbers. 
+One of the key features of pvtrace is the ability to simulate re-absorption of photons in luminescent materials. This requires following thousands of rays to build intensity profiles and spectra of incoming and outgoing photons because these process cannot be approximated in a continuous way.
 
-However, it may also be useful to researches or designers interesting in ray-optics simulations but will be slower at running these simulations compared to other software packages because pvtrace follows each ray individually.
+pvtrace may also be useful to researches or designers interested in ray-optics simulations but will be slower at running these simulations compared to other software packages because it follows each ray individually.
 
 ![](docs/example.png)
     
