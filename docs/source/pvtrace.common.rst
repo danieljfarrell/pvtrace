@@ -4,9 +4,6 @@ pvtrace.common package
 Submodules
 ----------
 
-pvtrace.common.errors module
-----------------------------
-
 .. automodule:: pvtrace.common.errors
     :members:
     :undoc-members:

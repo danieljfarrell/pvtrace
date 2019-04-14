@@ -9,7 +9,9 @@ Subpackages
     pvtrace.common
     pvtrace.geometry
     pvtrace.light
+    pvtrace.material
     pvtrace.scene
+    pvtrace.trace
 
 Module contents
 ---------------

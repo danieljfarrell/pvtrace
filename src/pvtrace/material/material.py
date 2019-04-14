@@ -20,6 +20,7 @@ class Material(object):
         
             class Dielectric(Refractive, Material):
                 pass
+
     """
     
 
@@ -32,6 +33,7 @@ class Dielectric(Refractive, Material):
         The material is unphysical in the sense that it does not absorb or emit light. 
         But it is useful in development and testing to have material which just 
         interacts with ray without in a purely refractive way.
+
     """
     def __init__(self, refractive_index):
         super(Dielectric, self).__init__(refractive_index)
@@ -39,6 +41,7 @@ class Dielectric(Refractive, Material):
     @classmethod
     def make_constant(cls, x_range: Tuple[float, float], refractive_index: float):
         """ Returns a dielectric material with spectrally constant refractive index.
+
         """
         refractive_index=np.column_stack(
             (x_range, [refractive_index, refractive_index]))
@@ -48,6 +51,7 @@ class Dielectric(Refractive, Material):
     def air(cls, x_range: Tuple[float, float] = (300.0, 4000.0)):
         """ Returns a dielectric material with constant refractive index of 1.0 in
             default range.
+
         """
         return cls.make_constant(x_range=x_range, refractive_index=1.0)
 
@@ -55,6 +59,7 @@ class Dielectric(Refractive, Material):
     def glass(cls, x_range: Tuple[float, float] = (300.0, 4000.0)):
         """ Returns a dielectric material with constant refractive index of 1.5 in
             default range.
+
         """
         return cls.make_constant(x_range=x_range, refractive_index=1.5)
 
@@ -66,6 +71,7 @@ class LossyDielectric(Refractive, Absorptive, Material):
         -----
         This can be used to model a most material such as plastic for luminescent
         concentrators or difference classes when ray tracing lenses.
+
     """
     def __init__(self, refractive_index: np.ndarray, absorption_coefficient: np.ndarray):
         super(LossyDielectric, self).__init__(
@@ -77,6 +83,7 @@ class LossyDielectric(Refractive, Absorptive, Material):
     @classmethod
     def make_constant(cls, x_range: Tuple[float, float], refractive_index: float, absorption_coefficient: float):
         """ Returns a dielectric material with spectrally constant refractive index.
+
         """
         refractive_index=np.column_stack(
             (x_range, [refractive_index, refractive_index])
@@ -103,6 +110,7 @@ class Lumophore(Absorptive, Emissive, Material):
         because it is common to want to blend multiple Lumophore together in a host
         matrix. The host is usually a plastic and the refractive index of the material
         is dominated by this material and not the lumophores.
+
     """
 
     def __init__(

@@ -1,20 +1,15 @@
-pvtrace.scene package
+pvtrace.trace package
 =====================
 
 Submodules
 ----------
 
-.. automodule:: pvtrace.scene.node
+.. automodule:: pvtrace.trace.context
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: pvtrace.scene.renderer
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-.. automodule:: pvtrace.scene.scene
+.. automodule:: pvtrace.trace.tracer
     :members:
     :undoc-members:
     :show-inheritance:
@@ -23,7 +18,7 @@ Submodules
 Module contents
 ---------------
 
-.. automodule:: pvtrace.scene
+.. automodule:: pvtrace.trace
     :members:
     :undoc-members:
     :show-inheritance:

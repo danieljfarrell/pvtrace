@@ -4,18 +4,17 @@ pvtrace.light package
 Submodules
 ----------
 
-pvtrace.light.light module
---------------------------
-
 .. automodule:: pvtrace.light.light
     :members:
     :undoc-members:
     :show-inheritance:
 
-pvtrace.light.ray module
-------------------------
-
 .. automodule:: pvtrace.light.ray
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: pvtrace.light.utils
     :members:
     :undoc-members:
     :show-inheritance:
