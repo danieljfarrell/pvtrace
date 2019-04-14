@@ -30,3 +30,4 @@ trimesh==2.37.28
 u-msgpack-python==2.5.1
 urllib3==1.24.1
 xxhash==1.3.0
+nbsphinx==0.4.2 
