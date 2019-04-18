@@ -2,7 +2,6 @@ import pytest
 import sys
 import os
 import numpy as np
-from pyquaternion import Quaternion
 from anytree import RenderTree
 from pvtrace.geometry.sphere import Sphere
 

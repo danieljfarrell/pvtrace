@@ -3,7 +3,6 @@ import sys
 import os
 import time
 import numpy as np
-from pyquaternion import Quaternion
 from anytree import RenderTree
 from pvtrace.geometry.sphere import Sphere
 from pvtrace.scene.node import Node
