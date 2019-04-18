@@ -1,4 +1,4 @@
-![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/logo.svg)
+![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/logo.png)
 
 > Optical ray tracing for luminescent materials and spectral converter photovoltaic devices 
 
