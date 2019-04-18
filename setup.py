@@ -14,6 +14,6 @@ setup(
        "pandas",
        "anytree",
        "meshcat>=0.0.16",
-       "trimesh"
+       "trimesh[easy]"
    ]
 )
