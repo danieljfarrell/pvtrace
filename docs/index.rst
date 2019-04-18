@@ -6,7 +6,7 @@ pvtrace
     :alt: pvtrace logo
     :align: center
 
-Ray-tracing for luminescent materials and spectral converter photovoltaic devices. 
+Optical ray tracing for luminescent materials and spectral converter photovoltaic devices.
 
 Introduction
 ------------
