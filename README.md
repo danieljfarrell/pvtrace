@@ -1,4 +1,4 @@
-![](docs/logo.svg)
+![](https://github.com/danieljfarrell/pvtrace/blob/pvtrace2/docs/logo.svg)
 
 > Optical ray tracing for luminescent materials and spectral converter photovoltaic devices 
 
@@ -8,7 +8,7 @@ pvtrace is a statistical photon path tracer written in Python. It follows photon
 
 ## Documentation
 
-Interactive Jupyter notebooks examples and tutorial can be found in the [docs directory](docs/).
+Interactive Jupyter notebooks examples and tutorial can be found in the [docs directory](https://github.com/danieljfarrell/pvtrace/tree/master/docs).
 
 Static versions are included in the project documentation, [https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
 
@@ -20,7 +20,7 @@ One of the key features of pvtrace is the ability to simulate re-absorption of p
 
 pvtrace may also be useful to researches or designers interested in ray-optics simulations but will be slower at running these simulations compared to other software packages because it follows each ray individually.
 
-![](docs/example.png)
+![](https://github.com/danieljfarrell/pvtrace/blob/pvtrace2/docs/example.png)
     
 A minimal working example that traces a glass sphere
 
