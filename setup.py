@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
    name='pvtrace',
@@ -6,8 +6,8 @@ setup(
    description='Optical ray tracing for photovoltaic devices and luminescent materials',
    author='Daniel Farrell',
    author_email='dan@excitonlabs.com',
-   packages=['src/pvtrace'],
    python_requires='>=3.7.2',
+   packages=find_packages("src"),
    install_requires=[
        "numpy",
        "scipy",
