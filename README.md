@@ -1,4 +1,4 @@
-![](https://github.com/danieljfarrell/pvtrace/blob/pvtrace2/docs/logo.svg)
+![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/logo.svg)
 
 > Optical ray tracing for luminescent materials and spectral converter photovoltaic devices 
 
@@ -20,7 +20,7 @@ One of the key features of pvtrace is the ability to simulate re-absorption of p
 
 pvtrace may also be useful to researches or designers interested in ray-optics simulations but will be slower at running these simulations compared to other software packages because it follows each ray individually.
 
-![](https://github.com/danieljfarrell/pvtrace/blob/pvtrace2/docs/example.png)
+![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/example.png)
     
 A minimal working example that traces a glass sphere
 
