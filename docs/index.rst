@@ -26,6 +26,14 @@ However, it may also be useful to researches or designers interesting in ray-opt
     
 A minimal working example that traces a glass sphere::
 
+    from pvtrace.scene.node import Node
+    from pvtrace.scene.scene import Scene
+    from pvtrace.scene.renderer import MeshcatRenderer
+    from pvtrace.geometry.sphere import Sphere
+    from pvtrace.material.material import Dielectric
+    from pvtrace.light.ray import Ray
+    from pvtrace.trace.tracer import PhotonTracer
+    
     # Add nodes to the scene graph
     world = Node(
         name="world (air)",
