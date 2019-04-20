@@ -65,10 +65,6 @@ Using pip
 
     pip install pvtrace
 
-or conda
-
-    conda install pvtrace
-
 ## Dependancies
 
 * python >= 3.7.2

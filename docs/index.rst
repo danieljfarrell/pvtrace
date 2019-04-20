@@ -94,7 +94,7 @@ Dependancies
    003 Lights
    004 Nodes
    005 LSC
-   readme
+   info
 
 
 
