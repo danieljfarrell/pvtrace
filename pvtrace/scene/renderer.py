@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from collections import deque
 from anytree import LevelOrderIter, PostOrderIter
 from pvtrace.geometry.sphere import Sphere
+from pvtrace.geometry.cylinder import Cylinder
 from pvtrace.geometry.mesh import Mesh
 from pvtrace.light.ray import Ray
 from pvtrace.light.utils import wavelength_to_rgb, rgb_to_hex_int, wavelength_to_hex_int
@@ -56,6 +57,19 @@ class MeshcatRenderer(object):
                 g.Sphere(sphere.radius),
                 material)
             vis[pathname].set_transform(transform)
+        elif isinstance(geometry, Cylinder):
+            cyl = geometry
+            vis[pathname].set_object(
+                g.Cylinder(cyl.length, cyl.radius),
+                material
+            )
+            # meshcat cylinder is aligned along y-axis. Align along z then apply the
+            # node's transform as normal.
+            vis[pathname].set_transform(
+                transform.dot(
+                    tf.rotation_matrix(np.radians(-90), [1, 0, 0])
+                )
+            )
         elif isinstance(geometry, Mesh):
                 obj = meshcat.geometry.StlMeshGeometry.from_stream(
                     io.BytesIO(trimesh.exchange.stl.export_stl(geometry.trimesh))

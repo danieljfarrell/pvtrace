@@ -63,38 +63,39 @@ class TestGeometryUtils:
     def test_ray_cylinder(self):
         length = 1.0
         radius = 1.0
+
         # end caps only
         ray_origin = (0.2, 0.2, -1)
         ray_direction = norm((0.0, 0.0, 1.0))
-        expected = ((0.2, 0.2, 0.0), (0.2, 0.2, 1.0))
-        points = ray_z_cylinder(length, radius, ray_origin, ray_direction)
+        expected = ((0.2, 0.2, -0.5), (0.2, 0.2, 0.5))
+        points, _ = ray_z_cylinder(length, radius, ray_origin, ray_direction)
         assert all([np.allclose(a, b) for a, b in zip(expected, points)])
 
         # surface and bottom
-        ray_origin = (-2, 0.2, 0.5)
+        ray_origin = (-2, 0.2, 0.0)
         ray_direction = norm((1.0, 0.2, -0.2))
         expected = (
-            (-0.9082895433880116, 0.41834209132239775, 0.2816579086776023),
-            (0.5, 0.7, 0.0)
+            (-0.9082895433880116, 0.41834209132239775, -0.2183420913223977),
+            (0.5, 0.7, -0.5)
         )
-        points = ray_z_cylinder(length, radius, ray_origin, ray_direction)
+        points, _ = ray_z_cylinder(length, radius, ray_origin, ray_direction)
         assert all([np.allclose(a, b) for a, b in zip(expected, points)])
         
         # surface and top
-        ray_origin = (-2, 0.2, 0.5)
+        ray_origin = (-2, 0.2, 0.0)
         ray_direction = norm((1.0, 0.2, 0.2))
         expected = (
-            (-0.9082895433880116,  0.41834209132239775,  0.7183420913223977),
-            (0.5, 0.7, 1.0)
+            (-0.9082895433880116, 0.41834209132239775, 0.2183420913223977),
+            (0.5, 0.7, 0.5)
         )
-        points = ray_z_cylinder(length, radius, ray_origin, ray_direction)
+        points, _ = ray_z_cylinder(length, radius, ray_origin, ray_direction)
         assert all([np.allclose(a, b) for a, b in zip(expected, points)])
         
         # touching
-        ray_origin = (0.0, 0.0, -1)
+        ray_origin = (0.0, 0.0, -1.5)
         ray_direction = norm((0.0, 1.0, 1.0))
-        expected = ((0.0, 1.0, 0.0),)
-        points = ray_z_cylinder(length, radius, ray_origin, ray_direction)
+        expected = ((0.0, 1.0, -0.5),)
+        points, _ = ray_z_cylinder(length, radius, ray_origin, ray_direction)
         print(points)
         print(expected)
         assert all([np.allclose(a, b) for a, b in zip(expected, points)])

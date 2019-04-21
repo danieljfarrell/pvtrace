@@ -77,7 +77,7 @@ def aabb_intersection(min_point, max_point, ray_position, ray_direction):
 
 def ray_z_cylinder(length, radius, ray_origin, ray_direction):
     """ Returns ray-cylinder intersection points for a cylinder aligned
-        to the z-axis with planar end caps at z = 0.0 and z = length.
+        along the z-axis with centre at (0, 0, 0).
         
         Parameters
         ----------
@@ -92,12 +92,10 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
         
         Returns
         -------
-        intersection_info: tuple of tuple of point, distance pairs
-            Returns a tuple of tuple like ((point, distance), ...) where
-            point is the intersection point and distance is the distance
-            from the rays origin to the intersection point. The tuple is 
-            sorted by distance from the ray origin.
-    
+        points: tuple of points
+            Returns a tuple of tuple like ((0.0, 1.0, 2.0), ...) where each item is an 
+            intersection point. The tuple is sorted by distance from the ray origin.
+            
         Notes
         -----
         
@@ -178,7 +176,7 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
                 \begin{bmatrix}
                 0 \\
                 0 \\
-                0 \\ 
+                -0.5 L \\ 
                 \end{bmatrix} - 
             \begin{bmatrix}
                 x_E \\
@@ -213,7 +211,7 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
                 \begin{bmatrix}
                 0 \\
                 0 \\
-                L \\ 
+                0.5 L \\ 
                 \end{bmatrix} - 
             \begin{bmatrix}
                 x_E \\
@@ -264,11 +262,11 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
     # Look for intersections on the cap surfaces
     with np.errstate(divide='ignore'):
         # top cap
-        point = np.array([0.0, 0.0, length])
+        point = np.array([0.0, 0.0, 0.5*length])
         normal = np.array([0.0, 0.0, 1.0]) # outward facing at z = length
         ttopcap = (point - p0).dot(normal) / n0.dot(normal)
         # bottom cap
-        point = np.array([0.0, 0.0, 0.0])
+        point = np.array([0.0, 0.0, -0.5*length])
         normal = np.array([0.0, 0.0, -1.0]) # outward facing at z = 0
         tbotcap = (point - p0).dot(normal) / n0.dot(normal)
         tcap = [t for t in (tbotcap, ttopcap) if np.isfinite(t) and t >= 0.0]
@@ -279,11 +277,14 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
     cap_candidates = [(point, t) for (point, t) in cap_candidates
                       if np.sqrt(point[0]**2 + point[1]**2) < radius]
     cyl_candidates = [(p0 + t * n0, t) for t in tcyl]
-    cyl_candidates = [(point, t) for (point, t) in cyl_candidates if point[2] > 0.0 and point[2] < length]
+    cyl_candidates = [(point, t) for (point, t) in cyl_candidates if point[2] > -0.5*length and point[2] < 0.5*length]
     intersection_info = tuple(cyl_candidates) + tuple(cap_candidates)
     intersection_info = sorted(intersection_info, key=lambda pair: pair[1])
+    if len(intersection_info) == 0:
+        return ([], [])
     points = tuple([tuple(p.tolist()) for p in list(zip(*intersection_info))[0]])
-    return points
+    distances = tuple([float(d) for d in list(zip(*intersection_info))[1]])
+    return points, distances
 
 
 # Equality tests
