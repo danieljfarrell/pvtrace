@@ -39,6 +39,12 @@ Features
 History
 -------
 
-pvtrace v2.0 has been totally re-written in 2019.
+pvtrace v2.0 has been totally re-written in 2019 by Daniel Farrell.
 
-pvtrace v1 to v1.3 was originally written between 2008-2010 as apart of my PhD studies in luminescent solar concentrators with contributions from Carl Poelking (Constructive Solid Geometry), Karl C Godel (Convex objects, Faces, and Polygons), Markus Fuhrer (povray scene rendering and multiprocessing) and Amanda Chatten (Windows friendly paths).
+pvtrace v1 to v1.3 was originally written between 2008-2010 as apart of my PhD studies in luminescent solar concentrators with contributions from (in no particular order),
+
+ * Carl Poelking (Constructive Solid Geometry),
+ * Karl C Godel (Convex objects, Faces, and Polygons), 
+ * Markus Fuhrer (povray scene rendering and multiprocessing), 
+ * Amanda Chatten (Windows friendly paths),
+ * Dario Cambie (Bug fixs)

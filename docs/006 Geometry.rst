@@ -5,6 +5,12 @@ Geometry
 This notebook demonstrates the different geometry objects available in
 pvtrace.
 
+.. image:: resources/006_1.png
+    :width: 600px
+    :alt: Visualiser
+    :align: center
+
+
 Sphere
 ------
 
@@ -93,9 +99,5 @@ mesh must be closed for the ray tracing algorithms to work.
         pass
 
 
-.. image:: resources/006_1.png
-    :width: 600px
-    :alt: Visualiser
-    :align: center
 
 

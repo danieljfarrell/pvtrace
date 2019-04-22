@@ -86,7 +86,7 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
         radius : float
             The radius of the cylinder
         ray_origin : tuple of float
-            The origin of th ray like, e.g. :math:`\left((0.0, 1.0, 2.0 \right)`
+            The origin of the ray like, e.g. :math:`\left(0.0, 1.0, 2.0 \\right)`
         ray_direction : tuple of float
             The direction **unit** vector of the ray like, e.g. :math:`(n_x, n_y, n_z)`.
         
@@ -108,12 +108,12 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
 
         .. math::
 
-            \begin{bmatrix}
+            \\begin{bmatrix}
             x(t) \\
             y(t) \\
             z(t) \\ 
             \end{bmatrix} = 
-            \begin{bmatrix}
+            \\begin{bmatrix}
             x_E + t x_D \\
             y_E + t y_D \\
             z_E + t z_D\\ 
@@ -138,9 +138,9 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
 
         .. math::
         
-            t^2\left(x_D^2 + y_D^2\right) + 
-            t \left(2 x_E x_D + 2 y_E y _D \right) + 
-            \left( x_E^2 + y_E^2 - R^2 \right) = 0
+            t^2\left(x_D^2 + y_D^2\\right) + 
+            t \left(2 x_E x_D + 2 y_E y _D \\right) + 
+            \left( x_E^2 + y_E^2 - R^2 \\right) = 0
 
         which is a standard quadratic equation,
 
@@ -148,18 +148,18 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
             
             at^2 + bt + c = 0
 
-        Solution of this equation give two values :math:`\left( t_1, t_2 \right)` which 
+        Solution of this equation give two values :math:`\left( t_1, t_2 \\right)` which 
         give the ray's distance to intersection points. To be ahead on the ray's path 
-        $\left( t_1, t_2 \right) >= 0$ and to be real intersection points the values 
-        must be finite and have imaginary component of zero. 
+        :math:`\left( t_1, t_2 \\right) >= 0` and to be real intersection points the 
+        values must be finite and have imaginary component of zero. 
 
         The intersection with the cylinder caps is found by intersecting the ray with 
-        two infinite planes at $z=0$ and $z=L$, where $L$ is the length of the cylinder. 
-        The ray-plane intersection is given by [2],
+        two infinite planes at :math:`z=0` and :math:`z=L`, where :math:`L` is the 
+        length of the cylinder. The ray-plane intersection is given by [2],
 
         .. math::
         
-            t = \frac{(Q - P) \cdot n}{D \cdot n}
+            t = \\frac{(Q - P) \cdot n}{D \cdot n}
 
         where :math:`t` is the distance from the ray origin to the intersection point, 
         :math:`Q` is a point on the plane and :math:`n` the **outward** facing surface 
@@ -170,32 +170,32 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
 
         .. math::
 
-            t_{\text{bot}} = 
-            \frac{
+            t_{\\text{bot}} = 
+            \\frac{
             \left(
-                \begin{bmatrix}
+                \\begin{bmatrix}
                 0 \\
                 0 \\
                 -0.5 L \\ 
                 \end{bmatrix} - 
-            \begin{bmatrix}
+            \\begin{bmatrix}
                 x_E \\
                 y_E \\
                 z_E \\ 
             \end{bmatrix}
-            \right) \cdot 
-            \begin{bmatrix}
+            \\right) \cdot 
+            \\begin{bmatrix}
                 0 \\
                 0 \\
                 -1 \\ 
             \end{bmatrix}
             }{
-            \begin{bmatrix}
+            \\begin{bmatrix}
                 x_D \\
                 y_D \\
                 z_D \\ 
             \end{bmatrix} \cdot
-            \begin{bmatrix}
+            \\begin{bmatrix}
                 0 \\
                 0 \\
                 -1 \\ 
@@ -205,32 +205,32 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
         and for the top cap at :math:`z=L`,
 
         .. math::
-            t_{\text{bot}} = 
-            \frac{
+            t_{\\text{bot}} = 
+            \\frac{
             \left(
-                \begin{bmatrix}
+                \\begin{bmatrix}
                 0 \\
                 0 \\
                 0.5 L \\ 
                 \end{bmatrix} - 
-            \begin{bmatrix}
+            \\begin{bmatrix}
                 x_E \\
                 y_E \\
                 z_E \\ 
             \end{bmatrix}
-            \right) \cdot 
-            \begin{bmatrix}
+            \\right) \cdot 
+            \\begin{bmatrix}
                 0 \\
                 0 \\
                 1 \\ 
             \end{bmatrix}
             }{
-            \begin{bmatrix}
+            \\begin{bmatrix}
                 x_D \\
                 y_D \\
                 z_D \\ 
             \end{bmatrix} \cdot
-            \begin{bmatrix}
+            \\begin{bmatrix}
                 0 \\
                 0 \\
                 1 \\ 
@@ -239,12 +239,13 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
     
 
         The intersection points with :math:`t<0` and points not contained inside the circle
-        of the end cap are rejected using $(x^2 + y^2) < R$, where $x$ and $y$ are the
-        components of the candidate intersection point.
+        of the end cap are rejected using :math:`(x^2 + y^2) < R`, where :math:`x` and 
+        :math:`y` are the components of the candidate intersection point.
         
         References
         ----------
         [1] https://www.cl.cam.ac.uk/teaching/1999/AGraphHCI/
+
         [2] https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection
         
     """
