@@ -102,6 +102,7 @@ Dependancies
    003 Lights
    004 Nodes
    005 LSC
+   006 Geometry
    info
 
 
