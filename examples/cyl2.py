@@ -14,6 +14,8 @@ import functools
 import sys
 import time
 
+# Make a world node filled with air
+
 world = Node(
     name="world (air)",
     geometry=Sphere(
@@ -21,6 +23,8 @@ world = Node(
         material=Dielectric.air()
     )
 )
+
+# Make a very simple (and probably unphysical) absorption and emission.
 
 def make_absorprtion_coefficient(x_range, wavelengths, absorption_coefficient, cutoff_range, min_alpha=0):
     wavelength1, wavelength2 = cutoff_range
@@ -39,6 +43,8 @@ def make_emission_spectrum(x_range, wavelengths, cutoff_range, min_ems=0):
     abs_coeff = np.interp(wavelengths, x, y)
     return abs_coeff
 
+# Use the functions above to make the spectrum needed by the Lumophore. At this point
+# you may want to customise this script and import your own experimental data.
 
 x_range = (300, 1000)
 wavelength = np.linspace(*x_range)
@@ -49,6 +55,10 @@ lumophore = Lumophore(
     np.column_stack((wavelength, ems_spec)),  # emission spectrum
     1.0  # quantum yield
 )
+
+# Make a host material which has a refractive index of 1.5 and also contains the 
+# lumophore we just created.
+
 material = Host(
     np.column_stack( # refractive index spectrum
         (wavelength,
@@ -56,6 +66,9 @@ material = Host(
     ), 
     [lumophore],  # list of lumophores, reuse the one we already have.
 )
+
+# Make the cylinder node with length 5cm and radius 0.02cm and give the material we 
+# just made.
 
 cylinder = Node(
     name="cylinder (glass)",
@@ -66,6 +79,12 @@ cylinder = Node(
     ),
     parent=world
 )
+
+# Make a light source. This is a laser emitting light along the whole length of the
+# cylinder. We need to translate and rotate the light source to get it to fire along
+# the axis. We use the position delegate to generate photons along the same length
+# as the cylinder.
+
 light = Node(
     name="light (555nm laser)",
     light=Light(position_delegate=lambda : (np.random.uniform(-2.5, 2.5), 0.0, 0.0)),
@@ -73,18 +92,27 @@ light = Node(
 )
 cylinder.rotate(np.radians(90), (0.0, 1.0, 0.0))
 light.translate((0.0, 0.0, -1.0))
+
+# Setup renderer and the scene for tracing
 rend = MeshcatRenderer()
 scene = Scene(world)
 tracer = PhotonTracer(scene)
 rend.render(scene)
-for ray in light.emit(1000):
+
+# Trace 100 photons and visualise
+for ray in light.emit(100):
     path = tracer.follow(ray)
     print(path)
     rend.add_ray_path(path)
 
+# You can kill the simulation any time by pressing ctrl-c.
+# Do something with the data. Read the pvtrace documentation on how to process data
+# for luminescence solar concentrators.
 while True:
     try:
         time.sleep(.3)
     except KeyboardInterrupt:
         print("Bye")
         sys.exit()
+
+
