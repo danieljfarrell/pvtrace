@@ -7,6 +7,7 @@ from pvtrace.trace.context import Context, Kind, StepContext
 from pvtrace.scene.scene import Scene
 from pvtrace.scene.node import Node
 from pvtrace.light.ray import Ray
+from pvtrace.material.material import Decision
 from pvtrace.geometry.intersection import Intersection
 from pvtrace.geometry.utils import distance_between, close_to_zero, points_equal
 from pvtrace.common.errors import TraceError
@@ -161,34 +162,19 @@ class MonteCarloTracer(object):
     def __init__(self, scene: Scene):
         super(MonteCarloTracer, self).__init__()
         self.scene = scene
-        
-    def container(self, ray: Ray, all_intersections: Tuple[Intersection]) -> Node:
-        """ A node contains the ray if the ray only has one intersection with the
-        container along its path.
-        """
-        
-        # Does not work with touching interfaces
-        all_nodes =[x.hit for x in all_intersections]
-        nodes_counter = collections.Counter(all_nodes)
-        candidate_nodes = {x : nodes_counter[x] for x in nodes_counter if nodes_counter[x] == 1}
-        # `all_intersections` is sorted by distance from the ray so we can just return
-        # the node in candidate_nodes that has the lowest index.
-        container_index = np.min([all_nodes.index(c) for c in candidate_nodes])
-        container_node = all_nodes[container_index]
-        return container_node
     
-    def follow(self, ray: Ray) -> [Ray]:
+    def follow(self, ray: Ray) -> [Tuple[Ray, Decision]]:
         """ Return full history of the ray with the scene.
         """
         print("Start follow:")
-        path = [ray]
+        path = [(ray, Decision.EMIT)]
         idx = 0
         last_ray = ray
         while ray.is_alive:
             intersections = self.scene.intersections(ray.position, ray.direction)
             points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-            ray = trace_algo(ray, points, nodes, idx)
-            path.append(ray)
+            ray, decision = trace_algo(ray, points, nodes, idx)
+            path.append((ray, decision))
             if np.allclose(ray.position, last_ray.position) and np.allclose(ray.direction, last_ray.direction):
                 import pdb; pdb.set_trace()
                 raise RuntimeError("Ray did not move.")
@@ -312,7 +298,7 @@ def trace_algo(ray, points, nodes, idx):
     max_point = points[0]
     dist = distance_between(min_point, max_point)
     #print("trace path")
-    ray = trace_path(ray, container, dist)
+    ray, decision = trace_path(ray, container, dist)
     print(ray)
     #import pdb; pdb.set_trace()
     
@@ -327,7 +313,7 @@ def trace_algo(ray, points, nodes, idx):
         #    container, to_node, surface_node)
         #)
         # Must return a ray that is no longer on the surface of node!
-        ray = trace_surface(ray, container, to_node, surface_node)
+        ray, decision = trace_surface(ray, container, to_node, surface_node)
         local_ray = ray.representation(surface_node.root, surface_node)
         if surface_node.geometry.is_on_surface(ray.position):
             import pdb; pdb.set_trace()
@@ -335,96 +321,103 @@ def trace_algo(ray, points, nodes, idx):
         #print(ray)
     else:
         raise RuntimeError("Something went wrong.")
-    return ray
+    return ray, decision
 
 
-def trace_path(ray, container_node, distance):
+def trace_path(ray, container_node, distance) -> Tuple[Ray, Decision]:
     """ Trace ray along path length inside the container node.
     """
     print("trace_path with distance: {}".format(distance))
     # No absorpion for now!
-    new_pos = tuple(
-        (np.array(ray.position) + 
-        distance * np.array(ray.direction)).tolist()
+    local_ray = ray.representation(
+        container_node.root, container_node
     )
-    ray = replace(ray, position=new_pos)
-    return ray
-
-
-def transform_surface(
-    local_ray: Ray,
-    from_node: Node,
-    to_node: Node, 
-    surface_node: Node
-    ) -> Ray:
-    """ Interacts the ray with the node's geometry surface and 
-        returns a transformed ray.
-    
-        local_ray : Ray
-            A ray in the local coordinate system of the node.
-
-        Returns
-        -------
-        transformed_local_ray : Ray
-            A transformed ray in the coordinate system of the node.
-    """
-    
-    # Make attempts to exit early for null geometry
-    from_geo = from_node.geometry
-    to_geo = to_node.geometry
-    null_geos = [geo is None for geo in (from_geo, to_geo)]
-    if all(null_geos):
-        return local_ray
-    elif any(null_geos):
-        raise TraceError("Both nodes must have a geometry.")
-
-    # Make attempts to exit early for null material
-    from_mat = from_geo.material
-    to_mat = to_geo.material
-    null_mats = [mat is None for mat in (from_mat, to_mat)]
-    if all(null_mats):
-        return local_ray
-    elif any(null_mats):
-        raise TraceError("Both nodes must have a material.")
-
-    surf_geo = surface_node.geometry
-    event = surf_geo.material.event(
-        local_ray, surf_geo
+    decision, context = container_node.geometry.material.trace_path(
+        local_ray, container_node.geometry, distance
     )
-    transformed_local_ray = geometry.material.transform(
-        local_ray, from_node, to_node, surface_node, event
+    print("Decision: {}, context: {}".format(decision, context))
+    new_local_ray = container_node.geometry.material.transform(local_ray, decision, context)
+    new_ray = new_local_ray.representation(
+        container_node, container_node.root
     )
-    return transformed_local_ray
+    # do transform here
+    return new_ray, decision
 
 
-class TraceDelegate(object):
-    """ This is a delegate object attached to every node. It provides
-        a common interface for tracing the ray across the node's 
-        surface or through the nodes volume; independent of the node's
-        material or coating attributes.
-    """
-    
-    # def __init__(self, node: Node):
-    #     """
-    #         Parameters
-    #         ----------
-    #         node : Node
-    #             The node which delegates to this object.
-    #     """
-    #     super(TraceDelegate, self).__init__()
-    #     self.node = node
+# def transform_surface(
+#     local_ray: Ray,
+#     from_node: Node,
+#     to_node: Node,
+#     surface_node: Node
+#     ) -> Ray:
+#     """ Interacts the ray with the node's geometry surface and
+#         returns a transformed ray.
+#
+#         local_ray : Ray
+#             A ray in the local coordinate system of the node.
+#
+#         Returns
+#         -------
+#         transformed_local_ray : Ray
+#             A transformed ray in the coordinate system of the node.
+#     """
+#
+#     # Make attempts to exit early for null geometry
+#     from_geo = from_node.geometry
+#     to_geo = to_node.geometry
+#     null_geos = [geo is None for geo in (from_geo, to_geo)]
+#     if all(null_geos):
+#         return local_ray
+#     elif any(null_geos):
+#         raise TraceError("Both nodes must have a geometry.")
+#
+#     # Make attempts to exit early for null material
+#     from_mat = from_geo.material
+#     to_mat = to_geo.material
+#     null_mats = [mat is None for mat in (from_mat, to_mat)]
+#     if all(null_mats):
+#         return local_ray
+#     elif any(null_mats):
+#         raise TraceError("Both nodes must have a material.")
+#
+#     surf_geo = surface_node.geometry
+#     event = surf_geo.material.event(
+#         local_ray, surf_geo
+#     )
+#     transformed_local_ray = geometry.material.transform(
+#         local_ray, from_node, to_node, surface_node, event
+#     )
+#     return transformed_local_ray
+#
+#
+# class TraceDelegate(object):
+#     """ This is a delegate object attached to every node. It provides
+#         a common interface for tracing the ray across the node's
+#         surface or through the nodes volume; independent of the node's
+#         material or coating attributes.
+#     """
+#
+#     # def __init__(self, node: Node):
+#     #     """
+#     #         Parameters
+#     #         ----------
+#     #         node : Node
+#     #             The node which delegates to this object.
+#     #     """
+#     #     super(TraceDelegate, self).__init__()
+#     #     self.node = node
+#
+#
+#
 
-
-
-
-def trace_surface(ray, from_node, to_node, surface_node) -> Ray:
+def trace_surface(ray, container_node, to_node, surface_node) -> Tuple[Ray, Decision]:
     """ Returns a ray after interaction with the surface.
     
         Parameters
         ----------
         ray : Ray
             Ray in the world coordinate system.
-        from_node : Node
+        container_node : Node
             The node containing the ray.
         to_node : Node
             The node that will contain the ray if it cross the surface.
@@ -434,10 +427,16 @@ def trace_surface(ray, from_node, to_node, surface_node) -> Ray:
 
         Notes
         -----
-        The from_node and to_node allow refractive index data to be 
+        The container_node and to_node allow refractive index data to be 
         gather from either side of the interace. The surface_node will
-        be either from_node or to_node and this node should be used
+        be either container_node or to_node and this node should be used
         for surface normal calculations.
+    
+        Returns
+        -------
+        tuple
+            Like, (Ray, Decision) where the first element is the new ray and the 
+            second element is a decision enum value indicating what occurred.
     """
     
     # to-do: this uses a new attribute on node: a trace delegate. The
@@ -455,13 +454,13 @@ def trace_surface(ray, from_node, to_node, surface_node) -> Ray:
     # properties. If the node does not have a material then the default
     # is to propagate forwards.
     decision, context = surface_node.geometry.material.trace_surface(
-        local_ray, from_node.geometry, to_node.geometry, surface_node.geometry 
+        local_ray, container_node.geometry, to_node.geometry, surface_node.geometry 
     )
     print("Decision: {}".format(decision))
     new_local_ray = surface_node.geometry.material.transform(local_ray, decision, context)
     new_ray = new_local_ray.representation(
         surface_node, surface_node.root
     )
-    return new_ray
+    return new_ray, decision
 
 

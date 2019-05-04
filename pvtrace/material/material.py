@@ -132,10 +132,20 @@ class Material(object):
         """
         raise NotImplmentedError("Subclass must implemented.")
 
+    def trace_path(
+        self,
+        local_ray: "Ray",
+        container_geometry: "Geometry",
+        distance : float
+    ) -> Tuple[Decision, dict]:
+
+        # Default is to travel the full path to the next intersection point
+        return Decision.FULL, {"distance": distance}
+
     def transform(
         self,
         local_ray: "Ray",
-        from_geometry: "Geometry",
+        container_geometry: "Geometry",
         to_geometry: "Geometry",
         surface_geometry: "Geometry",
         decision: Decision,
@@ -164,10 +174,20 @@ class Dielectric(Refractive, Material):
         self._path_mechanism = TravelPath()
         self._emit_mechanism = None
 
+    def trace_path(
+            self,
+            local_ray: "Ray",
+            container_geometry: "Geometry",
+            distance : float
+        ) -> Tuple[Decision, dict]:
+        """ Dielectric material does not have any absorption; this moves ray full dist.
+        """
+        return Decision.FULL, {"distance": distance}
+
     def trace_surface(
         self,
         local_ray: "Ray",
-        from_geometry: "Geometry",
+        container_geometry: "Geometry",
         to_geometry: "Geometry",
         surface_geometry: "Geometry",
     ) -> Tuple[Decision, dict]:
@@ -175,7 +195,7 @@ class Dielectric(Refractive, Material):
         """
         # Get reflectivity for the ray
         normal = surface_geometry.normal(local_ray.position)
-        n1 = from_geometry.material.refractive_index(local_ray.wavelength)
+        n1 = container_geometry.material.refractive_index(local_ray.wavelength)
         n2 = to_geometry.material.refractive_index(local_ray.wavelength)
         # Be flexible with how the normal is defined
         if np.dot(normal, local_ray.direction) < 0.0:
@@ -185,7 +205,7 @@ class Dielectric(Refractive, Material):
             raise TraceError("The incident angle must be between 0 and pi/2.")
         incident = local_ray.direction
         reflectivity = self._return_mechanism.reflectivity(angle, n1, n2)
-        print("Reflectivity: {}".format(reflectivity))
+        print("Reflectivity: {}, n1: {}, n2: {}, angle: {}".format(reflectivity, n1, n2, angle))
         gamma = np.random.uniform()
         
         # Pick between reflection (return) and transmission (transit)
@@ -207,7 +227,7 @@ class Dielectric(Refractive, Material):
             new_ray = self._transit_mechanism.transform(local_ray, user_info)
         elif decision == Decision.RETURN:
             new_ray = self._return_mechanism.transform(local_ray, user_info)
-        elif decision ==- Decision.PATH:
+        elif decision in (Decision.PATH, Decision.FULL):
             new_ray = self._path_mechanism.transform(local_ray, user_info)
         elif decision == Decision.KILL:
             new_ray = self.KillRay.transform(local_ray, user_info)
@@ -243,12 +263,12 @@ class Dielectric(Refractive, Material):
 
     
 
-class LossyDielectric(Refractive, Absorptive, Material):
+class LossyDielectric(Absorptive, Dielectric):
     """ A material with a refractive index that also attenuates light.
     
         Notes
         -----
-        This can be used to model a most material such as plastic for luminescent
+        This can be used to model a host material such as plastic for luminescent
         concentrators or difference classes when ray tracing lenses.
 
     """
@@ -256,11 +276,27 @@ class LossyDielectric(Refractive, Absorptive, Material):
     def __init__(
         self, refractive_index: np.ndarray, absorption_coefficient: np.ndarray
     ):
-        super(LossyDielectric, self).__init__(refractive_index, absorption_coefficient)
+        super(LossyDielectric, self).__init__(absorption_coefficient, refractive_index)
         self._transit_mechanism = FresnelRefraction()
         self._return_mechanism = FresnelReflection()
         self._path_mechanism = Absorption()
         self._emit_mechanism = None
+
+    def trace_path(
+            self,
+            local_ray: "Ray",
+            container_geometry: "Geometry",
+            distance : float
+        ) -> Tuple[Decision, dict]:
+        """ Returns .PATH is absorption occurred and .FULL if it reaches the full 
+            distance. The distance travelled is returned is the info_dict.
+        """
+        sampled_distance = self._path_mechanism.path_length(
+            local_ray.wavelength, container_geometry.material
+        )
+        if sampled_distance < distance:
+            return Decision.PATH, {"distance": sampled_distance}
+        return Decision.FULL, {"distance": distance}
 
     @classmethod
     def make_constant(

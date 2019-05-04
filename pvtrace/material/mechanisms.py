@@ -186,6 +186,7 @@ class Absorption(Mechanism):
         known geometrical distance of the line segment to test whether absorption 
         occurred or not.
         """
+        from pvtrace.material.properties import Absorptive
         if not isinstance(material, Absorptive):
             AppError("Need an absorptive material.")
         gamma = np.random.uniform()

@@ -9,7 +9,7 @@ from pvtrace.scene.node import Node
 from pvtrace.light.light import Light
 from pvtrace.light.ray import Ray
 from pvtrace.trace.tracer import MonteCarloTracer
-from pvtrace.material.material import Dielectric
+from pvtrace.material.material import Dielectric, LossyDielectric
 import numpy as np
 import functools
 import sys
@@ -31,6 +31,29 @@ def make_embedded_scene(n1=1.5):
             material=Dielectric.make_constant(
                 x_range=(300.0, 4000.0), refractive_index=n1
             )
+        ),
+        parent=world
+    )
+    scene = Scene(world)
+    return scene, world, box
+
+def make_embedded_lossy_scene(n1=1.5):
+    world = Node(
+        name="world (air)",
+        geometry=Sphere(
+            radius=10.0,
+            material=Dielectric.air()
+        )
+    )
+    box = Node(
+        name="box (glass)",
+        geometry=Box(
+            (1.0, 1.0, 1.0),
+            material=LossyDielectric.make_constant(
+                x_range=(300.0, 4000.0),
+                refractive_index=n1,
+                absorption_coefficient=10000.0
+            ),
         ),
         parent=world
     )
@@ -94,7 +117,7 @@ def test_follow_embedded_scene_1():
     np.random.seed(0)
     tracer = MonteCarloTracer(scene)
     path = tracer.follow(ray)
-    
+    path, decisions = zip(*path)
     positions = [x.position for x in path]
     print("Got: {}".format(positions))
     expected_positions = [
@@ -121,13 +144,41 @@ def test_follow_embedded_scene_2():
     np.random.seed(0)
     tracer = MonteCarloTracer(scene)
     path = tracer.follow(ray)
-    
+    path, decisions = zip(*path)
     positions = [x.position for x in path]
     print("Got: {}".format(positions))
     expected_positions = [
         (0.00, 0.00, -1.00), # Starting
         (0.00, 0.00, -0.50),   # Reflection
         (0.00, 0.00, -10.0)   # Hit world node
+    ]
+    print("Expected: {}".format(expected_positions))
+    assert all([
+        np.allclose(expected, actual, atol=EPS_ZERO)
+        for (expected, actual) in zip(expected_positions, positions)
+    ])
+
+
+def test_follow_lossy_embedded_scene_1():
+    
+    ray = Ray(
+        position=(0.0, 0.0, -1.0),
+        direction=(0.0, 0.0, 1.0),
+        wavelength=555.0,
+        is_alive=True
+    )
+    scene, world, box = make_embedded_lossy_scene()
+    np.random.seed(0)
+    tracer = MonteCarloTracer(scene)
+    path = tracer.follow(ray)
+    path, decisions = zip(*path)
+    positions = [x.position for x in path]
+    print("Got: {}".format(positions))
+    expected_positions = [
+        (0.00, 0.00, -1.00), # Starting
+        (0.00, 0.00, -0.50), # Refraction into box
+        (0.00, 0.00,  0.50), # Refraction out of box
+        (0.00, 0.00, 10.0)   # Hit world node
     ]
     print("Expected: {}".format(expected_positions))
     assert all([
@@ -162,7 +213,7 @@ def test_follow_touching_scene():
     np.random.seed(0)
     tracer = MonteCarloTracer(scene)
     path = tracer.follow(ray)
-    
+    path, decisions = zip(*path)
     positions = [x.position for x in path]
     print(positions)
     expected_positions = [
