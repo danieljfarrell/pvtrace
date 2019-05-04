@@ -6,23 +6,38 @@ import abc
 from dataclasses import replace
 from enum import Enum, unique
 import numpy as np
-from pvtrace.geometry.utils import angle_between, norm, flip
+from pvtrace.geometry.utils import angle_between, norm, flip, EPS_ZERO
 from pvtrace.light.ray import Ray
 from pvtrace.common.errors import AppError
-from pvtrace.material.properties import Refractive, Emissive, Absorptive
+#from pvtrace.material.properties import Refractive, Emissive, Absorptive
 from pvtrace.geometry.utils import magnitude
 import logging
 logger = logging.getLogger(__name__)
 
+
+def _check_required_keys(required: set, context: dict):
+    keys = set(list(context.keys()))
+    if not required.issubset(keys):
+        missing = sorted(required - keys)
+        KeyError("Context dictionary has missing keys {}.".format(missing))
+
+
 class Mechanism(abc.ABC):
     """ Physical interaction which can alter position, direction or 
     wavelength of the ray.
-    """
+    """    
 
-    def transform(self, ray) -> Ray:
+    @abc.abstractmethod
+    def transform(self, ray: Ray, context: dict) -> Ray:
         """ Transform ray according to the physics of the interaction.
+        
+            Parameters
+            ----------
+            ray : Ray
+                The ray undergoing the transformation.
+            context : dict
+                Dictionary containing information of the calculation.
         """
-        pass
 
     def __repr__(self):
         return self.__class__.__name__
@@ -31,30 +46,25 @@ class Mechanism(abc.ABC):
 class FresnelReflection(Mechanism):
     """ A frensel reflection interaction which alters the rays direction.
     """
-    
-    def __init__(self, context):
-        """ context: dict, specific information for this interaction.
-        """
-        super(FresnelReflection, self).__init__()
-        self.context = context
 
-    def probability(self, ray: Ray) -> float:
+    def reflectivity(self, angle: float, n1: float, n2: float) -> float:
         """ Returns the probability that the interaction will occur.
-        """
-        context = self.context
-        normal = np.array(context.normal)
-        n1 = context.n1
-        n2 = context.n2
-        
-        # Be flexible with how the normal is defined
-        ray_ = ray.representation(context.normal_node.root, context.normal_node)
-        if np.dot(normal, ray_.direction) < 0.0:
-            normal = flip(normal)
-        angle = angle_between(normal, np.array(ray_.direction))
-        logger.debug("Incident angle {:.2f}".format(np.degrees(angle)))
-        if angle < 0.0 or angle > 0.5 * np.pi:
-            raise ValueError("The incident angle must be between 0 and pi/2.")
 
+            Parameters
+            ----------
+            angle : float
+                The angle of incidence in radians
+            n1: float
+                The refractive index of origin side of the interface
+            n2 : float
+                The refractive index of the destination side of the interface
+
+            Returns
+            -------
+            r: float
+                The reflectivity of the interface
+        """
+        
         # Catch TIR case
         if n2 < n1 and angle > np.arcsin(n2/n1):
             return 1.0
@@ -67,41 +77,87 @@ class FresnelReflection(Mechanism):
         Rp1 = n1 * k - n2 * c
         Rp2 = n1 * k + n2 * c
         Rp = (Rp1/Rp2)**2
-        return 0.5 * (Rs + Rp)
-    
-    def transform(self, ray: Ray) -> Ray:
+        r = 0.5 * (Rs + Rp)
+        return r
+
+    def transform(self, ray: Ray, context: dict) -> Ray:
         """ Transform ray according to the physics of the interaction.
+        
+            Parameters
+            ----------
+            ray : Ray
+                The ray undergoing the transformation.
+            context : dict
+                Dictionary containing information of the calculation.
+
+            Raises
+            ------
+            KeyError
+                If the context dictionary has missing keys.
+
+            Notes
+            -----
+            The ray and any position or direction vectors in the context dictionary
+            must be in the same coordinate system.
+        
+            This method required the following items in the dictionary,
+        
+            normal : 3-tuple of floats
+                The normal vector of the surface
+            
         """
-        context = self.context
-        normal = np.array(context.normal)
-        ray_ = ray.representation(context.normal_node.root, context.normal_node)
-        vec = np.array(ray_.direction)
+        required = set(["normal"])
+        _check_required_keys(required, context)
+
+        # Must be in the local frame
+        normal = np.array(context["normal"])
+        vec = np.array(ray.direction)
         d = np.dot(normal, vec)
         reflected_direction = vec - 2 * d * normal
-        new_ray_ = replace(ray_, direction=tuple(reflected_direction.tolist()))
-        new_ray = new_ray_.representation(context.normal_node, context.normal_node.root)
-        return new_ray  # back to world node
+        new_position = np.array(ray.position) +  2 * EPS_ZERO * np.array(reflected_direction)
+        new_ray = replace(
+            ray,
+            position=new_position, 
+            direction=tuple(reflected_direction.tolist())
+        )
+        return new_ray
 
 
 class FresnelRefraction(Mechanism):
     """ A frensel refraction interaction which alters the rays direction.
     """
-    
-    def __init__(self, context):
-        """ context: dict, specific information for this interaction.
-        """
-        super(FresnelRefraction, self).__init__()
-        self.context = context
 
-    def transform(self, ray: Ray) -> Ray:
+    def transform(self, ray: Ray, context: dict) -> Ray:
         """ Transform ray according to the physics of the interaction.
+        
+            Parameters
+            ----------
+            ray : Ray
+                The ray undergoing the transformation.
+            context : dict
+                Dictionary containing information of the calculation.
+            
+            Notes
+            -----
+            The ray and any position or direction vectors in the context dictionary
+            must be in the same coordinate system.
+        
+            This method required the following items in the dictionary,
+        
+            normal : 3-tuple of floats
+                The normal vector of the surface.
+            n1 : float
+                The refractive index of the origin material.
+            n2: float
+                The refractive index of the destination material.
         """
-        context = self.context
-        n1 = context.n1
-        n2 = context.n2
-        ray_ = ray.representation(context.normal_node.root, context.normal_node)
-        normal = np.array(context.normal)
-        vector = np.array(ray_.direction)
+        required = set(["normal", "n1", "n2"])
+        _check_required_keys(required, context)
+        
+        n1 = context["n1"]
+        n2 = context["n2"]
+        normal = np.array(context["normal"])
+        vector = np.array(ray.direction)
         n = n1/n2
         dot = np.dot(vector, normal)
         c = np.sqrt(1 - n**2 * (1 - dot**2))
@@ -109,8 +165,14 @@ class FresnelRefraction(Mechanism):
         if dot < 0.0:
             sign = -1
         refracted_direction = n * vector + sign*(c - sign*n*dot) * normal
-        new_ray_ = replace(ray_, direction=tuple(refracted_direction.tolist()))
-        new_ray = new_ray_.representation(context.normal_node, context.normal_node.root)
+        # maybe not best to use refracted direction; better to use normal because it 
+        # moves a constant distance from the surface everytime?
+        new_position = np.array(ray.position) +  2 * EPS_ZERO * np.array(refracted_direction)
+        new_ray = replace(
+            ray,
+            position=tuple(new_position.tolist()),
+            direction=tuple(refracted_direction.tolist())
+        )
         return new_ray
 
 
@@ -118,53 +180,29 @@ class Absorption(Mechanism):
     """ Optical absorption interaction which alters the rays position.
     """
 
-    def __init__(self, context):
-        """ context: dict, specific information for this interaction.
-        """
-        super(Absorption, self).__init__()
-        self.context = context
-        self._path_length = None
-        self._interaction_material = None
-
-    def path_length(self, ray) -> float:
+    def path_length(self, wavelength: float, material: "Material") -> float:
         """ Samples the Beer-Lambert distribution and returns the path length at which
         the ray will be absorbed. A further test is needed to compare this against the
         known geometrical distance of the line segment to test whether absorption 
         occurred or not.
         """
-        if self._path_length is not None:
-            raise AppError("Cannot reuse mechanisms. Path length already calculated.")
-        if self._interaction_material is not None:
-            raise AppError("Cannot reuse mechanisms. Interaction material already calculated.")
-        material = self.context.container.geometry.material
         if not isinstance(material, Absorptive):
             AppError("Need an absorptive material.")
         gamma = np.random.uniform()
-        alpha = material.absorption_coefficient(ray.wavelength)
+        alpha = material.absorption_coefficient(wavelength)
         if np.isclose(alpha, 0.0):
             return float('inf')
-        logger.debug('Got alpha({}) = {}'.format(ray.wavelength, alpha))
-        #if np.isclose(ray.wavelength, 588.8747279142633):
-        #    import pdb; pdb.set_trace()
+        logger.debug('Got alpha({}) = {}'.format(wavelength, alpha))
         d = -np.log(1 - gamma)/alpha
-        self._path_length = d
         return d
 
-    @property
-    def interaction_material(self):
-        return self._interaction_material
-
-    def transform(self, ray: Ray) -> Ray:
+    def transform(self, ray: Ray, context: dict) -> Ray:
         """ Transform ray according to the physics of the interaction. An absorption
             event occurred at the path length along rays trajectory.
         """
-        if not isinstance(self._path_length, float):
-            raise AppError("Path length has not yet be calculated.")
-        if self._interaction_material is not None:
-            raise AppError("Cannot reuse mechanisms. Interaction material already calculated.")
-        material = self.context.container.geometry.material
-        self._interaction_material = material.get_interaction_material(ray.wavelength)
-        new_ray = ray.propagate(self._path_length)
+        _check_required_keys(set(["distance"]), context)
+        distance = context["distance"]
+        new_ray = ray.propagate(distance)
         return new_ray
 
 
@@ -173,53 +211,50 @@ class Emission(Mechanism):
     direction. Emission occurs isotropically.
     """
 
-    def __init__(self, context):
-        """ context: dict, specific information for this interaction.
-        """
-        super(Emission, self).__init__()
-        self.context = context
-
-    def probability(self, ray: Ray) -> float:
+    def quantum_yield(self, material: "Material") -> float:
         """ Returns the probability that the interaction will occur.
         """
         # Zero chance of emission if the material is no emissive
-        context = self.context
-        material = context.interaction_material
         if material is None:
             raise TraceError("Interaction material cannot be None")
         if not isinstance(material, Emissive):
             return 0.0
-        context = self.context
         qy = material.quantum_yield
         return qy
 
-    def transform(self, ray: Ray) -> Ray:
-        """ Transform ray according to the physics of the interaction.
+    def transform(self, ray: Ray, context: dict) -> Ray:
+        """ Redshift and re-emit picking a new emission direction.
         """
-        context = self.context
-        material = context.interaction_material
+        _check_required_keys(set(["material"]), context)
         if not isinstance(material, Emissive):
             AppError("Need an emissive material.")
         new_wavelength = material.redshift_wavelength(ray.wavelength)
         new_direction = material.emission_direction()
-        
         logger.debug("Wavelength was {} and is now {}".format(ray.wavelength, new_wavelength))
         new_ray = replace(ray, wavelength=new_wavelength, direction=new_direction)
         return new_ray
+
+
+class CrossInterface(Mechanism):
+    """ An interaction which moves a ray across an interface without altering
+        any of the ray attributes.
+    """
+
+    def transform(self, ray: Ray, context: dict) -> Ray:
+        distance = 2 * EPS_ZERO
+        new_position = np.array(ray.position) + distance * np.array(ray.direction)
+        new_ray = replace(ray, position=new_position)
 
 
 class TravelPath(Mechanism):
     """ An interaction that moves ray to the ends of it's current path.
     """
     
-    def __init__(self, context):
-        """ context: dict, specific information for this interaction.
-        """
-        super(TravelPath, self).__init__()
-        self.context = context
-    
-    def transform(self, ray: Ray) -> Ray:
-        new_ray = replace(ray, position=self.context.end_path)
+    def transform(self, ray: Ray, context: dict) -> Ray:
+        _check_required_keys(set(["distance"]), context)
+        distance = context["distance"]
+        new_position = np.array(ray.position) + distance * np.array(ray.direction)
+        new_ray = replace(ray, position=new_position)
         return new_ray
 
 
@@ -231,14 +266,7 @@ class KillRay(Mechanism):
         This is used when a ray is absorbed but not re-emitted.
     """
 
-    
-    def __init__(self, context):
-        """ context: dict, specific information for this interaction.
-        """
-        super(KillRay, self).__init__()
-        self.context = context
-
-    def transform(self, ray: Ray) -> Ray:
+    def transform(self, ray: Ray, context: dict) -> Ray:
         new_ray = replace(ray, is_alive=False)
         return new_ray
 

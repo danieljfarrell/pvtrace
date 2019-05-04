@@ -10,6 +10,7 @@ import sys
 import numpy as np
 from pvtrace.material.distribution import Distribution
 from pvtrace.common.errors import TraceError
+from pvtrace.geometry.utils import EPS_ZERO
 from scipy.interpolate import interp1d
 from typing import Union, Tuple
 import numpy as np
@@ -55,6 +56,7 @@ class Refractive(object):
         if values.size == 1:
             values = values.tolist()
         return values
+    
 
 
 class Absorptive(object):
