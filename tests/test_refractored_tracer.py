@@ -6,7 +6,7 @@ from pvtrace.scene.scene import Scene
 from pvtrace.scene.node import Node
 from pvtrace.light.light import Light
 from pvtrace.light.ray import Ray
-from pvtrace.trace.tracer import MonteCarloTracer
+from pvtrace.trace.tracer import follow
 from pvtrace.material.lumophore import Lumophore
 from pvtrace.material.dielectric import Dielectric, LossyDielectric
 from pvtrace.material.material import Decision
@@ -140,8 +140,7 @@ def test_follow_embedded_scene_1():
     )
     scene, world, box = make_embedded_scene()
     np.random.seed(0)
-    tracer = MonteCarloTracer(scene)
-    path = tracer.follow(ray)
+    path = follow(ray, scene)
     path, decisions = zip(*path)
     positions = [x.position for x in path]
     expected_positions = [
@@ -177,8 +176,7 @@ def test_follow_embedded_scene_2():
     )
     scene, world, box = make_embedded_scene(n1=100.0)
     np.random.seed(0)
-    tracer = MonteCarloTracer(scene)
-    path = tracer.follow(ray)
+    path = follow(ray, scene)
     path, decisions = zip(*path)
     positions = [x.position for x in path]
     expected_positions = [
@@ -210,8 +208,7 @@ def test_follow_lossy_embedded_scene_1():
     )
     scene, world, box = make_embedded_lossy_scene()
     np.random.seed(0)
-    tracer = MonteCarloTracer(scene)
-    path = tracer.follow(ray)
+    path = follow(ray, scene)
     path, decisions = zip(*path)
     positions = [x.position for x in path]
     expected_positions = [
@@ -242,8 +239,7 @@ def test_follow_embedded_lumophore_scene_1():
     )
     scene, world, box = make_embedded_lumophore_scene()
     np.random.seed(0)
-    tracer = MonteCarloTracer(scene)
-    path = tracer.follow(ray)
+    path = follow(ray, scene)
     path, decisions = zip(*path)
     positions = [x.position for x in path]
     # First two are before box
@@ -283,8 +279,7 @@ def test_follow_touching_scene():
     )
     scene, world, box1, box2, box3 = make_touching_scene()
     np.random.seed(0)
-    tracer = MonteCarloTracer(scene)
-    path = tracer.follow(ray)
+    path = follow(ray, scene)
     path, decisions = zip(*path)
     positions = [x.position for x in path]
     print(decisions)

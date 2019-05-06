@@ -17,35 +17,27 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class MonteCarloTracer(object):
-    """ This is version 2 of Photon Tracer, essentially it is just a 
-        refactoring.
-    """
 
-    def __init__(self, scene: Scene):
-        super(MonteCarloTracer, self).__init__()
-        self.scene = scene
-    
-    def follow(self, ray: Ray) -> [Tuple[Ray, Decision]]:
-        """ Return full history of the ray with the scene.
-        """
-        print("Start follow:")
-        path = [(ray, Decision.EMIT)]
-        idx = 0
+def follow(ray: Ray, scene: Scene) -> [Tuple[Ray, Decision]]:
+    """ Return full history of the ray with the scene.
+    """
+    print("Start follow:")
+    path = [(ray, Decision.EMIT)]
+    idx = 0
+    last_ray = ray
+    while ray.is_alive:
+        intersections = scene.intersections(ray.position, ray.direction)
+        points, nodes = zip(*[(x.point, x.hit) for x in intersections])
+        for ray, decision in trace_algo(ray, points, nodes, idx):
+            path.append((ray, decision))
+        if points_equal(ray.position, last_ray.position) and np.allclose(ray.direction, last_ray.direction):
+            import pdb; pdb.set_trace()
+            raise RuntimeError("Ray did not move.")
         last_ray = ray
-        while ray.is_alive:
-            intersections = self.scene.intersections(ray.position, ray.direction)
-            points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-            for ray, decision in trace_algo(ray, points, nodes, idx):
-                path.append((ray, decision))
-            if points_equal(ray.position, last_ray.position) and np.allclose(ray.direction, last_ray.direction):
-                import pdb; pdb.set_trace()
-                raise RuntimeError("Ray did not move.")
-            last_ray = ray
-            idx += 1
-            if idx > 10:
-                raise RuntimeError("Got stuck!")
-        return path
+        idx += 1
+        if idx > 10:
+            raise RuntimeError("Got stuck!")
+    return path
 
 
 def find_container(ray, intersection_nodes):
