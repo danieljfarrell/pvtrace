@@ -5,7 +5,7 @@ from anytree import NodeMixin, Walker, PostOrderIter, LevelOrderIter
 from pvtrace.light.ray import Ray
 from pvtrace.light.light import Light
 from pvtrace.trace.context import Context, Kind
-from pvtrace.geometry.utils import distance_between, close_to_zero
+from pvtrace.geometry.utils import distance_between, close_to_zero, intersection_point_is_ahead
 import numpy as np
 import logging
 logger = logging.getLogger(__name__)
@@ -70,6 +70,15 @@ class Scene(object):
         all_intersections = self.root.intersections(ray_origin, ray_direction)
         # Convert intersection point to root frame/node.
         all_intersections = map(lambda x: x.to(root), all_intersections)
+        # Filter for forward intersections only
+        all_intersections = tuple(
+            filter(
+                lambda x: intersection_point_is_ahead(
+                    ray_origin, ray_direction, x.point
+                    ),
+                all_intersections)
+            )
+        
         # Sort by distance to ray
         all_intersections = tuple(sorted(all_intersections, key=distance_sort_key))
         # to-do: Correctly order touching interfaces

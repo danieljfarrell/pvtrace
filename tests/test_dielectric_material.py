@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from dataclasses import replace
-from pvtrace.material.material import Dielectric
+from pvtrace.material.dielectric import Dielectric
 from pvtrace.trace.context import Context, Kind
 from pvtrace.light.ray import Ray
 

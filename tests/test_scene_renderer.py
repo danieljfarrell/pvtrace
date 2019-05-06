@@ -18,7 +18,7 @@ class TestMeshcatRenderer:
         b.geometry = Sphere(radius=1.0)
         b.translate((2.0, 0.0, 0.0))
         s = Scene(root=a)
-        r = MeshcatRenderer(zmq_url='tcp://127.0.0.1:6000')
+        r = MeshcatRenderer()
         r.render(s)
         time.sleep(0.5)
         r.remove(s)

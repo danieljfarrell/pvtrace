@@ -35,7 +35,8 @@ class Mesh(Geometry):
         mesh = self.trimesh
         closest_points, distances, triangle_id = \
             mesh.nearest.on_surface(np.array([point]))
-        return np.any(np.absolute(distances) < EPS_ZERO)
+        flag = np.any(np.absolute(distances) < EPS_ZERO)
+        return flag
 
     def intersections(self, position: tuple, direction: tuple) -> Sequence[tuple]:
         """Returns tuple of intersection points sorted by distance from origin.

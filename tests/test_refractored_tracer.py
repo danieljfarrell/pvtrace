@@ -1,5 +1,3 @@
-""" Basic example using a cylinder geometry.
-"""
 from pvtrace.geometry.box import Box
 from pvtrace.geometry.sphere import Sphere
 from pvtrace.geometry.utils import EPS_ZERO
@@ -9,7 +7,9 @@ from pvtrace.scene.node import Node
 from pvtrace.light.light import Light
 from pvtrace.light.ray import Ray
 from pvtrace.trace.tracer import MonteCarloTracer
-from pvtrace.material.material import Dielectric, LossyDielectric
+from pvtrace.material.lumophore import Lumophore
+from pvtrace.material.dielectric import Dielectric, LossyDielectric
+from pvtrace.material.material import Decision
 import numpy as np
 import functools
 import sys
@@ -52,7 +52,32 @@ def make_embedded_lossy_scene(n1=1.5):
             material=LossyDielectric.make_constant(
                 x_range=(300.0, 4000.0),
                 refractive_index=n1,
-                absorption_coefficient=10000.0
+                absorption_coefficient=10.0
+            ),
+        ),
+        parent=world
+    )
+    scene = Scene(world)
+    return scene, world, box
+
+def make_embedded_lumophore_scene(n1=1.5):
+    world = Node(
+        name="world (air)",
+        geometry=Sphere(
+            radius=10.0,
+            material=Dielectric.air()
+        )
+    )
+    box = Node(
+        name="box (lumophore)",
+        geometry=Box(
+            (1.0, 1.0, 1.0),
+            material=Lumophore.make_constant(
+                x_range=(300.0, 4000.0),
+                wavelength1=550,
+                wavelength2=600,
+                absorption_coefficient=10.0,
+                quantum_yield=1.0
             ),
         ),
         parent=world
@@ -119,19 +144,29 @@ def test_follow_embedded_scene_1():
     path = tracer.follow(ray)
     path, decisions = zip(*path)
     positions = [x.position for x in path]
-    print("Got: {}".format(positions))
     expected_positions = [
         (0.00, 0.00, -1.00), # Starting
+        (0.00, 0.00, -0.50), # Hit box
         (0.00, 0.00, -0.50), # Refraction into box
+        (0.00, 0.00,  0.50), # Hit box
         (0.00, 0.00,  0.50), # Refraction out of box
-        (0.00, 0.00, 10.0)   # Hit world node
+        (0.00, 0.00, 10.0),  # Hit world node
+        (0.00, 0.00, 10.0),  # Kill ray
     ]
-    print("Expected: {}".format(expected_positions))
-    assert all([
-        np.allclose(expected, actual, atol=EPS_ZERO)
-        for (expected, actual) in zip(expected_positions, positions)
-    ])
-    
+    expected_decisions = [
+        Decision.EMIT,
+        Decision.TRAVEL,
+        Decision.TRANSIT,
+        Decision.TRAVEL,
+        Decision.TRANSIT,
+        Decision.TRAVEL,
+        Decision.KILL
+    ]
+    for expected_point, point, expected_decision, decision in zip(expected_positions, positions, expected_decisions, decisions):
+        assert expected_decision == decision
+        assert np.allclose(expected_point, point, atol=EPS_ZERO)
+
+
 def test_follow_embedded_scene_2():
     
     ray = Ray(
@@ -146,17 +181,23 @@ def test_follow_embedded_scene_2():
     path = tracer.follow(ray)
     path, decisions = zip(*path)
     positions = [x.position for x in path]
-    print("Got: {}".format(positions))
     expected_positions = [
         (0.00, 0.00, -1.00), # Starting
-        (0.00, 0.00, -0.50),   # Reflection
-        (0.00, 0.00, -10.0)   # Hit world node
+        (0.00, 0.00, -0.50), # Hit box
+        (0.00, 0.00, -0.50), # Reflection
+        (0.00, 0.00, -10.0),   # Hit world node
+        (0.00, 0.00, -10.0)   # Ray killed
     ]
-    print("Expected: {}".format(expected_positions))
-    assert all([
-        np.allclose(expected, actual, atol=EPS_ZERO)
-        for (expected, actual) in zip(expected_positions, positions)
-    ])
+    expected_decisions = [
+        Decision.EMIT,
+        Decision.TRAVEL,
+        Decision.RETURN,
+        Decision.TRAVEL,
+        Decision.KILL
+    ]
+    for expected_point, point, expected_decision, decision in zip(expected_positions, positions, expected_decisions, decisions):
+        assert expected_decision == decision
+        assert np.allclose(expected_point, point, atol=EPS_ZERO)
 
 
 def test_follow_lossy_embedded_scene_1():
@@ -173,20 +214,51 @@ def test_follow_lossy_embedded_scene_1():
     path = tracer.follow(ray)
     path, decisions = zip(*path)
     positions = [x.position for x in path]
-    print("Got: {}".format(positions))
+    expected_positions = [
+        (0.00, 0.00, -1.00), # Starting
+        (0.00, 0.00, -0.50), # Hit box
+        (0.00, 0.00, -0.50), # Reflection
+        (0.00, 0.00, -0.3744069237034118), # Absorbed
+    ]
+    expected_decisions = [
+        Decision.EMIT,
+        Decision.TRAVEL,
+        Decision.TRANSIT,
+        Decision.ABSORB,
+    ]
+    for expected_point, point, expected_decision, decision in zip(
+        expected_positions, positions, expected_decisions, decisions):
+        assert expected_decision == decision
+        assert np.allclose(expected_point, point, atol=EPS_ZERO)
+
+
+def test_follow_embedded_lumophore_scene_1():
+    
+    ray = Ray(
+        position=(0.0, 0.0, -1.0),
+        direction=(0.0, 0.0, 1.0),
+        wavelength=555.0,
+        is_alive=True
+    )
+    scene, world, box = make_embedded_lumophore_scene()
+    np.random.seed(0)
+    tracer = MonteCarloTracer(scene)
+    path = tracer.follow(ray)
+    path, decisions = zip(*path)
+    positions = [x.position for x in path]
+    # First two are before box
     expected_positions = [
         (0.00, 0.00, -1.00), # Starting
         (0.00, 0.00, -0.50), # Refraction into box
-        (0.00, 0.00,  0.50), # Refraction out of box
-        (0.00, 0.00, 10.0)   # Hit world node
     ]
+    assert len(expected_positions) < len(positions[:-1])
     print("Expected: {}".format(expected_positions))
     assert all([
         np.allclose(expected, actual, atol=EPS_ZERO)
-        for (expected, actual) in zip(expected_positions, positions)
+        for (expected, actual) in zip(expected_positions, positions[0:2])
     ])
-
-
+    
+    
 def test_touching_scene_intersections():
     print("test_touching_scene_intersections")
     ray = Ray(
@@ -215,19 +287,38 @@ def test_follow_touching_scene():
     path = tracer.follow(ray)
     path, decisions = zip(*path)
     positions = [x.position for x in path]
-    print(positions)
+    print(decisions)
     expected_positions = [
         (0.00, 0.00, -1.00), # Starting
+        (0.00, 0.00, -0.50), # Hit box
         (0.00, 0.00, -0.50), # Refraction into box
-        (0.00, 0.00,  0.50), # Refraction out of box
-        (0.00, 0.00,  1.50), # Refraction out of box
-        (0.00, 0.00,  2.50), # Refraction out of box
-        (0.00, 0.00, 10.0)   # Hit world node
+        (0.00, 0.00,  0.50), # Hit box 
+        (0.00, 0.00,  0.50), # Refraction
+        (0.00, 0.00,  1.50), # Hit box 
+        (0.00, 0.00,  1.50), # Refraction
+        (0.00, 0.00,  2.50), # Hit box 
+        (0.00, 0.00,  2.50), # Refraction
+        (0.00, 0.00, 10.0),  # Hit world node
+        (0.00, 0.00, 10.0)   # Kill
     ]
-    assert [
-        np.allclose(expected, actual, atol=EPS_ZERO)
-        for (expected, actual) in zip(expected_positions, positions)
+    expected_decisions = [
+        Decision.EMIT,
+        Decision.TRAVEL,
+        Decision.TRANSIT,
+        Decision.TRAVEL,
+        Decision.TRANSIT,
+        Decision.TRAVEL,
+        Decision.TRANSIT,
+        Decision.TRAVEL,
+        Decision.TRANSIT,
+        Decision.TRAVEL,
+        Decision.KILL
     ]
+    for expected_point, point, expected_decision, decision in zip(
+        expected_positions, positions, expected_decisions, decisions):
+        assert np.allclose(expected_point, point, atol=EPS_ZERO)
+        assert expected_decision == decision
+
 
 
 def test_find_container_embedded_scene():

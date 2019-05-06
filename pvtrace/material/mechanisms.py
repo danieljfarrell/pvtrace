@@ -111,6 +111,8 @@ class FresnelReflection(Mechanism):
 
         # Must be in the local frame
         normal = np.array(context["normal"])
+        if np.dot(normal, ray.direction) < 0.0:
+            normal = flip(normal)
         vec = np.array(ray.direction)
         d = np.dot(normal, vec)
         reflected_direction = vec - 2 * d * normal
@@ -218,6 +220,7 @@ class Emission(Mechanism):
         # Zero chance of emission if the material is no emissive
         if material is None:
             raise TraceError("Interaction material cannot be None")
+        from pvtrace.material.properties import Emissive
         if not isinstance(material, Emissive):
             return 0.0
         qy = material.quantum_yield
@@ -227,6 +230,8 @@ class Emission(Mechanism):
         """ Redshift and re-emit picking a new emission direction.
         """
         _check_required_keys(set(["material"]), context)
+        material = context["material"]
+        from pvtrace.material.properties import Emissive
         if not isinstance(material, Emissive):
             AppError("Need an emissive material.")
         new_wavelength = material.redshift_wavelength(ray.wavelength)
@@ -242,9 +247,15 @@ class CrossInterface(Mechanism):
     """
 
     def transform(self, ray: Ray, context: dict) -> Ray:
-        distance = 2 * EPS_ZERO
-        new_position = np.array(ray.position) + distance * np.array(ray.direction)
+        _check_required_keys(set(["normal"]), context)
+        normal = context["normal"]
+        # check for angle > 90
+        if np.dot(normal, ray.direction) < 0.0:
+            normal = flip(normal)
+        distance = 2*EPS_ZERO
+        new_position = np.array(ray.position) + distance * np.array(normal)
         new_ray = replace(ray, position=new_position)
+        return new_ray
 
 
 class TravelPath(Mechanism):

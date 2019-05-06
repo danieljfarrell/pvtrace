@@ -1,33 +1,36 @@
 import pytest
 import numpy as np
+from pvtrace.geometry.utils import flip
 from pvtrace.material.mechanisms import FresnelReflection
-from pvtrace.trace.context import Context, Kind
 from pvtrace.light.ray import Ray
-from pvtrace.scene.node import Node
 
 
 class TestFresnelReflection:
     
     def test_init(self):
-        node = Node(name="node")
-        ctx = Context(n1=1.0, n2=1.5, normal_node=node, normal=(0.0, 0.0, 1.0), kind=Kind.SURFACE, end_path=(10, 10, 10), container=None)
-        assert type(FresnelReflection(ctx)) == FresnelReflection
+        assert type(FresnelReflection()) == FresnelReflection
     
     def test_normal_reflection(self):
-        node = Node(name="node")
-        ctx = Context(n1=1.0, n2=1.5, normal_node=node, normal=(0.0, 0.0, 1.0), kind=Kind.SURFACE, end_path=(10, 10, 10), container=None)
+        n1 = 1.0
+        n2 = 1.5
+        normal = (0.0, 0.0, 1.0)
+        angle = 0.0
         ray = Ray(position=(0.0, 0.0, 0.0), direction=(0.0, 0.0, 1.0), wavelength=None)
-        interaction = FresnelReflection(ctx)
-        p = interaction.probability(ray)
-        assert np.isclose(p, 0.04)
+        fresnel = FresnelReflection()
+        assert np.isclose(fresnel.reflectivity(angle, n1, n2), 0.04)
+        new_ray = fresnel.transform(ray, {"normal": normal})
+        assert np.allclose(flip(ray.direction), new_ray.direction)
 
     def test_antinormal_reflection(self):
         """ FresnelReflection takes the smallest angle between the ray direction and 
         the normal. Thus the flipped normal will also work.
         """
-        node = Node(name="node")
-        ctx = Context(n1=1.0, n2=1.5, normal_node=node, normal=(0.0, 0.0, -1.0), kind=Kind.SURFACE, end_path=(10, 10, 10), container=None)
+        n1 = 1.0
+        n2 = 1.5
+        normal = (0.0, 0.0, -1.0)
+        angle = 0.0
         ray = Ray(position=(0.0, 0.0, 0.0), direction=(0.0, 0.0, 1.0), wavelength=None)
-        interaction = FresnelReflection(ctx)
-        p = interaction.probability(ray)
-        assert np.isclose(p, 0.04)
+        fresnel = FresnelReflection()
+        assert np.isclose(fresnel.reflectivity(angle, n1, n2), 0.04)
+        new_ray = fresnel.transform(ray, {"normal": normal})
+        assert np.allclose(flip(ray.direction), new_ray.direction)
