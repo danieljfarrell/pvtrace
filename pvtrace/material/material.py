@@ -7,8 +7,13 @@ from pvtrace.common.errors import AppError
 from pvtrace.geometry.utils import flip, angle_between
 from pvtrace.material.properties import Refractive, Absorptive, Emissive
 from pvtrace.material.mechanisms import (
-    FresnelRefraction, FresnelReflection, Absorption, Emission, TravelPath, 
-    CrossInterface, KillRay
+    FresnelRefraction,
+    FresnelReflection,
+    Absorption,
+    Emission,
+    TravelPath,
+    CrossInterface,
+    KillRay,
 )
 import logging
 
@@ -41,7 +46,7 @@ class Decision(Enum):
     EMIT = 4
     """ Specifies that the ray has been emitted.
     """
-    
+
     TRAVEL = 5
     """ Specifies that the ray did not interact with anything along it's path length.
     """
@@ -137,11 +142,8 @@ class Material(object):
         yield new_ray, Decision.TRANSIT
 
     def trace_path(
-            self,
-            local_ray: "Ray",
-            container_geometry: "Geometry",
-            distance : float
-        ) -> Tuple[Decision, dict]:
+        self, local_ray: "Ray", container_geometry: "Geometry", distance: float
+    ) -> Tuple[Decision, dict]:
         """ Dielectric material does not have any absorption; this moves ray full dist.
         """
         new_ray = TravelPath().transform(local_ray, {"distance": distance})
@@ -183,7 +185,6 @@ class Host(Refractive, Absorptive, Emissive, Material):
         self._return_mechanism = FresnelRefraction()
         self._path_mechanism = Absorption()
         self._emit_mechanism = Emission()
-        
 
     def get_interaction_material(self, nanometers: float) -> Material:
         """ Returns which lumophore absorbed the ray.

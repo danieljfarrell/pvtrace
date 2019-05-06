@@ -4,7 +4,6 @@ from typing import Optional, Sequence
 from anytree import NodeMixin, Walker, PostOrderIter, LevelOrderIter
 from pvtrace.light.ray import Ray
 from pvtrace.light.light import Light
-from pvtrace.trace.context import Context, Kind
 from pvtrace.geometry.utils import distance_between, close_to_zero, intersection_point_is_ahead
 import numpy as np
 import logging

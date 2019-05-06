@@ -3,7 +3,6 @@ import collections
 from typing import Optional, Tuple, Sequence
 from dataclasses import dataclass, replace
 import numpy as np
-from pvtrace.trace.context import Context, Kind, StepContext
 from pvtrace.scene.scene import Scene
 from pvtrace.scene.node import Node
 from pvtrace.light.ray import Ray

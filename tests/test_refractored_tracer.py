@@ -6,7 +6,7 @@ from pvtrace.scene.scene import Scene
 from pvtrace.scene.node import Node
 from pvtrace.light.light import Light
 from pvtrace.light.ray import Ray
-from pvtrace.trace.tracer import follow
+from pvtrace.algorithm.photon_tracer import follow
 from pvtrace.material.lumophore import Lumophore
 from pvtrace.material.dielectric import Dielectric, LossyDielectric
 from pvtrace.material.material import Decision
@@ -317,7 +317,7 @@ def test_follow_touching_scene():
 
 
 def test_find_container_embedded_scene():
-    from pvtrace.trace.tracer import find_container
+    from pvtrace.algorithm.photon_tracer import find_container
     scene, world, box = make_embedded_scene()
     ray = Ray(
         position=(0.0, 0.0, -1.0),
@@ -354,7 +354,7 @@ def test_find_container_embedded_scene():
 
 
 def test_find_container_touching_scene():
-    from pvtrace.trace.tracer import find_container
+    from pvtrace.algorithm.photon_tracer import find_container
     scene, world, box1, box2, box3 = make_touching_scene()
     ray = Ray(
         position=(0.0, 0.0, -1.0),
@@ -414,7 +414,7 @@ def test_find_container_touching_scene():
 
 
 def test_ray_status_embedded_scene():
-    from pvtrace.trace.tracer import ray_status
+    from pvtrace.algorithm.photon_tracer import ray_status
     ray = Ray(
         position=(0.0, 0.0, -1.0),
         direction=(0.0, 0.0, 1.0),
@@ -466,7 +466,7 @@ def test_ray_status_embedded_scene():
 
 
 def test_ray_status_touching_scene():
-    from pvtrace.trace.tracer import ray_status
+    from pvtrace.algorithm.photon_tracer import ray_status
     ray = Ray(
         position=(0.0, 0.0, -1.0),
         direction=(0.0, 0.0, 1.0),
