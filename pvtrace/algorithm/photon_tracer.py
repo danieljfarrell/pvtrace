@@ -184,16 +184,14 @@ def step(ray, points, nodes):
     for (ray, decision) in trace_path(ray, container, dist):
         yield ray, decision
 
-    if not ray.is_alive:
-        # Case: killed by non-radiative absorption in material path trace.
-        yield ray, decision
-    elif to_node is None and container.parent is None:
+    if to_node is None and container.parent is None:
         # Case: Hit world node; kill ray here.
         ray = replace(ray, is_alive=False)
         yield ray, Decision.KILL
     elif points_equal(ray.position, max_point):
         # Case: Hit surface
-        # NB `trace_surface` *must* return a ray that is *not* on the surface of node!
+        # NB The ray argument of `trace_surface` *must* be a ray on the surface of the 
+        # node and the returned ray must *not* be on the node!
         before_ray = ray
         for ray, decision in trace_surface(ray, container, to_node, surface_node):
             yield ray, decision

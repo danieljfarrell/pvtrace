@@ -60,7 +60,7 @@ class Dielectric(Refractive, Material):
             raise TraceError("The incident angle must be between 0 and pi/2.")
         incident = local_ray.direction
         reflectivity = self._return_mechanism.reflectivity(angle, n1, n2)
-        print("Reflectivity: {}, n1: {}, n2: {}, angle: {}".format(reflectivity, n1, n2, angle))
+        #print("Reflectivity: {}, n1: {}, n2: {}, angle: {}".format(reflectivity, n1, n2, angle))
         gamma = np.random.uniform()
         info = {"normal": normal, "n1": n1, "n2": n2}
         # Pick between reflection (return) and transmission (transit)

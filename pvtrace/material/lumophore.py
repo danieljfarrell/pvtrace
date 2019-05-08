@@ -54,7 +54,7 @@ class Lumophore(Absorptive, Emissive, Material):
             # Apply the absorption transformation to the ray; this updates the rays
             # position to the absorption location.
             info = {"distance": sampled_distance}
-            print("Sampled pathlength: {}".format(info))
+            #print("Sampled pathlength: {}".format(info))
             new_ray = self._path_mechanism.transform(local_ray, info)
             # Test if ray is reemitted by comparing a random number to the quantum yield
             qy = self.quantum_yield
