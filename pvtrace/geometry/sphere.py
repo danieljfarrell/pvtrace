@@ -1,5 +1,5 @@
 from pvtrace.geometry.geometry import Geometry
-from pvtrace.geometry.utils import angle_between
+from pvtrace.geometry.utils import angle_between, EPS_ZERO
 import numpy as np
 import logging
 logger = logging.getLogger(__name__)
@@ -25,11 +25,11 @@ class Sphere(Geometry):
         
     def is_on_surface(self, point):
         r = np.sqrt(np.sum(np.array(point)**2))
-        return np.isclose(r, self.radius)
+        return np.abs(r - self.radius) < EPS_ZERO
     
     def contains(self, point):
         r = np.sqrt(np.sum(np.array(point)**2))
-        return r < self.radius
+        return np.abs(r - self.radius) > EPS_ZERO
     
     def intersections(self, origin, direction):
         # Compute a, b and b coefficients
@@ -55,7 +55,7 @@ class Sphere(Geometry):
         t = np.sort(t)
         hits = []
         for distance in t:
-            if distance >= 0.:
+            if distance >= 0.0:
                 point = origin + distance * direction
                 hits.append(tuple(point.tolist()))
         return tuple(hits)

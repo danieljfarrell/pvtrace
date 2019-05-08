@@ -29,10 +29,12 @@ from pvtrace.scene.node import Node
 from pvtrace.scene.scene import Scene
 from pvtrace.scene.renderer import MeshcatRenderer
 from pvtrace.geometry.sphere import Sphere
-from pvtrace.material.material import Dielectric
-from pvtrace.light.ray import Ray
-from pvtrace.trace.tracer import PhotonTracer
-    
+from pvtrace.material.dielectric import Dielectric
+from pvtrace.light.light import Light
+from pvtrace.algorithm import photon_tracer
+import functools
+import numpy as np
+
 # Add nodes to the scene graph
 world = Node(
     name="world (air)",
@@ -63,9 +65,9 @@ light = Node(
 
 # Trace the scene
 scene = Scene(world)
-tracer = PhotonTracer(scene)
 for ray in light.emit(100):
-    path = tracer.follow(ray)
+    # Do something with this optical path information
+    path = photon_tracer.follow(ray, scene)
 ```
 ## Install
 

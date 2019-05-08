@@ -108,15 +108,15 @@ class FresnelReflection(Mechanism):
         """
         required = set(["normal"])
         _check_required_keys(required, context)
-
         # Must be in the local frame
         normal = np.array(context["normal"])
         if np.dot(normal, ray.direction) < 0.0:
             normal = flip(normal)
+        
         vec = np.array(ray.direction)
         d = np.dot(normal, vec)
         reflected_direction = vec - 2 * d * normal
-        new_position = np.array(ray.position) +  2 * EPS_ZERO * np.array(reflected_direction)
+        new_position = np.array(ray.position) +  2 * EPS_ZERO * np.array(flip(normal))
         new_ray = replace(
             ray,
             position=new_position, 
@@ -155,10 +155,11 @@ class FresnelRefraction(Mechanism):
         """
         required = set(["normal", "n1", "n2"])
         _check_required_keys(required, context)
-        
+        normal = np.array(context["normal"])
+        if np.dot(normal, ray.direction) < 0.0:
+            normal = flip(normal)
         n1 = context["n1"]
         n2 = context["n2"]
-        normal = np.array(context["normal"])
         vector = np.array(ray.direction)
         n = n1/n2
         dot = np.dot(vector, normal)
@@ -169,7 +170,7 @@ class FresnelRefraction(Mechanism):
         refracted_direction = n * vector + sign*(c - sign*n*dot) * normal
         # maybe not best to use refracted direction; better to use normal because it 
         # moves a constant distance from the surface everytime?
-        new_position = np.array(ray.position) +  2 * EPS_ZERO * np.array(refracted_direction)
+        new_position = np.array(ray.position) +  2 * EPS_ZERO * np.array(normal)
         new_ray = replace(
             ray,
             position=tuple(new_position.tolist()),
