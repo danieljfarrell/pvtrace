@@ -7,6 +7,73 @@ import numpy as np
 import pandas as pd
 
 
+def lumogen_f_red(x):
+    """ Fit to Lumogen F Red absorption coefficient spectrum using five Gaussians.
+    
+        Parameters
+        ----------
+        x : numpy.array
+            Wavelength array in nanometers. This should take values in the optical 
+            range between 200 and 900.
+
+        Returns
+        -------
+        numpy.array
+            The spectrum
+
+        Notes
+        -----
+        This fit is "good enough" for getting sensible answers but for research purposes
+        you should be using your own data as this might not be exactly the same 
+        spectrum as your materials.
+
+        Example
+        -------
+        To make a absorption coefficient spectrum in the range 300 to 800 nanometers
+        containing 200 points::
+
+            spectrum = lumogen_f_red(np.linspace(300, 800, 200))
+    """
+    spec = 0.9454846839252642*np.exp(-((578.6167306868869 - x)/22.6976093987002)**2) +
+           0.6430326869158796*np.exp(-((535.1850303736512 - x)/28.63029894331116)**2) +
+           0.1243340609168971*np.exp(-((494.5721783546976 - x)/13.98438275367119)**2) +
+           0.3651471532322375*np.exp(-((440.4679754085741 - x)/34.91923613222621)**2) +
+           0.7042787252835550*np.exp(-((336.0548556730901 - x)/34.24136755250487)**2)
+    spec = spec/np.max(spec)
+    return spec
+
+
+def lumogen_f_red(x):
+    """ Fit to Lumogen F Red emission spectrum using five Gaussians.
+
+        Parameters
+        ----------
+        x : numpy.array
+            Wavelength array in nanometers. This should take values in the optical 
+            range between 200 and 900.
+
+        Returns
+        -------
+        numpy.array
+            The spectrum
+
+        Notes
+        -----
+        This fit is "good enough" for getting sensible answers but for research purposes
+        you should be using your own data as this might not be exactly the same 
+        spectrum as your materials.
+
+        Example
+        -------
+        To make a emission spectrum in the range 300 to 800 nanometers containing 200 
+        points::
+
+            spectrum = lumogen_f_red(np.linspace(300, 800, 200))
+    """
+    spec = 1.0*exp((-1)*((600.0 - x)/38.60)**2)
+    return spec
+
+
 class Lumophore(Absorptive, Emissive, Material):
     """ A material that absorbs and emits light.
 
@@ -99,26 +166,32 @@ class Lumophore(Absorptive, Emissive, Material):
             This is mostly useful for testing and should not really be considered
             a feature that is commonly used.
         """
-
-        def make_absorprtion_coefficient(x_range, absorption_coefficient, cutoff_range):
+    
+        # Helper functions
+        def make_absorption_coefficient(x_range, wavelengths, absorption_coefficient, cutoff_range, min_alpha=0):
+            """ Make a very simple (and probably unphysical) absorption spectrum!
+            """
             wavelength1, wavelength2 = cutoff_range
             alpha = absorption_coefficient
             halfway = wavelength1 + 0.5 * (wavelength2 - wavelength1)
             x = [x_range[0], wavelength1, halfway, wavelength2, x_range[1]]
-            y = [alpha, alpha, 0.5 * alpha, 0, 0]
-            spectrum = np.column_stack((x, y))
-            return spectrum
+            y = [alpha, alpha, 0.5 * alpha, min_alpha, min_alpha]
+            abs_coeff = np.interp(wavelengths, x, y)
+            return abs_coeff
 
-        def make_emission_spectrum(x_range, cutoff_range):
+
+        def make_emission_spectrum(x_range, wavelengths, cutoff_range, min_ems=0):
+            """ Make a very simple (and probably unphysical) emission spectrum!
+            """
             wavelength1, wavelength2 = cutoff_range
             halfway = wavelength1 + 0.5 * (wavelength2 - wavelength1)
             x = [x_range[0], wavelength1, halfway, wavelength2, x_range[1]]
-            y = [0.0, 0.0, 1.0, 0, 0]
-            spectrum = np.column_stack((x, y))
-            return spectrum
-
+            y = [min_ems, min_ems, 1.0, min_ems, min_ems]
+            abs_coeff = np.interp(wavelengths, x, y)
+            return abs_coeff
+            
         cutoff_range = (wavelength1, wavelength2)
-        absorption_coefficient = make_absorprtion_coefficient(
+        absorption_coefficient = make_absorption_coefficient(
             x_range, absorption_coefficient, cutoff_range
         )
         emission_spectrum = make_emission_spectrum(x_range, cutoff_range)
