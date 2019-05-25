@@ -196,7 +196,7 @@ class Absorption(Mechanism):
         alpha = material.absorption_coefficient(wavelength)
         if np.isclose(alpha, 0.0):
             return float('inf')
-        logger.debug('Got alpha({}) = {}'.format(wavelength, alpha))
+        logger.info('Got alpha({}) = {}'.format(wavelength, alpha))
         d = -np.log(1 - gamma)/alpha
         return d
 

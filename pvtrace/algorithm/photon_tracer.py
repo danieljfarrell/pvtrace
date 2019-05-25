@@ -233,6 +233,7 @@ def trace_path(ray, container_node, distance):
     )
     for (local_ray, decision) in container_node.geometry.material.trace_path(
             local_ray, container_node.geometry, distance):
+        logging.info("material {}".format(container_node.geometry.material))
         new_ray = local_ray.representation(
             container_node, container_node.root
         )

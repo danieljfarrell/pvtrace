@@ -1,4 +1,3 @@
 import logging
-logging.basicConfig()
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('pvtrace')
-logger.info("Hello from pvtrace")

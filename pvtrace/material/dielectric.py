@@ -73,6 +73,40 @@ class Dielectric(Refractive, Material):
             decision = Decision.TRANSIT
             yield new_ray, decision
 
+    def trace_surface(
+        self,
+        local_ray: "Ray",
+        container_geometry: "Geometry",
+        to_geometry: "Geometry",
+        surface_geometry: "Geometry",
+    ) -> Tuple[Decision, dict]:
+        """ 
+        """
+        # Get reflectivity for the ray
+        normal = surface_geometry.normal(local_ray.position)
+        n1 = container_geometry.material.refractive_index(local_ray.wavelength)
+        n2 = to_geometry.material.refractive_index(local_ray.wavelength)
+        # Be flexible with how the normal is defined
+        if np.dot(normal, local_ray.direction) < 0.0:
+            normal = flip(normal)
+        angle = angle_between(normal, np.array(local_ray.direction))
+        if angle < 0.0 or angle > 0.5 * np.pi:
+            raise TraceError("The incident angle must be between 0 and pi/2.")
+        incident = local_ray.direction
+        reflectivity = self._return_mechanism.reflectivity(angle, n1, n2)
+        #print("Reflectivity: {}, n1: {}, n2: {}, angle: {}".format(reflectivity, n1, n2, angle))
+        gamma = np.random.uniform()
+        info = {"normal": normal, "n1": n1, "n2": n2}
+        # Pick between reflection (return) and transmission (transit)
+        if gamma < reflectivity:
+            new_ray = self._return_mechanism.transform(local_ray, info)
+            decision = Decision.RETURN
+            yield new_ray, decision
+        else:
+            new_ray = self._transit_mechanism.transform(local_ray, info)
+            decision = Decision.TRANSIT
+            yield new_ray, decision
+
     @classmethod
     def make_constant(cls, x_range: Tuple[float, float], refractive_index: float):
         """ Returns a dielectric material with spectrally constant refractive index.

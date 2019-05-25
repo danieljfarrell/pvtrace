@@ -32,9 +32,9 @@ class Cylinder(Geometry):
             return False
         dist = dist[0]  # Only need closest intersection
         if close_to_zero(dist):
-            print("dist from point {} {} is_on_surface True".format(dist, point))
+            #print("dist from point {} {} is_on_surface True".format(dist, point))
             return True
-        print("dist from point {} {} is_on_surface False".format(dist, point))
+        #print("dist from point {} {} is_on_surface False".format(dist, point))
         return False
 
     def contains(self, point):

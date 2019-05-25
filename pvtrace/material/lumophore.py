@@ -5,9 +5,13 @@ from dataclasses import replace
 from typing import Tuple
 import numpy as np
 import pandas as pd
+import logging
+#logger = logging.getLogger()
+logger = logging.getLogger(__name__)
+#logger = logging.getLogger('pvtrace')
 
 
-def lumogen_f_red(x):
+def lumogen_f_red_abs(x):
     """ Fit to Lumogen F Red absorption coefficient spectrum using five Gaussians.
     
         Parameters
@@ -19,7 +23,7 @@ def lumogen_f_red(x):
         Returns
         -------
         numpy.array
-            The spectrum
+            The spectrum normalised to peak value of 1.0.
 
         Notes
         -----
@@ -34,16 +38,16 @@ def lumogen_f_red(x):
 
             spectrum = lumogen_f_red(np.linspace(300, 800, 200))
     """
-    spec = 0.9454846839252642*np.exp(-((578.6167306868869 - x)/22.6976093987002)**2) +
-           0.6430326869158796*np.exp(-((535.1850303736512 - x)/28.63029894331116)**2) +
-           0.1243340609168971*np.exp(-((494.5721783546976 - x)/13.98438275367119)**2) +
-           0.3651471532322375*np.exp(-((440.4679754085741 - x)/34.91923613222621)**2) +
+    spec = 0.9454846839252642*np.exp(-((578.6167306868869 - x)/22.6976093987002)**2) + \
+           0.6430326869158796*np.exp(-((535.1850303736512 - x)/28.63029894331116)**2) +\
+           0.1243340609168971*np.exp(-((494.5721783546976 - x)/13.98438275367119)**2) +\
+           0.3651471532322375*np.exp(-((440.4679754085741 - x)/34.91923613222621)**2) +\
            0.7042787252835550*np.exp(-((336.0548556730901 - x)/34.24136755250487)**2)
     spec = spec/np.max(spec)
     return spec
 
 
-def lumogen_f_red(x):
+def lumogen_f_red_ems(x):
     """ Fit to Lumogen F Red emission spectrum using five Gaussians.
 
         Parameters
@@ -55,7 +59,7 @@ def lumogen_f_red(x):
         Returns
         -------
         numpy.array
-            The spectrum
+            The spectrum normalised to peak value of 1.0
 
         Notes
         -----
@@ -70,8 +74,31 @@ def lumogen_f_red(x):
 
             spectrum = lumogen_f_red(np.linspace(300, 800, 200))
     """
-    spec = 1.0*exp((-1)*((600.0 - x)/38.60)**2)
+    spec = 1.0*np.exp(-((600.0 - x)/38.60)**2)
     return spec
+
+
+def make_absorption_coefficient(x_range, wavelengths, absorption_coefficient, cutoff_range, min_alpha=0):
+    """ Make a very simple (and probably unphysical) absorption spectrum!
+    """
+    wavelength1, wavelength2 = cutoff_range
+    alpha = absorption_coefficient
+    halfway = wavelength1 + 0.5 * (wavelength2 - wavelength1)
+    x = [x_range[0], wavelength1, halfway, wavelength2, x_range[1]]
+    y = [alpha, alpha, 0.5 * alpha, min_alpha, min_alpha]
+    abs_coeff = np.interp(wavelengths, x, y)
+    return abs_coeff
+
+
+def make_emission_spectrum(x_range, wavelengths, cutoff_range, min_ems=0):
+    """ Make a very simple (and probably unphysical) emission spectrum!
+    """
+    wavelength1, wavelength2 = cutoff_range
+    halfway = wavelength1 + 0.5 * (wavelength2 - wavelength1)
+    x = [x_range[0], wavelength1, halfway, wavelength2, x_range[1]]
+    y = [min_ems, min_ems, 1.0, min_ems, min_ems]
+    abs_coeff = np.interp(wavelengths, x, y)
+    return abs_coeff
 
 
 class Lumophore(Absorptive, Emissive, Material):
@@ -103,18 +130,20 @@ class Lumophore(Absorptive, Emissive, Material):
         self._path_mechanism = Absorption()
         self._emit_mechanism = Emission()
 
+
     def trace_path(
-            self,
+            self, 
             local_ray: "Ray",
             container_geometry: "Geometry",
-            distance : float
-        ):
+            distance: float
+    ) -> Tuple[Decision, dict]:
         
         # Sample the exponential distribution and get a distance at which the
         # ray is absorbed.
         sampled_distance = self._path_mechanism.path_length(
             local_ray.wavelength, container_geometry.material
         )
+        logger.debug("Host.trace_path args: {}".format((local_ray, container_geometry, distance)))
         # If the sampled distance is less than the full distance the ray can travel
         # then the ray is absorbed.
         if sampled_distance < distance:
@@ -150,7 +179,7 @@ class Lumophore(Absorptive, Emissive, Material):
         wavelength1: float,
         wavelength2: float,
         absorption_coefficient: float,
-        quantum_yield: float,
+        quantum_yield: float
     ):
         """ Returns a Lumophore material with spectral properties parameterised as::
 
@@ -166,33 +195,26 @@ class Lumophore(Absorptive, Emissive, Material):
             This is mostly useful for testing and should not really be considered
             a feature that is commonly used.
         """
-    
-        # Helper functions
-        def make_absorption_coefficient(x_range, wavelengths, absorption_coefficient, cutoff_range, min_alpha=0):
-            """ Make a very simple (and probably unphysical) absorption spectrum!
-            """
-            wavelength1, wavelength2 = cutoff_range
-            alpha = absorption_coefficient
-            halfway = wavelength1 + 0.5 * (wavelength2 - wavelength1)
-            x = [x_range[0], wavelength1, halfway, wavelength2, x_range[1]]
-            y = [alpha, alpha, 0.5 * alpha, min_alpha, min_alpha]
-            abs_coeff = np.interp(wavelengths, x, y)
-            return abs_coeff
-
-
-        def make_emission_spectrum(x_range, wavelengths, cutoff_range, min_ems=0):
-            """ Make a very simple (and probably unphysical) emission spectrum!
-            """
-            wavelength1, wavelength2 = cutoff_range
-            halfway = wavelength1 + 0.5 * (wavelength2 - wavelength1)
-            x = [x_range[0], wavelength1, halfway, wavelength2, x_range[1]]
-            y = [min_ems, min_ems, 1.0, min_ems, min_ems]
-            abs_coeff = np.interp(wavelengths, x, y)
-            return abs_coeff
-            
         cutoff_range = (wavelength1, wavelength2)
         absorption_coefficient = make_absorption_coefficient(
             x_range, absorption_coefficient, cutoff_range
         )
         emission_spectrum = make_emission_spectrum(x_range, cutoff_range)
         return cls(absorption_coefficient, emission_spectrum, quantum_yield)
+    
+    @classmethod
+    def make_lumogen_f_red(
+        cls,
+        x: np.ndarray,
+        absorption_coefficient: float,
+        quantum_yield: float
+        ):
+        """ Returns a Lumophore material with spectral properties like Lumogen F Red 300.
+        """
+        absorption_spec = np.column_stack(
+            [x, lumogen_f_red_abs(x) * absorption_coefficient]
+        )
+        emission_spec = np.column_stack(
+            [x, lumogen_f_red_ems(x)]
+        )
+        return cls(absorption_spec, emission_spec, quantum_yield)
