@@ -32,6 +32,7 @@ class Mesh(Geometry):
     
     def is_on_surface(self, point: tuple) -> bool:
         """Returns `True` is the point is on the surface."""
+        # This failes sometimes because surface points can be larger than EPS_ZERO
         mesh = self.trimesh
         closest_points, distances, triangle_id = \
             mesh.nearest.on_surface(np.array([point]))

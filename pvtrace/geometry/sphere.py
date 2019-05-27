@@ -29,8 +29,8 @@ class Sphere(Geometry):
     
     def contains(self, point):
         r = np.sqrt(np.sum(np.array(point)**2))
-        return np.abs(r - self.radius) > EPS_ZERO
-    
+        return self.radius - (r + EPS_ZERO) > 0.0
+
     def intersections(self, origin, direction):
         # Compute a, b and b coefficients
         origin = np.array(origin)

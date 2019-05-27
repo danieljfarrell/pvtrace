@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 
-def follow(ray: Ray, scene: Scene, max_iters=1000) -> [Tuple[Ray, Decision]]:
+def follow(ray: Ray, scene: Scene, max_iters=1000, renderer=None) -> [Tuple[Ray, Decision]]:
     """ Follow the ray through a scene.
     
         This the highest level ray-tracing function. It moves the ray through the
@@ -41,7 +41,7 @@ def follow(ray: Ray, scene: Scene, max_iters=1000) -> [Tuple[Ray, Decision]]:
     while ray.is_alive:
         intersections = scene.intersections(ray.position, ray.direction)
         points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-        for ray, decision in step(ray, points, nodes):
+        for ray, decision in step(ray, points, nodes, renderer=renderer):
             path.append((ray, decision))
         if points_equal(ray.position, last_ray.position) and np.allclose(ray.direction, last_ray.direction):
             raise TraceError("Ray did not move.")
@@ -150,7 +150,7 @@ def ray_status(ray, points, nodes):
     return status
 
 
-def step(ray, points, nodes):
+def step(ray, points, nodes, renderer=None):
     """ Step the ray through the scene until the next Monte Carlo decision.
         
         This is generator function because it cannot be known exactly how many events
@@ -181,7 +181,11 @@ def step(ray, points, nodes):
     max_point = points[0]
     
     dist = distance_between(min_point, max_point)
+    _ray = ray
     for (ray, decision) in trace_path(ray, container, dist):
+        if renderer:
+            renderer.add_ray_path([_ray, ray])
+            _ray = ray
         yield ray, decision
 
     if to_node is None and container.parent is None:
@@ -193,7 +197,11 @@ def step(ray, points, nodes):
         # NB The ray argument of `trace_surface` *must* be a ray on the surface of the 
         # node and the returned ray must *not* be on the node!
         before_ray = ray
+        _ray = ray
         for ray, decision in trace_surface(ray, container, to_node, surface_node):
+            if renderer:
+                renderer.add_ray_path([_ray, ray])
+                _ray = ray
             yield ray, decision
         # Avoid error checks in production
         if __debug__:
@@ -233,7 +241,6 @@ def trace_path(ray, container_node, distance):
     )
     for (local_ray, decision) in container_node.geometry.material.trace_path(
             local_ray, container_node.geometry, distance):
-        logging.info("material {}".format(container_node.geometry.material))
         new_ray = local_ray.representation(
             container_node, container_node.root
         )

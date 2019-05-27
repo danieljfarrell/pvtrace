@@ -255,7 +255,7 @@ class CrossInterface(Mechanism):
             normal = flip(normal)
         distance = 2*EPS_ZERO
         new_position = np.array(ray.position) + distance * np.array(normal)
-        new_ray = replace(ray, position=new_position)
+        new_ray = replace(ray, position=tuple(new_position.tolist()))
         return new_ray
 
 
@@ -267,7 +267,7 @@ class TravelPath(Mechanism):
         _check_required_keys(set(["distance"]), context)
         distance = context["distance"]
         new_position = np.array(ray.position) + distance * np.array(ray.direction)
-        new_ray = replace(ray, position=new_position)
+        new_ray = replace(ray, position=tuple(new_position.tolist()))
         return new_ray
 
 

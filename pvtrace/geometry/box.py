@@ -30,8 +30,8 @@ class Box(Mesh):
         self._size = np.array(size)
         mesh = trimesh.creation.box(size)
         super(Box, self).__init__(mesh,  material=material)
-        
-        
+
+
 # class Box(Geometry):
 #     """Defines a box of length, width and height with centre (0, 0, 0).
 #     """

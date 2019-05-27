@@ -5,8 +5,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# Set reasonable precision for comparing floats to zero
-EPS_ZERO = np.finfo(float).eps * 10
+# Set reasonable precision for comparing floats to zero. Originally the multipler was
+# 10, but I needed to set this to 1000 because some of the trimesh distance methods
+# do not see as accuate as with primative shapes.
+EPS_ZERO = np.finfo(float).eps * 1000
 
 
 def aabb_intersection(min_point, max_point, ray_position, ray_direction):

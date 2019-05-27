@@ -21,6 +21,7 @@
     from pvtrace.common.errors import TraceError
     from pvtrace.light.light import Light
     from pvtrace.light.ray import Ray
+    from pvtrace.geometry.utils import EPS_ZERO
     from pvtrace.geometry.mesh import Mesh
     from pvtrace.geometry.box import Box
     from pvtrace.geometry.sphere import Sphere
@@ -36,9 +37,7 @@
 Luminescent solar concentrator
 ==============================
 
-In this example we perform a simulation of a box shape luminescent
-concentrator (LSC) and demonstrate how the data can be analysed and
-plotted.
+In this example we perform a simulation of a box shape luminescent concentrator (LSC) and demonstrate how the data can be analysed and plotted. We will calculate the *approximate* optical efficiency of the LSC but counting the number of photons entering the top and the number of photons exiting the edge facets. Note, in this simulation total internal reflection is occurring at the edge surfaces so not all photons that reach the edge are counted. The optical efficiency will appear smaller than it should.
 
 Absorption and emission spectrum
 --------------------------------
@@ -49,135 +48,24 @@ this properties.
 
 .. code:: ipython3
 
-    def make_absorprtion_coefficient(wavelengths, absorption_coefficient, cutoff_range, min_alpha=0):
-        wavelength1, wavelength2 = cutoff_range
-        alpha = absorption_coefficient
-        halfway = wavelength1 + 0.5 * (wavelength2 - wavelength1)
-        x = [0.0, wavelength1, halfway, wavelength2, sys.float_info.max]
-        y = [alpha, alpha, 0.5 * alpha, min_alpha, min_alpha]
-        abs_coeff = np.interp(wavelengths, x, y)
-        return abs_coeff
-    
-    def make_emission_spectrum(wavelengths, cutoff_range, min_ems=0):
-        wavelength1, wavelength2 = cutoff_range
-        halfway = wavelength1 + 0.5 * (wavelength2 - wavelength1)
-        x = [0.0, wavelength1, halfway, wavelength2, sys.float_info.max]
-        y = [min_ems, min_ems, 1.0, min_ems, min_ems]
-        abs_coeff = np.interp(wavelengths, x, y)
-        return abs_coeff
-    
-    wavelength_range = (300, 800)
-    wavelength = np.linspace(*wavelength_range)
-    abs_coef = make_absorprtion_coefficient(wavelength, 100.0, (700, 780))
-    ems_spec = make_emission_spectrum(wavelength, (680, 780))
+    wavelength_range = (200, 800)
+    wavelength = np.linspace(*wavelength_range, 1000)
+    lumogen = Lumophore.make_lumogen_f_red(wavelength, 1000, 1.0)
+    linear_background = Lumophore.make_linear_background(wavelength, 1.0)
     fig, ax1 = plt.subplots()
-    ax1.plot(wavelength, abs_coef, label="Abs.")
+    ax1.plot(wavelength, lumogen.absorption_coefficient(wavelength), label="Abs.")
     ax1.set_ylabel('Abs. coef. (1/cm)')
     ax2 = ax1.twinx()
-    ax2.plot(wavelength, ems_spec, '--r', label="Ems.")
+    ax2.plot(wavelength, lumogen.emission_spectrum(wavelength), '--r', label="Ems.")
     ax2.set_ylabel('Ems. spec. (arb.)')
     ax1.set_xlabel('Wavelength (nm)')
     plt.grid(linestyle='dotted')
     ax1.legend()
 
-
 .. image:: resources/005_plot_1.png
     :width: 600px
     :alt: Visualiser
     :align: center
-
-
-We need to provide this data to pvtrace in a pandas dataframe with a
-very specific format as shown below,
-
-.. code:: ipython3
-
-    data = {
-        "wavelength": wavelength,
-        "refractive index": np.ones(wavelength.shape) * 1.5,
-        "absorption coefficient dye 1": abs_coef,
-        "emission spectrum dye 1": ems_spec,
-        "quantum yield dye 1": np.ones(wavelength.shape) * 1.0
-    }    
-    df = pd.DataFrame(data)
-    df.tail()
-
-
-
-
-.. raw:: html
-
-    <div>
-    <style scoped>
-        .dataframe tbody tr th:only-of-type {
-            vertical-align: middle;
-        }
-    
-        .dataframe tbody tr th {
-            vertical-align: top;
-        }
-    
-        .dataframe thead th {
-            text-align: right;
-        }
-    </style>
-    <table border="1" class="dataframe">
-      <thead>
-        <tr style="text-align: right;">
-          <th></th>
-          <th>wavelength</th>
-          <th>refractive index</th>
-          <th>absorption coefficient dye 1</th>
-          <th>emission spectrum dye 1</th>
-          <th>quantum yield dye 1</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th>45</th>
-          <td>759.183673</td>
-          <td>1.5</td>
-          <td>26.020408</td>
-          <td>0.416327</td>
-          <td>1.0</td>
-        </tr>
-        <tr>
-          <th>46</th>
-          <td>769.387755</td>
-          <td>1.5</td>
-          <td>13.265306</td>
-          <td>0.212245</td>
-          <td>1.0</td>
-        </tr>
-        <tr>
-          <th>47</th>
-          <td>779.591837</td>
-          <td>1.5</td>
-          <td>0.510204</td>
-          <td>0.008163</td>
-          <td>1.0</td>
-        </tr>
-        <tr>
-          <th>48</th>
-          <td>789.795918</td>
-          <td>1.5</td>
-          <td>0.000000</td>
-          <td>0.000000</td>
-          <td>1.0</td>
-        </tr>
-        <tr>
-          <th>49</th>
-          <td>800.000000</td>
-          <td>1.5</td>
-          <td>0.000000</td>
-          <td>0.000000</td>
-          <td>1.0</td>
-        </tr>
-      </tbody>
-    </table>
-    </div>
-
-
 
 LSC scene
 ---------
@@ -189,16 +77,37 @@ of the following should make sense,
 
     # Make a world coordinate system
     world_node = Node(name='world')
-    world_node.geometry = Sphere(radius=10.0, material=Dielectric.make_constant((300, 1000.0), 1.0))
-    
+    world_node.geometry = Sphere(
+        radius=10.0,
+        material=Dielectric.make_constant((300, 1000.0), 1.0)
+    )
+
+    refractive_index = np.column_stack(
+        (wavelength, np.ones(wavelength.shape) * 1.5)
+    )
     # Add LSC
     size = (1.0, 1.0, 0.02)
     lsc = Node(name="LSC", parent=world_node)
-    lsc.geometry = Box(size, material=Host.from_dataframe(df))
-    
+    lsc.geometry = Box(
+        size, 
+        material=Host(
+            refractive_index,  # LSC refractive index
+            [linear_background, lumogen]  # LSC list of lumophore materials
+        )
+    )
+
     # Light source
-    light = Light(divergence_delegate=functools.partial(Light.cone_divergence, np.radians(20)))
-    light_node = Node(name='light', parent=world_node, location=(0.0, 0.0, 1.0))
+    light = Light(
+        divergence_delegate=functools.partial(
+            Light.cone_divergence,
+            np.radians(20)
+        )
+    )
+    light_node = Node(
+        name='light',
+        parent=world_node,
+        location=(0.0, 0.0, 1.0)
+    )
     light_node.rotate(np.radians(180), (1, 0, 0))
     light_node.light = light
     scene = Scene(root=world_node)
@@ -210,19 +119,10 @@ of the following should make sense,
     renderer.vis.jupyter_cell()
 
 
-.. parsed-literal::
-
-    You can open the visualizer by visiting the following URL:
-    http://127.0.0.1:7019/static/
-
-
-
-
 .. image:: resources/005_1.png
     :width: 600px
     :alt: Visualiser
     :align: center
-
 
 
 Let’s trace a small number of rays to see if we made our scene
@@ -230,12 +130,12 @@ correctly.
 
 .. code:: ipython3
 
-    tracer = PhotonTracer(scene)
+    np.random.seed(1)
     for light_node in scene.light_nodes:
         for ray in light.emit(20):
             ray = ray.representation(light_node, world_node)
-            history = tracer.follow(ray)
-            path = [x for x in history]
+            steps = photon_tracer.follow(ray, scene)
+            path, decisions = zip(*steps)
             renderer.add_ray_path(path)
 
 Tracing
@@ -251,38 +151,29 @@ Let’s trace a larger number of rays to make a dataset we can analyse.
 
     from ipywidgets import IntProgress
     from IPython.display import display
-    np.random.seed(4)
-    tracer = PhotonTracer(scene)
     entrance_rays = []
     exit_rays = []
     max_rays = 200
     f = IntProgress(min=0, max=max_rays, description='Tracing:',
     )
     display(f)
+    renderer.vis.delete()
+    renderer.render(scene)
     for light_node in scene.light_nodes:
         for idx, ray in enumerate(light.emit(max_rays)):
             ray = ray.representation(light_node, world_node)
             try:
-                path = tracer.follow(ray)
+                steps = photon_tracer.follow(ray, scene)
+                path, decisions = zip(*steps)
+                renderer.add_ray_path(path)
             except TraceError:
                 continue
             else:
                 entrance_rays.append(path[0])
-                exit_rays.append(path[-2])  # -1 is the world node, don't want that
+                exit_rays.append(path[-3])  # -1 and -2 are the world node, don't want that
             finally:
                 f.value += 1
     print("Done!")
-
-
-
-.. parsed-literal::
-
-    IntProgress(value=0, description='Tracing:', max=200)
-
-
-.. parsed-literal::
-
-    Done!
 
 
 Here are some helper functions for labelling and processing the row and
@@ -337,12 +228,12 @@ columns.
         xmin, xmax = -0.5*length, 0.5*length
         ymin, ymax = -0.5*width, 0.5*width
         zmin, zmax = -0.5*height, 0.5*height
-        df.loc[(np.isclose(df['position_x'], xmin)), 'facet'] = '-x'
-        df.loc[(np.isclose(df['position_x'], xmax)), 'facet'] = '+x'
-        df.loc[(np.isclose(df['position_y'], ymin)), 'facet'] = '-y'
-        df.loc[(np.isclose(df['position_y'], ymax)), 'facet'] = '+y'
-        df.loc[(np.isclose(df['position_z'], zmin)), 'facet'] = '-z'
-        df.loc[(np.isclose(df['position_z'], zmax)), 'facet'] = '+z'
+        df.loc[(np.isclose(df['position_x'], xmin, atol=EPS_ZERO)), 'facet'] = '-x'
+        df.loc[(np.isclose(df['position_x'], xmax, atol=EPS_ZERO)), 'facet'] = '+x'
+        df.loc[(np.isclose(df['position_y'], ymin, atol=EPS_ZERO)), 'facet'] = '-y'
+        df.loc[(np.isclose(df['position_y'], ymax, atol=EPS_ZERO)), 'facet'] = '+y'
+        df.loc[(np.isclose(df['position_z'], zmin, atol=EPS_ZERO)), 'facet'] = '-z'
+        df.loc[(np.isclose(df['position_z'], zmax, atol=EPS_ZERO)), 'facet'] = '+z'
         return df
     
 

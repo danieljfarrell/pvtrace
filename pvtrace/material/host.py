@@ -6,6 +6,7 @@ from pvtrace.material.mechanisms import (
 )
 from pvtrace.geometry.utils import flip, angle_between
 from typing import Tuple
+from dataclasses import replace
 import numpy as np
 import logging
 logger = logging.getLogger(__name__)
@@ -82,9 +83,12 @@ class Host(Refractive, Blend, Material):
     ) -> Tuple[Decision, dict]:
         """ 
         """
-        # Ray both materials need a a refractive index to compute Frensel reflection;
+        # Ray both materials need a refractive index to compute Frensel reflection;
         # if they are not the both refractive then just let ray cross the interface.
-        normal = surface_geometry.normal(local_ray.position)
+        try:
+            normal = surface_geometry.normal(local_ray.position)
+        except Exception:
+            import pdb; pdb.set_trace() 
         if not all([isinstance(x, Refractive) for x in (container_geometry.material, to_geometry.material)]):
             new_ray = CrossInterface().transform(local_ray, {"normal": normal})
             yield new_ray, Decision.TRANSIT
@@ -120,7 +124,7 @@ class Host(Refractive, Blend, Material):
             container_geometry: "Geometry",
             distance: float
     ) -> Tuple[Decision, dict]:
-        
+                
         # Which of the host's materials captured the ray
         material = self.select_lumophore(local_ray.wavelength)
         # Sample the exponential distribution and get a distance at which the

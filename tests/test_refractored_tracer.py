@@ -72,13 +72,11 @@ def make_embedded_lumophore_scene(n1=1.5):
         name="box (lumophore)",
         geometry=Box(
             (1.0, 1.0, 1.0),
-            material=Lumophore.make_constant(
-                x_range=(300.0, 4000.0),
-                wavelength1=550,
-                wavelength2=600,
+            material=Lumophore.make_lumogen_f_red(
+                x=np.linspace(300.0, 4000.0),
                 absorption_coefficient=10.0,
                 quantum_yield=1.0
-            ),
+            )
         ),
         parent=world
     )

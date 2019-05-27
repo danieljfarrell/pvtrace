@@ -8,7 +8,8 @@ from dataclasses import replace
 from typing import Tuple
 import numpy as np
 import pandas as pd
-
+import logging
+logger = logging.getLogger(__name__)
 
 class Dielectric(Refractive, Material):
     """ A material with a refractive index.
@@ -165,11 +166,15 @@ class LossyDielectric(Absorptive, Dielectric):
         sampled_distance = self._path_mechanism.path_length(
             local_ray.wavelength, container_geometry.material
         )
+        logger.info("sampled_distance {}".format(sampled_distance))
+        logger.info("max. distance {}".format(distance))
         if sampled_distance < distance:
             new_ray = self._path_mechanism.transform(
                 local_ray, {"distance": sampled_distance}
             )
+            new_ray = replace(new_ray, is_alive=False)  # Not re-emitted
             yield new_ray, Decision.ABSORB
+            return
         new_ray = self._path_mechanism.transform(
             local_ray, {"distance": distance}
         )

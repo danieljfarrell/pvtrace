@@ -1,12 +1,10 @@
 from pvtrace.material.lumophore import Lumophore
 from pvtrace.material.properties import Emissive, Absorptive, Refractive
-
+import numpy as np
 
 def test_lumophore():
-    lum = Lumophore.make_constant(
-        x_range=(300.0, 4000.0),
-        wavelength1=550,
-        wavelength2=600,
+    lum = Lumophore.make_lumogen_f_red(
+        x=np.array([300.0, 400.0, 500.0]),
         absorption_coefficient=10.0,
         quantum_yield=1.0
     )

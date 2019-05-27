@@ -6,9 +6,7 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 import logging
-#logger = logging.getLogger()
 logger = logging.getLogger(__name__)
-#logger = logging.getLogger('pvtrace')
 
 
 def lumogen_f_red_abs(x):
@@ -76,29 +74,6 @@ def lumogen_f_red_ems(x):
     """
     spec = 1.0*np.exp(-((600.0 - x)/38.60)**2)
     return spec
-
-
-def make_absorption_coefficient(x_range, wavelengths, absorption_coefficient, cutoff_range, min_alpha=0):
-    """ Make a very simple (and probably unphysical) absorption spectrum!
-    """
-    wavelength1, wavelength2 = cutoff_range
-    alpha = absorption_coefficient
-    halfway = wavelength1 + 0.5 * (wavelength2 - wavelength1)
-    x = [x_range[0], wavelength1, halfway, wavelength2, x_range[1]]
-    y = [alpha, alpha, 0.5 * alpha, min_alpha, min_alpha]
-    abs_coeff = np.interp(wavelengths, x, y)
-    return abs_coeff
-
-
-def make_emission_spectrum(x_range, wavelengths, cutoff_range, min_ems=0):
-    """ Make a very simple (and probably unphysical) emission spectrum!
-    """
-    wavelength1, wavelength2 = cutoff_range
-    halfway = wavelength1 + 0.5 * (wavelength2 - wavelength1)
-    x = [x_range[0], wavelength1, halfway, wavelength2, x_range[1]]
-    y = [min_ems, min_ems, 1.0, min_ems, min_ems]
-    abs_coeff = np.interp(wavelengths, x, y)
-    return abs_coeff
 
 
 class Lumophore(Absorptive, Emissive, Material):
@@ -173,36 +148,6 @@ class Lumophore(Absorptive, Emissive, Material):
             yield new_ray, Decision.TRAVEL
 
     @classmethod
-    def make_constant(
-        cls,
-        x_range: Tuple[float, float],
-        wavelength1: float,
-        wavelength2: float,
-        absorption_coefficient: float,
-        quantum_yield: float
-    ):
-        """ Returns a Lumophore material with spectral properties parameterised as::
-
-                    Abs coef./     absorption     emission
-                   emissivity        band           band
-              alpha / 1 |-------------------------   +
-                        |                         \ + +
-                        |                          +\  +
-                        |                         +   \ +
-                      0 |________________________+______\+___________>
-                        0                       w1       w2         oo (wavelength)
-
-            This is mostly useful for testing and should not really be considered
-            a feature that is commonly used.
-        """
-        cutoff_range = (wavelength1, wavelength2)
-        absorption_coefficient = make_absorption_coefficient(
-            x_range, absorption_coefficient, cutoff_range
-        )
-        emission_spectrum = make_emission_spectrum(x_range, cutoff_range)
-        return cls(absorption_coefficient, emission_spectrum, quantum_yield)
-    
-    @classmethod
     def make_lumogen_f_red(
         cls,
         x: np.ndarray,
@@ -218,3 +163,20 @@ class Lumophore(Absorptive, Emissive, Material):
             [x, lumogen_f_red_ems(x)]
         )
         return cls(absorption_spec, emission_spec, quantum_yield)
+
+    @classmethod
+    def make_linear_background(
+        cls,
+        x: np.array,
+        absorption_coefficient: float
+        ):
+        """ Returns an Lumophore with quantum yield *zero* and flat panchromatic 
+            absorption.
+        """
+        absorption_spec = np.column_stack(
+            [x, np.ones(x.shape) * absorption_coefficient]
+        )
+        emission_spec = np.column_stack(
+            [x, np.zeros(x.shape)]
+        )
+        return cls(absorption_spec, emission_spec, 0.0)
