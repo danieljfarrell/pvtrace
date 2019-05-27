@@ -1,27 +1,6 @@
+.. note::
 
-.. code:: ipython3
-
-    import time
-    import numpy as np
-    import functools
-    import matplotlib
-    import matplotlib.pyplot as plt
-    %matplotlib inline
-    from pvtrace.scene.scene import Scene
-    from pvtrace.scene.renderer import MeshcatRenderer
-    from pvtrace.scene.node import Node
-    from pvtrace.trace.tracer import PhotonTracer
-    from pvtrace.geometry.sphere import Sphere
-    from pvtrace.geometry.box import Box
-    from pvtrace.geometry.utils import norm
-    from pvtrace.material.material import Dielectric, LossyDielectric, Lumophore, Host
-    from pvtrace.light.ray import Ray
-    from pvtrace.light.light import Light
-    from pvtrace.material.distribution import Distribution
-    import logging
-    logging.getLogger("pvtrace").setLevel(logging.WARNING)
-
-
+    This is a static HTML version of an interactive Jupyter notebook in the examples folders of the pvtrace project.
 
 Nodes
 =====
@@ -60,15 +39,8 @@ transformations.
         parent=world
     )
     scene = Scene(world)
-    tracer = PhotonTracer(scene)
     vis = MeshcatRenderer()
     vis.render(scene)
-
-
-.. parsed-literal::
-
-    You can open the visualizer by visiting the following URL:
-    http://127.0.0.1:7016/static/
 
 
 Add some widgets for changing the box’s location. The sliders change the
@@ -188,17 +160,9 @@ the world node has changed.
     # Change the location of the laser node
     laser.location = (0.1, 0.1, -1)
     scene = Scene(world)
-    tracer = PhotonTracer(scene)
     vis = MeshcatRenderer()
     vis.render(scene)
     vis.vis.jupyter_cell()
-
-
-.. parsed-literal::
-
-    You can open the visualizer by visiting the following URL:
-    http://127.0.0.1:7017/static/
-
 
 
 .. image:: resources/004_2.png
@@ -214,7 +178,8 @@ frame of the light, but we need the rays in the frame of the laser node.
 .. code:: ipython3
 
     for ray in laser.emit(200):
-        path = tracer.follow(ray)
+        steps = photon_tracer.follow(ray, scene)
+        path, decisions = zip(*steps)
         vis.add_ray_path(path)
 
 Nested nodes
@@ -264,23 +229,15 @@ rotate all of them at the same time.
         ),
         parent=group
     )
-    
+
     # Customise location and orientation
     box1.location = (1, 1, 1)
     box2.location = (2, 2, 2)
     box3.location = (3, 3, 3)
     scene = Scene(world)
-    tracer = PhotonTracer(scene)
     vis = MeshcatRenderer()
     vis.render(scene)
     vis.vis.jupyter_cell()
-
-
-.. parsed-literal::
-
-    You can open the visualizer by visiting the following URL:
-    http://127.0.0.1:7018/static/
-
 
 
 .. image:: resources/004_3.png
@@ -298,6 +255,6 @@ at once.
     phi_range = 4 * np.pi
     phi_increment = phi_range / steps
     for _ in range(int(steps)):
-        time.sleep(0.01)
+        time.sleep(0.05)
         group.rotate(phi_increment, norm((0, 0, 1)))
         vis.update_transform(group)

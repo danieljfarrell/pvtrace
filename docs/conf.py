@@ -44,7 +44,10 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
+    'sphinx.ext.autosummary',
 ]
+
+autosummary_generate = True
 
 nbsphinx_allow_errors = True
 

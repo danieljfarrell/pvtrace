@@ -30,10 +30,13 @@ A minimal working example that traces a glass sphere::
     from pvtrace.scene.scene import Scene
     from pvtrace.scene.renderer import MeshcatRenderer
     from pvtrace.geometry.sphere import Sphere
-    from pvtrace.material.material import Dielectric
-    from pvtrace.light.ray import Ray
-    from pvtrace.trace.tracer import PhotonTracer
-    
+    from pvtrace.material.dielectric import Dielectric
+    from pvtrace.light.light import Light
+    from pvtrace.algorithm import photon_tracer
+    import time
+    import functools
+    import numpy as np
+
     # Add nodes to the scene graph
     world = Node(
         name="world (air)",
@@ -62,11 +65,13 @@ A minimal working example that traces a glass sphere::
         )
     )
 
-    # Trace the scene
     scene = Scene(world)
-    tracer = PhotonTracer(scene)
     for ray in light.emit(100):
-        path = tracer.follow(ray)
+        # Do something with the photon step information...
+        steps = photon_tracer.follow(ray, scene)
+        rays, events = zip(*steps)
+
+
 
 Install
 -------
@@ -104,8 +109,7 @@ Dependancies
    005 LSC
    006 Geometry
    info
-
-
+   _modules/modules
 
 Indices and tables
 ==================

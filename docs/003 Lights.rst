@@ -2,26 +2,6 @@
 
     This is a static HTML version of an interactive Jupyter notebook in the examples folders of the pvtrace project.
 
-.. code:: ipython3
-
-    import time
-    import numpy as np
-    import functools
-    import matplotlib
-    import matplotlib.pyplot as plt
-    %matplotlib inline
-    from pvtrace.scene.scene import Scene
-    from pvtrace.scene.renderer import MeshcatRenderer
-    from pvtrace.scene.node import Node
-    from pvtrace.trace.tracer import PhotonTracer
-    from pvtrace.geometry.sphere import Sphere
-    from pvtrace.material.material import Dielectric, LossyDielectric, Lumophore, Host
-    from pvtrace.light.ray import Ray
-    from pvtrace.light.light import Light
-    from pvtrace.material.distribution import Distribution
-    import logging
-
-
 Lights
 ======
 

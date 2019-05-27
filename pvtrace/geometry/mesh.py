@@ -1,4 +1,5 @@
 from pvtrace.geometry.geometry import Geometry
+from pvtrace.geometry.utils import EPS_ZERO
 from pvtrace.common.errors import GeometryError
 from typing import Optional, Sequence, Tuple
 import numpy as np
@@ -31,10 +32,12 @@ class Mesh(Geometry):
     
     def is_on_surface(self, point: tuple) -> bool:
         """Returns `True` is the point is on the surface."""
+        # This failes sometimes because surface points can be larger than EPS_ZERO
         mesh = self.trimesh
         closest_points, distances, triangle_id = \
             mesh.nearest.on_surface(np.array([point]))
-        return np.any(np.absolute(distances) < 1e-12)
+        flag = np.any(np.absolute(distances) < EPS_ZERO)
+        return flag
 
     def intersections(self, position: tuple, direction: tuple) -> Sequence[tuple]:
         """Returns tuple of intersection points sorted by distance from origin.
@@ -63,7 +66,7 @@ class Mesh(Geometry):
         (closest_points, distances, triangle_id) = mesh.nearest.on_surface(np.array([surface_point]))
         if closest_points.shape != (1, 3):
             raise GeometryError('Mesh must have a single closest point to calculate normal.')
-        if not np.any(np.absolute(distances) < 1e-12):
+        if not np.any(np.absolute(distances) < EPS_ZERO):
             raise GeometryError('Point is not on surface.')
         normal = tuple(mesh.face_normals[triangle_id[0]])
         return normal

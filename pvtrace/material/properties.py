@@ -10,6 +10,7 @@ import sys
 import numpy as np
 from pvtrace.material.distribution import Distribution
 from pvtrace.common.errors import TraceError
+from pvtrace.geometry.utils import EPS_ZERO
 from scipy.interpolate import interp1d
 from typing import Union, Tuple
 import numpy as np
@@ -21,7 +22,7 @@ def check_spectrum_like(arr):
     if not isinstance(arr, np.ndarray):
         raise ValueError("Must be an numpy.ndarray.")
     if arr.shape[1] != 2:
-        raise ValueError("Must only have two columns.")
+        raise ValueError("Must have two columns.")
 
 
 class Refractive(object):
@@ -55,6 +56,7 @@ class Refractive(object):
         if values.size == 1:
             values = values.tolist()
         return values
+    
 
 
 class Absorptive(object):
@@ -101,8 +103,29 @@ class Emissive(object):
         self._quantum_yield = quantum_yield
 
     def redshift_wavelength(self, wavelength) -> float:
-        """ Returns a new wavelength sampled from the emission spectrum which is 
-            guaranteed to be at a longer wavelength.
+        """ Returns nanometer values which is larger than the supplied value.
+        
+            Parameters
+            ----------
+            wavelength : float
+                Wavelength to be red-shifted in nanometers.
+
+            Returns
+            -------
+            float
+                The red-shifted wavelength.
+
+            Raises
+            ------
+            TraceError
+                If emission spectrum could not be sampled.
+
+            Notes
+            -----
+            This method simulates global redshift in a very simple way, but it does
+            seem to give good results when compared with experiment. The new wavelength
+            is sampled from the emission spectrum of the material.
+        
         """
         dist = self._emission_dist
         p1 = dist.lookup(wavelength)
@@ -114,7 +137,6 @@ class Emissive(object):
         logger.debug("p1={}, p2={}, gamma={}".format(p1, p2, gamma))
         new_wavelength = dist.sample(gamma)
         if np.isclose(new_wavelength, max_wavelength):
-            import pdb; pdb.set_trace()
             raise TraceError("Monte-carlo is sampling ends of distribution")
         return new_wavelength
 
@@ -153,3 +175,10 @@ class Emissive(object):
         """
         return self._quantum_yield
 
+
+class Blend(object):
+    """ A material mix-in providing a mix of multiple lumophore characteristic.
+    """
+    def __init__(self, lumophores, *args, **kwargs):
+        super(Blend, self).__init__(*args, **kwargs)
+        self.lumophores = lumophores
