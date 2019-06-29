@@ -11,6 +11,56 @@ logger = logging.getLogger(__name__)
 EPS_ZERO = np.finfo(float).eps * 1000
 
 
+def on_aabb_surface(size, point, centre=(0.0, 0.0, 0.0), atol=EPS_ZERO):
+    """ Surface test for axis-aligned bounding box with absolute distance 
+        tolerance along surface normal direction.
+    
+        >>> size = (1.0, 1.0, 1.0)
+        >>> centre = (0.0, 0.0, 0.0)
+        >>> pt = np.array([0.5, np.random.uniform(-0.5*size[1], 0.5*size[1]), np.random.uniform(-0.5*size[2], 0.5*size[2])])
+        >>> atol = 1e-8
+        >>> on_aabb_surface(size, pt, centre=centre, atol=1e-8)
+        True
+        >>> on_aabb_surface(size, pt + np.array([atol, 0.0, 0.0]), centre=centre, atol=1e-8)
+        False
+        >>> on_aabb_surface(size, pt + np.array([atol, 0.0, 0.0]), centre=centre, atol=1e-8)
+        False
+    """
+    origin = np.array(centre) - 0.5 * np.array(size)
+    extent = np.array(centre) + 0.5 * np.array(size)
+    # xmin
+    xmin_point = np.array(point)
+    xmin_point[0] = origin[0]
+    #print("point: {}, xmin_point: {}".format(point, xmin_point))
+    xmin_dist = distance_between(point, xmin_point)
+    # xmax
+    xmax_point = np.array(point)
+    xmax_point[0] = extent[0]
+    #print("point: {}, xmax_point: {}".format(point, xmax_point))
+    xmax_dist = distance_between(point, xmax_point)
+    # ymin
+    ymin_point = np.array(point)
+    ymin_point[1] = origin[1]
+    ymin_dist = distance_between(point, ymin_point)
+    # ymax
+    ymax_point = np.array(point)
+    ymax_point[1] = extent[1]
+    ymax_dist = distance_between(point, ymax_point)
+    # ymin
+    zmin_point = np.array(point)
+    zmin_point[2] = origin[2]
+    zmin_dist = distance_between(point, zmin_point)
+    # ymax
+    zmax_point = np.array(point)
+    zmax_point[2] = extent[2]
+    zmax_dist = distance_between(point, zmax_point)
+    
+    dists = (xmin_dist, xmax_dist, ymin_dist, ymax_dist, zmin_dist, zmax_dist)
+    tests = [np.abs(dist) < (atol/2) for dist in dists]
+    surfaces = np.where(np.array(tests) == True)[0].tolist()
+    return np.any(tests), surfaces
+
+
 def aabb_intersection(min_point, max_point, ray_position, ray_direction):
     """
     Returns an array intersection points with the ray and box using the method of 

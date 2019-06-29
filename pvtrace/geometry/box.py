@@ -1,10 +1,14 @@
 from pvtrace.geometry.mesh import Mesh
-from pvtrace.geometry.utils import angle_between, EPS_ZERO, allinrange, aabb_intersection
+from pvtrace.geometry.utils import angle_between, EPS_ZERO, allinrange, aabb_intersection, on_aabb_surface
 import trimesh
 import numpy as np
 from collections import Counter
 import logging
 logger = logging.getLogger(__name__)
+
+
+# *Outward* surface normals corresponding to (xmin, xmax, ymin, ymax, zmin, xmax)
+NORMALS = ((-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1))
 
 
 class Box(Mesh):
@@ -30,6 +34,27 @@ class Box(Mesh):
         self._size = np.array(size)
         mesh = trimesh.creation.box(size)
         super(Box, self).__init__(mesh,  material=material)
+
+
+    def is_on_surface(self, point):
+        on_surf, _ = on_aabb_surface(self._size, point,  atol=2*EPS_ZERO)
+        return on_surf
+
+    def normal(self, surface_point: tuple) -> tuple:
+        on_surf, surf_indexes = on_aabb_surface(self._size, surface_point,  atol=2*EPS_ZERO)
+        if not on_surf:
+            raise GeometryError(
+                "Point is not on surface.",
+                {"point": surface_point, "geometry": self}
+            )
+        if len(surf_indexes) != 1:
+            raise GeometryError(
+                "Point is on multiple surfaces.",
+                {"point": surface_point, "geometry": self}
+            )
+        idx = surf_indexes[0]
+        # normal vector in the local frame
+        return NORMALS[idx]
 
 
 # class Box(Geometry):

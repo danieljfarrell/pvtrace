@@ -30,7 +30,11 @@ class TestBox:
         ray_dir = bad_dir
         #import pdb; pdb.set_trace()
         assert b.is_on_surface(bad_pos) == True  # this should be on surface!
-    
+        
+        b = Box(size=(1.0, 3.0, 0.02))
+        bad_pos = (-0.5, -0.2415708917159319, -0.008736363958583498)
+        assert b.is_on_surface(bad_pos) == True 
+
     def test_contains(self):
         b = Box(size=(1,1,1))
         assert b.contains((0.0, 0.0, 0.0)) == True
