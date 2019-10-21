@@ -9,6 +9,35 @@ from pvtrace.geometry.utils import (
 import logging
 logger = logging.getLogger(__name__)
 
+
+def isotropic():
+    g1, g2 = np.random.uniform(0, 1, 2)
+    phi = 2 * np.pi * g1
+    mu = 2 * np.pi * g2 - 1 # mu = cos(theta)
+    theta = np.arccos(mu)
+    x = np.sin(theta) * np.cos(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(theta)
+    return (x, y, z)
+
+
+def henyey_greenstein(g=0.0):
+    # https://www.astro.umd.edu/~jph/HG_note.pdf
+    p = np.random.uniform(0, 1)
+    s = 2 * p - 1
+    mu = 1/(2*g) * (1 + g**2 - ((1 - g**2)/(1 + g*s))**2)
+    # Inverse is not defined at g=0 but in the limit 
+    # tends to the isotropic case.
+    if close_to_zero(g):
+        return isotropic()
+    phi = 2 * np.pi * np.random.uniform()
+    theta = np.arccos(mu)
+    x = np.sin(theta) * np.cos(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = mu
+    return (x, y, z)
+
+
 def fresnel_reflectivity(angle, n1, n2):
     # Catch TIR case
     if n2 < n1 and angle > np.arcsin(n2/n1):
@@ -67,7 +96,10 @@ class Surface(object):
         """ Specular reflection.
         """
         normal = geometry.normal(ray.position)
-        reflected_direction = specular_reflection()
+        direction = ray.direction
+        print("Incident ray", direction)
+        reflected_direction = specular_reflection(direction, normal)
+        print("Reflected ray", reflected_direction)
         ray = replace(
             ray,
             position=ray.position, 
@@ -146,24 +178,56 @@ class Scatterer(Component):
         super(Scatterer, self).__init__(*args, **kwargs)
         self.coefficient = coefficient
         self.quantum_yield = quantum_yield
-        self.phase_function = phase_function
+        self.phase_function = isotropic if phase_function is None else phase_function
 
     def is_radiative(self, ray):
         """ Monte-Carlo sampling to determine of the event is radiative.
         """
         return np.random.uniform() < self.quantum_yield
+    
+    def emit(self, ray: "Ray") -> "Ray":
+        """ Change ray direction or wavelength based on physics of the interaction.
+        """
+        direction = self.phase_function()
+        ray = replace(
+            ray,
+            direction=direction
+        )
+        return ray
 
 
 class Luminophore(Component):
     """Describes molecule, nanocrystal or material which absorbs and emits light."""
     
-    def __init__(self, coefficient, linespace, quantum_yield=1.0, phase_function=None):
+    def __init__(self, coefficient, lineshape, quantum_yield=1.0, phase_function=None):
         super(Luminophore, object).__init__(
             coefficient, *args, 
             quantum_yield=quantum_yield, phase_function=phase_function, **kwargs
         )
+        
         self.lineshape = lineshape
-
+        if isinstance(lineshape, np.ndarray)
+            self._emission_dist = Distribution(
+                x=lineshape[:, 0],
+                y=lineshape[:, 1]
+            )
+    def emit(self, ray: "Ray") -> "Ray":
+        """ Change ray direction or wavelength based on physics of the interaction.
+        """
+        direction = self.phase_function()
+        dist = self._emission_dist
+        p1 = dist.lookup(ray.wavelength)
+        p2 = 1.0
+        max_wavelength = dist.sample(1.0)
+        gamma = np.random.uniform(p1, p2)
+        wavelength = dist.sample(gamma)
+        ray = replace(
+            ray,
+            direction=tuple(direction.tolist()),
+            wavelength=wavelength
+        )
+        return ray
+    
 
 class Material(object):
     
@@ -265,23 +329,25 @@ def next_hit(scene, ray):
     return hit_node, (container, adjacent), point, distance
 
 
-def trace(scene, ray):
+def trace(scene, ray, maxsteps=20):
     count = 0
-    maxcount = 20
     history = [ray]
     while True:
         count += 1
-        if count > maxcount:
+        if count > maxsteps:
             print("Max count reached.")
             break
+
         info = next_hit(scene, ray)
         print("Info: ", info)
         if info is None:
+            print("[1] Exit.")
             break
+
         hit, (container, adjacent), point, full_distance = info
         print("interface: {}|{}".format(container, adjacent))
         if hit is scene.root:
-            print("Exit.")
+            print("[2] Exit.")
             break
 
         material = container.geometry.material
@@ -296,7 +362,7 @@ def trace(scene, ray):
                 continue
             else:
                 history.append(ray)
-                print("Exit.")
+                print("[3] Exit.")
                 break
         else:
             ray = ray.propagate(full_distance)
@@ -304,14 +370,15 @@ def trace(scene, ray):
             if surface.is_reflected(ray, hit.geometry, container, adjacent):
                 ray = surface.reflect(ray, hit.geometry, container, adjacent)
                 history.append(ray)
-                print("Step", ray)
+                print("REFLECT", ray)
                 continue
             else:
                 ray = surface.transmit(ray, hit.geometry, container, adjacent)
                 history.append(ray)
-                print("Step", ray)
+                print("TRANSMIT", ray)
                 continue
     return history
+
 
 if __name__ == '__main__':
     from pvtrace.scene.scene import Scene
@@ -319,15 +386,20 @@ if __name__ == '__main__':
     from pvtrace.light.ray import Ray
     from pvtrace.geometry.sphere import Sphere
     import numpy as np
-    np.random.seed(0)
+    np.random.seed(2)
     air = Material(refractive_index=1.0)
-    plastic = Material(refractive_index=1.5)
+    plastic = Material(
+        refractive_index=1.5,
+        components=[
+            Scatterer(coefficient=2.0)
+        ]
+    )
     world = Node(
         name="world",
         geometry=Sphere(
             radius=10,
             material=air,
-            surface=FresnelSurface()
+            surface=Surface()
         )
     )
     ball = Node(
@@ -339,7 +411,7 @@ if __name__ == '__main__':
             surface=FresnelSurface()
         )
     )
-    ray = Ray(position=(0, 0, 5), direction=(0, 0, -1), wavelength=555)
+    ray = Ray(position=(0, 0., 2), direction=(0, 0, -1), wavelength=555)
     scene = Scene(root=world)
     history = trace(scene, ray)
     for r in history:

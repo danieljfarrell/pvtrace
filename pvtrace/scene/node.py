@@ -7,6 +7,7 @@ from pvtrace.common.errors import AppError
 from pvtrace.geometry.intersection import Intersection
 from pvtrace.geometry import transformations as tf
 from pvtrace.geometry.transformable import Transformable
+from pvtrace.geometry.utils import distance_between
 import logging
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,10 @@ class Node(NodeMixin, Transformable):
         if self.geometry is not None:
             points = self.geometry.intersections(ray_origin, ray_direction)
             for point in points:
-                intersection = Intersection(coordsys=self, point=point, hit=self)
+                intersection = Intersection(
+                    coordsys=self, point=point, hit=self,
+                    distance=distance_between(ray_origin, point)
+                )
                 all_intersections.append(intersection)
         all_intersections = tuple(all_intersections)
 

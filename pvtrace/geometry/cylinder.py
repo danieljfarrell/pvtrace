@@ -11,11 +11,20 @@ class Cylinder(Geometry):
     along the z axis.
     """
 
-    def __init__(self, length, radius, material=None):
+    def __init__(self, length, radius, material=None, surface=None):
         super(Cylinder, self).__init__()
         self.length = length
         self.radius = radius
         self._material = material
+        self._surface = surface
+
+    @property
+    def surface(self):
+        return self._surface
+
+    @surface.setter
+    def set_surface(self, new_value):
+        self._surface = new_value
 
     @property
     def material(self):

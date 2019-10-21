@@ -25,18 +25,25 @@ class Distribution(object):
             ValueError
                 If x is not ascending or if any element of y is not finite.
         """
-        if not np.all(np.diff(x) > 0):
-            raise ValueError("x must be sorted and ascending.")
-        if not np.isfinite(y).any():
-            raise ValueError("All values of y must be finite.")
+        
+        if x is None and isinstance(y, (float, np.float)):
+            self._x = None
+            self._y = y
+        else:
+            if not np.all(np.diff(x) > 0):
+                raise ValueError("x must be sorted and ascending.")
+            if not np.isfinite(y).any():
+                raise ValueError("All values of y must be finite.")
+            if np.any(y < 0.0):
+                raise ValueError("Distributions are like histograms all counts must be positive.")
 
-        self._x = x
-        self._y = y
-        cdf = np.cumsum((y[:-1] + y[1:])*0.5)
-        cdf = cdf/np.max(cdf)
-        cdf = np.hstack([0.0, cdf])
-        self._cdf = cdf
-        self._x_range = np.min(x), np.max(x)
+            self._x = x
+            self._y = y
+            cdf = np.cumsum((y[:-1] + y[1:])*0.5)
+            cdf = cdf/np.max(cdf)
+            cdf = np.hstack([0.0, cdf])
+            self._cdf = cdf
+            self._x_range = np.min(x), np.max(x)
 
     def __call__(self, x):
         """ Returns a linearly interpolated value of the distribution at x.
@@ -52,6 +59,12 @@ class Distribution(object):
             ValueError
                 If x is outside the data range.
         """
+        if self._x is None and isinstance(self._y, (float, np.float)):
+            if isinstance(x, (list, tuple, np.ndarray)):
+                return np.zeros(len(x)) + self._y
+            else:
+                return self._y
+
         if not allinrange(x, self._x_range):
             raise ValueError("x is outside data range.")
 
@@ -140,4 +153,16 @@ class Distribution(object):
         if xval.size == 1:
             xval = xval.tolist()  # actually a float
         return xval
+    
+    @classmethod
+    def from_functions(cls, x, callables):
+        x = np.array(x)
+        if len(x.shape) != 1:
+            raise ValueError("Requires a 1D array.")
+        y = np.zeros(len(x))
+        for f in callables:
+            y_ = f(x)
+            y_[np.where(~np.isfinite(y_))] = 0.0
+            y += y_
+        return Distribution(x=x, y=y)
 

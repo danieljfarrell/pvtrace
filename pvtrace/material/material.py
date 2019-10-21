@@ -1,153 +1,170 @@
-from __future__ import annotations
-import sys
-import numpy as np
-from typing import Tuple
-from dataclasses import replace
-from pvtrace.common.errors import AppError
-from pvtrace.geometry.utils import flip, angle_between
-from pvtrace.material.properties import Refractive, Absorptive, Emissive
-from pvtrace.material.mechanisms import (
-    FresnelRefraction,
-    FresnelReflection,
-    Absorption,
-    Emission,
-    TravelPath,
-    CrossInterface,
-    KillRay,
-)
-import logging
-logger = logging.getLogger(__name__)
-
-
-from enum import Enum, unique
-
-
-@unique
-class Decision(Enum):
-    """ Description of events that can occur when rays interact with 
-        materials.
+class Component(object):
+    """ Base class for all things that can be added to a host material.
     """
+    def __init__(self):
+        super(Component, self).__init__()
 
-    TRANSIT = 1
-    """ Specifies that the ray crosses an interface boundary and 
-        enters the next material.
+    def is_radiative(self, ray):
+        return False
+
+
+class Scatterer(Component):
+    """Describes a scatterer center with attenuation coefficient per unit length."""
+    
+    def __init__(self, coefficient, x=None, quantum_yield=1.0, phase_function=None):
+        super(Scatterer, self).__init__()
+        
+        # Make absorption/scattering spectrum distribution
+        self._coefficient = coefficient
+        if coefficient is None:
+            raise ValueError("Coefficient must be specified.")
+        elif isinstance(coefficient, (float, np.float)):
+            self._abs_dist = Distribution(x=None, y=coefficient)
+        elif isinstance(coefficient, np.ndarray):
+            self._abs_dist = Distribution(x=coefficient[:, 0], y=coefficient[:, 1])
+        elif isinstance(coefficient, (list, tuple)):
+            if x is None:
+                raise ValueError("Requires `x`.")
+            self._abs_dist = Distribution.from_functions(x, coefficient)
+            
+        self.quantum_yield = quantum_yield
+        self.phase_function = phase_function if phase_function is not None else isotropic
+
+    def coefficient(self, wavelength):
+        value = self._abs_dist(wavelength)
+        if value < 0:
+            import pdb; pdb.set_trace()
+        return value
+
+    def is_radiative(self, ray):
+        """ Monte-Carlo sampling to determine of the event is radiative.
+        """
+        return np.random.uniform() < self.quantum_yield
+    
+    def emit(self, ray: "Ray") -> "Ray":
+        """ Change ray direction or wavelength based on physics of the interaction.
+        """
+        direction = self.phase_function()
+        ray = replace(
+            ray,
+            direction=direction
+        )
+        return ray
+
+
+class Absorber(Scatterer):
+    """ Absorption only.
     """
+    
+    def __init__(self, coefficient, x=None):
+        super(Absorber, self).__init__(coefficient, x=x, quantum_yield=0.0, phase_function=None)
 
-    RETURN = 2
-    """ Specifies that the ray does not cross the boundary and remains
-        in the original material.
-    """
+    def is_radiative(self, ray):
+        return False
 
-    ABSORB = 3
-    """ Specifies that the ray has been absorbed along it's path length.
-    """
 
-    EMIT = 4
-    """ Specifies that the ray has been emitted.
-    """
+class Luminophore(Scatterer):
+    """Describes molecule, nanocrystal or material which absorbs and emits light."""
+    
+    def __init__(self, coefficient, emission=None, x=None, quantum_yield=1.0, phase_function=None):
+        super(Luminophore, self).__init__(
+            coefficient,
+            x=x,
+            quantum_yield=quantum_yield,
+            phase_function=phase_function
+        )
+        
+        # Make emission spectrum distribution
+        self._emission = emission
+        if emission is None:
+            self._ems_dist = Distribution.from_functions(
+                x, [lambda x: gaussian(x, 1.0, 600.0, 40.0)]
+            )
+        elif isinstance(emission, np.ndarray):
+            self._ems_dist = Distribution(x=emission[:, 0], y=emission[:, 1])
+        elif isinstance(emission, (tuple, list)):
+            if x is None:
+                raise ValueError("Requires `x`.")
+            self._ems_dist = Distribution.from_functions(x, emission)
+        else:
+            raise ValueError("Lumophore `emission` arg has wrong type.")
 
-    TRAVEL = 5
-    """ Specifies that the ray did not interact with anything along it's path length.
-    """
-
-    KILL = 6
-    """ Specifies that the ray has been killed because it reach the scene boundary
-        of because something went wrong in the tracing algorithm.
-    """
-
+    def emit(self, ray: "Ray") -> "Ray":
+        """ Change ray direction or wavelength based on physics of the interaction.
+        """
+        theta = np.random.uniform(0, 2 * np.pi)
+        phi = np.arccos(2 * np.random.uniform(0.0, 1.0) - 1)
+        x = np.sin(phi) * np.cos(theta)
+        y = np.sin(phi) * np.sin(theta)
+        z = np.cos(phi)
+        direction = (x, y, z)
+        dist = self._ems_dist
+        p1 = dist.lookup(ray.wavelength)
+        p2 = 1.0
+        max_wavelength = dist.sample(1.0)
+        gamma = np.random.uniform(p1, p2)
+        wavelength = dist.sample(gamma)
+        ray = replace(
+            ray,
+            direction=direction,
+            wavelength=wavelength
+        )
+        return ray
+    
 
 class Material(object):
-    """ Base class for materials.
     
-        Notes
-        -----
+    def __init__(self, refractive_index: float, components=None):
+        self.refractive_index = refractive_index
+        self.components = [] if components is None else components
 
-        Material are built using mixins to have a defined set of properties. The 
-        available properties live in `pvtrace.material.properties`. For example,
-        to have a material with a refractive index and does not absorb or emit
-        light the material should using the `Refractive` mixin::
+    # Cache this function!
+    def total_attenutation_coefficient(self, wavelength: float) -> float:
+        coefs = [x.coefficient(wavelength) for x in self.components]
+        print(coefs)
+        alpha = np.sum(coefs)
+        return alpha
+
+    def is_absorbed(self, ray, full_distance) -> Tuple[bool, float]:
+        distance = self.penetration_depth(ray.wavelength)
+        return (distance < full_distance, distance)
+
+    def penetration_depth(self, wavelength: float) -> float:
+        """ Monte-Carlo sampling to find penetration depth of ray due to total
+            attenuation coefficient of the material.
         
-            class Dielectric(Refractive, Material):
-                pass
+            Arguments
+            --------
+            wavelength: float
+                The ray wavelength in nanometers.
 
-    """
-
-    _transit_mechanism = None
-    """ A mechanism which transforms the ray across an interface. For 
-        example, this could be Fresnel refraction for refractive
-        materials.
-    """
-
-    _return_mechanism = None
-    """ A mechanism which transforms the ray by denying it access to
-        cross an interace; returning it to the original material. For
-        example, this could be Fresnel reflection for refractive
-        materials.
-    """
-
-    _path_mechanism = None
-    """ A mechanism which transforms the ray when travelling along 
-        a path length in the material. This could be optical 
-        absorption of volume scatter events.
-    """
-
-    _emit_mechanism = None
-    """ A mechanism which transforms the ray by re-emission. This
-        mechanism is conditional and called if the material can
-        re-emit rays after an absorption event has occurred.
-    """
-
-    @property
-    def transit_mechanism(self):
-        """ The mechanism which transforms the ray across the interface.
+            Returns
+            -------
+            depth: float
+                The penetration depth in centimetres or `float('inf')`.
         """
-        return self._transit_mechanism
+        alpha = self.total_attenutation_coefficient(wavelength)
+        logger.info('Got alpha({}) = {}'.format(wavelength, alpha))
+        if np.isclose(alpha, 0.0):
+            return float('inf')
+        elif not np.isfinite(alpha):
+            return 0.0
+        # Sample exponential distribution
+        depth = -np.log(1 - np.random.uniform())/alpha
+        return depth
 
-    @property
-    def return_mechanism(self):
-        """ The mechanism which transforms the ray by denying it to 
-            cross the interface.
+    def component(self, wavelength: float) -> Union[Scatterer, Luminophore]:
+        """ Monte-Carlo sampling to find which component captures the ray.
         """
-        return self._return_mechanism
-
-    @property
-    def path_mechanism(self):
-        """ The mechanism which transforms the ray along it's path.
-        """
-        self._path_mechanism
-
-    @property
-    def path_mechanism(self):
-        """ The mechanism which transforms the ray along it's path.
-        """
-        self._emit_mechanism
-
-    def trace_surface(
-        self,
-        local_ray: "Ray",
-        from_geometry: "Geometry",
-        to_geometry: "Geometry",
-        surface_geometry: "Geometry",
-    ) -> Tuple[Decision, dict]:
-        """ Performs calculations to determine what happens to 
-            the ray when it hits an interface. 
-    
-            Return
-            ------
-            and returns a decision and 
-        """
-        normal = surface_geometry.normal(local_ray.position)
-        new_ray = CrossInterface().transform(local_ray, {"normal": normal})
-        yield new_ray, Decision.TRANSIT
-
-    def trace_path(
-        self, local_ray: "Ray",
-        container_geometry: "Geometry",
-        distance: float
-    ) -> Tuple[Decision, dict]:
-        """ Dielectric material does not have any absorption; this moves ray full dist.
-        """
-        logger.debug("Material.trace_path args: {}".format((local_ray, container_geometry, distance)))
-        new_ray = TravelPath().transform(local_ray, {"distance": distance})
-        yield new_ray, Decision.TRAVEL
-
+        coefs = [x.coefficient(wavelength) for x in self.components]
+        if np.any(coefs < 0.0):
+            raise ValueError("Must be positive.")
+        count = len(self.components)
+        bins = list(range(0, count + 1))
+        cdf = np.cumsum(coefs)
+        pdf = cdf / max(cdf)
+        pdf = np.hstack([0, pdf[:]])
+        pdfinv_lookup = np.interp(np.random.uniform(), pdf, bins)
+        index = int(np.floor(pdfinv_lookup))
+        component = self.components[index]
+        return component
