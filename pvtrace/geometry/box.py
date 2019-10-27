@@ -1,5 +1,6 @@
 from pvtrace.geometry.mesh import Mesh
 from pvtrace.geometry.utils import angle_between, EPS_ZERO, allinrange, aabb_intersection, on_aabb_surface
+from pvtrace.common.errors import GeometryError
 import trimesh
 import numpy as np
 from collections import Counter

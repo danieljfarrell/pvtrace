@@ -1,3 +1,11 @@
+from typing import Union, Tuple, List
+from enum import Enum
+import numpy as np
+from pvtrace.material.distribution import Distribution
+import logging
+logger = logging.getLogger(__name__)
+
+
 class Component(object):
     """ Base class for all things that can be added to a host material.
     """
@@ -32,8 +40,6 @@ class Scatterer(Component):
 
     def coefficient(self, wavelength):
         value = self._abs_dist(wavelength)
-        if value < 0:
-            import pdb; pdb.set_trace()
         return value
 
     def is_radiative(self, ray):
@@ -92,16 +98,10 @@ class Luminophore(Scatterer):
     def emit(self, ray: "Ray") -> "Ray":
         """ Change ray direction or wavelength based on physics of the interaction.
         """
-        theta = np.random.uniform(0, 2 * np.pi)
-        phi = np.arccos(2 * np.random.uniform(0.0, 1.0) - 1)
-        x = np.sin(phi) * np.cos(theta)
-        y = np.sin(phi) * np.sin(theta)
-        z = np.cos(phi)
-        direction = (x, y, z)
+        direction = self.phase_function()
         dist = self._ems_dist
         p1 = dist.lookup(ray.wavelength)
         p2 = 1.0
-        max_wavelength = dist.sample(1.0)
         gamma = np.random.uniform(p1, p2)
         wavelength = dist.sample(gamma)
         ray = replace(
@@ -110,7 +110,7 @@ class Luminophore(Scatterer):
             wavelength=wavelength
         )
         return ray
-    
+
 
 class Material(object):
     
@@ -121,7 +121,6 @@ class Material(object):
     # Cache this function!
     def total_attenutation_coefficient(self, wavelength: float) -> float:
         coefs = [x.coefficient(wavelength) for x in self.components]
-        print(coefs)
         alpha = np.sum(coefs)
         return alpha
 
@@ -156,7 +155,7 @@ class Material(object):
     def component(self, wavelength: float) -> Union[Scatterer, Luminophore]:
         """ Monte-Carlo sampling to find which component captures the ray.
         """
-        coefs = [x.coefficient(wavelength) for x in self.components]
+        coefs = np.array([x.coefficient(wavelength) for x in self.components])
         if np.any(coefs < 0.0):
             raise ValueError("Must be positive.")
         count = len(self.components)

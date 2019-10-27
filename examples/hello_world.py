@@ -2,7 +2,8 @@ from pvtrace.scene.node import Node
 from pvtrace.scene.scene import Scene
 from pvtrace.scene.renderer import MeshcatRenderer
 from pvtrace.geometry.sphere import Sphere
-from pvtrace.material.dielectric import Dielectric
+from pvtrace.material.material import Material
+from pvtrace.material.surface import FresnelSurface
 from pvtrace.light.light import Light
 from pvtrace.algorithm import photon_tracer
 import time
@@ -14,14 +15,16 @@ world = Node(
     name="world (air)",
     geometry=Sphere(
         radius=10.0,
-        material=Dielectric.air()
+        material=Material(refractive_index=1.0),
+        surface=FresnelSurface()
     )
 )
 sphere = Node(
     name="sphere (glass)",
     geometry=Sphere(
         radius=1.0,
-        material=Dielectric.glass()
+        material=Material(refractive_index=1.5),
+        surface=FresnelSurface()
     ),
     parent=world
 )
@@ -40,14 +43,11 @@ light = Node(
 # Use meshcat to render the scene (optional)
 viewer = MeshcatRenderer(open_browser=True)
 scene = Scene(world)
-for ray in light.emit(100):
-    # Do something with the photon trace information...
-    info = photon_tracer.follow(ray, scene)
-    rays, events = zip(*info)
-    # Add rays to the renderer (optional)
-    viewer.add_ray_path(rays)
-# Open the scene in a new browser window (optional)
 viewer.render(scene)
+for ray in light.emit(100):
+    history = photon_tracer.trace(scene, ray)
+    path, events = zip(*history)
+    viewer.add_ray_path(path)  
 
 # Keep the script alive until Ctrl-C (optional)
 while True:

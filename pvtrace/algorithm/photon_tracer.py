@@ -3,6 +3,7 @@ import collections
 import traceback
 import numpy as np
 from typing import Optional, Tuple, Sequence
+from enum import Enum
 from dataclasses import dataclass, replace
 from pvtrace.scene.scene import Scene
 from pvtrace.scene.node import Node
@@ -34,11 +35,17 @@ def find_container(intersections):
 
 
 def next_hit(scene, ray):
+    # Intersections are in the local node's coordinate system
     intersections = scene.intersections(ray.position, ray.direction)
+    
     # Remove on surface intersections
     intersections = \
         [x for x in intersections if not close_to_zero(x.distance)]
-
+    
+    print(intersections)
+    # Convert intersection points to world node
+    intersections = [x.to(scene.root) for x in intersections]
+    
     # Node which owns the surface
     if len(intersections) == 0:
         return None
@@ -62,25 +69,36 @@ def next_hit(scene, ray):
     return hit_node, (container, adjacent), point, distance
 
 
-def trace(scene, ray, maxsteps=20, renderer=None, render_path=False):
+class Event(Enum):
+    GENERATE = 0
+    REFLECT = 1
+    TRANSMIT = 2
+    ABSORB = 3
+    SCATTER = 4
+    EMIT = 5
+    EXIT = 6
+    MAXSTEP = 7
+
+
+def trace(scene, ray, maxsteps=1000):
     count = 0
-    history = [ray]
+    history = [(ray, Event.GENERATE)]
     while True:
         count += 1
         if count > maxsteps:
-            print("Max count reached.")
+            history.append([ray, Event.MAXSTEP])
             break
 
         info = next_hit(scene, ray)
-        print("Info: ", info)
+        #print("Info: ", info)
         if info is None:
-            print("[1] Exit.")
+            #print("[1] Exit.")
             break
 
         hit, (container, adjacent), point, full_distance = info
-        print("interface: {}|{} (hit: {})".format(container, adjacent, hit))
+        #print("interface: {}|{} (hit: {})".format(container, adjacent, hit))
         if hit is scene.root:
-            print("[2] Exit.")
+            history.append((ray.propagate(full_distance), Event.EXIT))
             break
 
         material = container.geometry.material
@@ -89,26 +107,37 @@ def trace(scene, ray, maxsteps=20, renderer=None, render_path=False):
             ray = ray.propagate(at_distance)
             component = material.component(ray.wavelength)
             if component.is_radiative(ray):
-                ray = component.emit(ray)
-                history.append(ray)
-                print("Step", ray)
+                ray = component.emit(ray.representation(scene.root, container))
+                ray = ray.representation(container, scene.root)
+                if isinstance(component, Luminophore):
+                    event = Event.EMIT
+                elif isinstance(component, Scatterer):
+                    event = Event.SCATTER
+                history.append((ray, event))
+                #print("Step", ray)
                 continue
             else:
-                history.append(ray)
-                print("[3] Exit.")
+                history.append((ray, Event.ABSORB))
+                #print("[3] Exit.")
                 break
         else:
             ray = ray.propagate(full_distance)
             surface = hit.geometry.surface
+            ray = ray.representation(scene.root, hit)
             if surface.is_reflected(ray, hit.geometry, container, adjacent):
                 ray = surface.reflect(ray, hit.geometry, container, adjacent)
-                history.append(ray)
-                print("REFLECT", ray)
+                ray = ray.representation(hit, scene.root)
+                history.append((ray, Event.REFLECT))
+                #print("REFLECT", ray)
                 continue
             else:
-                ray = surface.transmit(ray, hit.geometry, container, adjacent)
-                history.append(ray)
-                print("TRANSMIT", ray)
+                ref_ray = surface.transmit(ray, hit.geometry, container, adjacent)
+                #if points_equal(ref_ray.direction, ray.direction):
+                #    raise ValueError("Ray did not refract.")
+                ray = ref_ray
+                ray = ray.representation(hit, scene.root)
+                history.append((ray, Event.TRANSMIT))
+                #print("TRANSMIT", ray)
                 continue
     return history
 

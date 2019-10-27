@@ -1,3 +1,9 @@
+import numpy as np
+from dataclasses import replace
+from pvtrace.geometry.utils import (
+    flip,
+    angle_between
+)
 from pvtrace.material.utils import (
     fresnel_reflectivity,
     specular_reflection,
@@ -19,10 +25,11 @@ class Surface(object):
         """
         normal = geometry.normal(ray.position)
         direction = ray.direction
+        print("Incident ray", direction)
         reflected_direction = specular_reflection(direction, normal)
+        print("Reflected ray", reflected_direction)
         ray = replace(
             ray,
-            position=ray.position, 
             direction=tuple(reflected_direction.tolist())
         )
         return ray
@@ -47,6 +54,7 @@ class FresnelSurface(Surface):
         if np.dot(normal, ray.direction) < 0.0:
             normal = flip(normal)
         angle = angle_between(normal, np.array(ray.direction))
+        print("angle {}".format(angle))
         gamma = np.random.uniform()
         return gamma < fresnel_reflectivity(angle, n1, n2)
 
@@ -63,7 +71,7 @@ class FresnelSurface(Surface):
         refracted_direction = fresnel_refraction(ray.direction, normal, n1, n2)
         ray = replace(
             ray,
-            position=ray.position, 
             direction=tuple(refracted_direction.tolist())
         )
         return ray
+
