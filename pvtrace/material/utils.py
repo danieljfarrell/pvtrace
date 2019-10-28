@@ -55,18 +55,26 @@ gaussian = lambda x, c1, c2, c3: c1*np.exp(-((c2 - x)/c3)**2)
 bandgap = lambda x, cutoff, alpha: (1 - np.heaviside(x-cutoff, 0.5)) * alpha
 
 
-# Scattering
+# Coordinates
+
+def spherical_to_cart(theta, phi, r=1):
+    x = r * np.sin(theta) * np.cos(phi)
+    y = r * np.sin(theta) * np.sin(phi)
+    z = r * np.cos(theta)
+    cart = np.column_stack((x, y, z))
+    if cart.size == 3:
+        return cart[0,:]
+    return cart
+
+#  Volume scattering
 
 def isotropic():
     g1, g2 = np.random.uniform(0, 1, 2)
     phi = 2 * np.pi * g1
     mu = 2 * g2 - 1 # mu = cos(theta)
     theta = np.arccos(mu)
-    x = np.sin(theta) * np.cos(phi)
-    y = np.sin(theta) * np.sin(phi)
-    z = mu
-    return norm([x, y, z])
-
+    coords = spherical_to_cart(theta, phi)
+    return coords
 
 def henyey_greenstein(g=0.0):
     # https://www.astro.umd.edu/~jph/HG_note.pdf
@@ -79,9 +87,45 @@ def henyey_greenstein(g=0.0):
         return isotropic()
     phi = 2 * np.pi * np.random.uniform()
     theta = np.arccos(mu)
-    x = np.sin(theta) * np.cos(phi)
-    y = np.sin(theta) * np.sin(phi)
-    z = mu
-    return (x, y, z)
+    coords = spherical_to_cart(theta, phi)
+    return coords
+
+
+# Light source /surface scattering
+
+def cone(theta_max):
+    """ Samples directions within a cone of solid angle defined by `theta_max`.
+    
+        Notes
+        -----
+        Derived as follows using sympy:
+    
+            from sympy import *
+            theta, theta_max, p = symbols('theta theta_max p')
+            f = cos(theta) * sin(theta)
+            cdf = integrate(f, (theta, 0, theta))
+            pdf = cdf / cdf.subs({theta: theta_max})
+            inv_pdf = solve(Eq(pdf, p), theta)[-1]
+    """
+    if np.isclose(theta_max, 0.0) or theta_max > np.pi/2:
+        raise ValueError("Expected 0 < theta_max <= pi/2")
+    p1, p2 = np.random.uniform(0, 1, 2)
+    theta = np.arcsin(np.sqrt(p1) * np.sin(theta_max))
+    phi = 2 * np.pi * p2
+    coords = spherical_to_cart(theta, phi)
+    return coords
+
+def lambertian():
+    """ Samples the Lambertian directions emitted from a surface with normal
+        pointing along the postive z-direction.
+        
+        This never produces directions in the negative z-direction.
+    """
+    p1, p2 = np.random.uniform(0, 1, 2)
+    theta = np.arcsin(np.sqrt(p1))
+    phi = 2 * np.pi * p2
+    coords = spherical_to_cart(theta, phi)
+    return coords
+
 
 

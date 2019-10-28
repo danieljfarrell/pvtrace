@@ -1,14 +1,30 @@
-from pvtrace.scene.node import Node
-from pvtrace.scene.scene import Scene
-from pvtrace.scene.renderer import MeshcatRenderer
-from pvtrace.geometry.sphere import Sphere
-from pvtrace.material.material import Material
-from pvtrace.material.surface import FresnelSurface
-from pvtrace.light.light import Light
-from pvtrace.algorithm import photon_tracer
+from pvtrace import (
+    Node,
+    Scene,
+    MeshcatRenderer,
+    Sphere, Box,
+    Material,
+    Surface,
+    Light
+)
+import pvtrace.material.utils as phase_functions
+from pvtrace import photon_tracer
 import time
 import functools
 import numpy as np
+
+
+class CustomBoxReflection(object):
+    """ Gives the bottom surface a reflectivity of 1.
+    """
+
+    def reflectivity(self, surface, ray, geometry, container, adjacent):
+        normal = geometry.normal(ray.position)
+        # bottom surface has normal (0, 0, -1)
+        if np.allclose((0, 0, -1), normal):
+            return 1.0
+        return None  # opt-out of handling custom reflection
+
 
 # Add nodes to the scene graph
 world = Node(
@@ -16,35 +32,40 @@ world = Node(
     geometry=Sphere(
         radius=10.0,
         material=Material(refractive_index=1.0),
-        surface=FresnelSurface()
+        surface=Surface()
     )
 )
-sphere = Node(
+box = Node(
     name="sphere (glass)",
-    geometry=Sphere(
-        radius=1.0,
+    parent=world,
+    geometry=Box(
+        (0.5, 0.5, 0.5),
         material=Material(refractive_index=1.5),
-        surface=FresnelSurface()
+        surface=Surface(delegate=CustomBoxReflection())
     ),
-    parent=world
 )
-sphere.translate((0,0,2))
+box.translate((0,0,1))
 
 # Add source of photons
 light = Node(
     name="Light (555nm)",
+    parent=world,
     light=Light(
-        divergence_delegate=functools.partial(
-            Light.cone_divergence, np.radians(20)
+        direction=functools.partial(
+            phase_functions.cone, np.arcsin(1/1.5)
         )
     )
 )
 
+light.translate((0, 0, 1))
+light.rotate(np.pi, (1, 0, 0))
+#light.rotate(-np.pi/4, (1, 0, 0))
+#light.rotate(np.pi/4, (0, 1, 0))
 # Use meshcat to render the scene (optional)
 viewer = MeshcatRenderer(open_browser=True)
 scene = Scene(world)
 viewer.render(scene)
-for ray in light.emit(100):
+for ray in light.emit(100, to_world=True):
     history = photon_tracer.trace(scene, ray)
     path, events = zip(*history)
     viewer.add_ray_path(path)  

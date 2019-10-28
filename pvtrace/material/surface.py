@@ -11,8 +11,8 @@ from pvtrace.material.utils import (
 )
 
 
-class Surface(object):
-    """ Surface of a geometry which handles details of reflection at an interface.
+class NullSurface(object):
+    """ A surface between two material that only transmits.
     """
 
     def is_reflected(self, ray, geometry, container, adjacent):
@@ -25,9 +25,7 @@ class Surface(object):
         """
         normal = geometry.normal(ray.position)
         direction = ray.direction
-        print("Incident ray", direction)
         reflected_direction = specular_reflection(direction, normal)
-        print("Reflected ray", reflected_direction)
         ray = replace(
             ray,
             direction=tuple(reflected_direction.tolist())
@@ -39,14 +37,30 @@ class Surface(object):
         return ray
 
 
-class FresnelSurface(Surface):
+class Surface(NullSurface):
     """ Implements reflection and refraction at an interface of two dielectrics.
     """
     
-    def is_reflected(self, ray, geometry, container, adjacent):
-        """ Monte-Carlo sampling. Default is to transmit.
+    def __init__(self, delegate=None):
+        """ Parameters
+            ----------
+            delegate: object
+                An object that implements the SurfaceDelegate protocol.
         """
-        # to-do: express ray in local coordinate system
+        super(Surface, self).__init__()
+        self._delegate = delegate
+    
+    @property
+    def delegate(self):
+        return self._delegate
+
+    def reflectivity(self, ray, geometry, container, adjacent):
+        if self.delegate:
+            r = self.delegate.reflectivity(self, ray, geometry, container, adjacent)
+            if r is not None:
+                return r
+        
+        # Calculate Fresnel reflectivity
         n1 = container.geometry.material.refractive_index
         n2 = adjacent.geometry.material.refractive_index
         # Be tolerance with definition of surface normal
@@ -54,9 +68,16 @@ class FresnelSurface(Surface):
         if np.dot(normal, ray.direction) < 0.0:
             normal = flip(normal)
         angle = angle_between(normal, np.array(ray.direction))
-        print("angle {}".format(angle))
+        r = fresnel_reflectivity(angle, n1, n2)
+        return r
+
+    def is_reflected(self, ray, geometry, container, adjacent):
+        """ Monte-Carlo sampling. Default is to transmit.
+        """
+        # to-do: express ray in local coordinate system
+        r = self.reflectivity(ray, geometry, container, adjacent)
         gamma = np.random.uniform()
-        return gamma < fresnel_reflectivity(angle, n1, n2)
+        return gamma < r
 
     def transmit(self, ray, geometry, container, adjacent):
         """ Refract through the interface.
