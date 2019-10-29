@@ -23,7 +23,10 @@ class CustomBoxReflection(FresnelSurfaceDelegate):
         normal = geometry.normal(ray.position)
         # find bottom facet, it has normal (0, 0, -1)
         if np.allclose((0, 0, -1), normal):
-            return 1.0  #  bottom surface is perfect mirror
+            l, w, d = geometry._size
+            print("strip", ray.position)
+            if ray.position[1] > 0.0:  # to the RHS of the y 
+                return 1.0  #  the bottom surface is perfect mirror
         return super(CustomBoxReflection, self).reflectivity(surface, ray, geometry, container, adjacent)  # opt-out of handling custom reflection
 
     def reflected_direction(self, surface, ray, geometry, container, adjacent):

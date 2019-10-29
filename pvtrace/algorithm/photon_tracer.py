@@ -90,13 +90,10 @@ def trace(scene, ray, maxsteps=1000):
             break
 
         info = next_hit(scene, ray)
-        #print("Info: ", info)
         if info is None:
-            #print("[1] Exit.")
             break
 
         hit, (container, adjacent), point, full_distance = info
-        #print("interface: {}|{} (hit: {})".format(container, adjacent, hit))
         if hit is scene.root:
             history.append((ray.propagate(full_distance), Event.EXIT))
             break
@@ -114,11 +111,9 @@ def trace(scene, ray, maxsteps=1000):
                 elif isinstance(component, Scatterer):
                     event = Event.SCATTER
                 history.append((ray, event))
-                #print("Step", ray)
                 continue
             else:
                 history.append((ray, Event.ABSORB))
-                #print("[3] Exit.")
                 break
         else:
             ray = ray.propagate(full_distance)
