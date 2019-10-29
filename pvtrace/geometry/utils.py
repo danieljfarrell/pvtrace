@@ -392,6 +392,15 @@ def angle_between(normal, vector):
     dot = np.dot(normal, vector)
     return np.arccos(dot)
 
+def is_ahead(position, direction, point):
+    """ Tests whether point is ahead of the current position.
+    """
+    if points_equal(position, point):
+        return False
+    d1 = np.dot(self.direction, np.array(point))
+    d2 = np.dot(self.direction, self.position)
+    return (d1 - d2) > 0
+
 
 def smallest_angle_between(normal, vector):
     rads = angle_between(normal, vector)

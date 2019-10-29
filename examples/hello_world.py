@@ -5,6 +5,7 @@ from pvtrace import (
     Sphere, Box,
     Material,
     Surface,
+    FresnelSurfaceDelegate,
     Light
 )
 import pvtrace.material.utils as phase_functions
@@ -14,16 +15,26 @@ import functools
 import numpy as np
 
 
-class CustomBoxReflection(object):
+class CustomBoxReflection(FresnelSurfaceDelegate):
     """ Gives the bottom surface a reflectivity of 1.
     """
 
     def reflectivity(self, surface, ray, geometry, container, adjacent):
         normal = geometry.normal(ray.position)
-        # bottom surface has normal (0, 0, -1)
+        # find bottom facet, it has normal (0, 0, -1)
         if np.allclose((0, 0, -1), normal):
-            return 1.0
-        return None  # opt-out of handling custom reflection
+            return 1.0  #  bottom surface is perfect mirror
+        return super(CustomBoxReflection, self).reflectivity(surface, ray, geometry, container, adjacent)  # opt-out of handling custom reflection
+
+    def reflected_direction(self, surface, ray, geometry, container, adjacent):
+        normal = geometry.normal(ray.position)
+        # find bottom facet, it has normal (0, 0, -1)
+        if np.allclose((0, 0, -1), normal):
+            return tuple(phase_functions.lambertian().tolist())
+        return super(CustomBoxReflection, self).reflected_direction(surface, ray, geometry, container, adjacent)  # opt-out of handling custom reflection
+
+    def transmitted_direction(self, surface, ray, geometry, container, adjacent):
+        return super(CustomBoxReflection, self).transmitted_direction(surface, ray, geometry, container, adjacent)  # opt-out of handling custom reflection
 
 
 # Add nodes to the scene graph
@@ -35,8 +46,9 @@ world = Node(
         surface=Surface()
     )
 )
+
 box = Node(
-    name="sphere (glass)",
+    name="box (glass)",
     parent=world,
     geometry=Box(
         (0.5, 0.5, 0.5),
@@ -59,13 +71,10 @@ light = Node(
 
 light.translate((0, 0, 1))
 light.rotate(np.pi, (1, 0, 0))
-#light.rotate(-np.pi/4, (1, 0, 0))
-#light.rotate(np.pi/4, (0, 1, 0))
-# Use meshcat to render the scene (optional)
-viewer = MeshcatRenderer(open_browser=True)
 scene = Scene(world)
+viewer = MeshcatRenderer(open_browser=True)
 viewer.render(scene)
-for ray in light.emit(100, to_world=True):
+for ray in scene.emit(100):
     history = photon_tracer.trace(scene, ray)
     path, events = zip(*history)
     viewer.add_ray_path(path)  

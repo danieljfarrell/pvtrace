@@ -50,6 +50,19 @@ class Scene(object):
             if isinstance(node.light, Light):
                 found_nodes.append(node)
         return found_nodes
+    
+    def emit(self, num_rays):
+        """ Rays are emitted in the coordinate system of the world node.
+        
+            Internally the scene cycles through Light nodes, askes them to emit
+            a ray and the converts the ray to the world coordinate system.
+        """
+        world = self.root
+        lights = self.light_nodes
+        for idx in range(num_rays):
+            light = lights[idx % len(lights)]
+            for ray in light.emit(1):
+                yield ray.representation(light, world)
 
     def intersections(self, ray_origin, ray_direction) -> Sequence[Tuple[Node, Tuple]]:
         """ Intersections with ray and scene. Ray is defined in the root node's

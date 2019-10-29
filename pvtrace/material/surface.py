@@ -1,4 +1,6 @@
+import abc
 import numpy as np
+from typing import Tuple
 from dataclasses import replace
 from pvtrace.geometry.utils import (
     flip,
@@ -10,56 +12,40 @@ from pvtrace.material.utils import (
     fresnel_refraction
 )
 
-
-class NullSurface(object):
-    """ A surface between two material that only transmits.
+class SurfaceDelegate(abc.ABC):
+    """ Defines a interface for custom surface interactions.
     """
+    @abc.abstractmethod
+    def reflectivity(self, surface, ray, geometry, container, adjacent) -> float:
+        pass
 
-    def is_reflected(self, ray, geometry, container, adjacent):
-        """ Monte-Carlo sampling. Default is to transmit.
-        """
-        return False
+    @abc.abstractmethod
+    def reflected_direction(self, surface, ray, geometry, container, adjacent) -> Tuple[float, float, float]:
+        pass
 
-    def reflect(self, ray, geometry, container, adjacent):
-        """ Specular reflection.
-        """
-        normal = geometry.normal(ray.position)
-        direction = ray.direction
-        reflected_direction = specular_reflection(direction, normal)
-        ray = replace(
-            ray,
-            direction=tuple(reflected_direction.tolist())
-        )
-        return ray
-
-    def transmit(self, ray, geometry, container, adjacent):
-        """ Simply propgate."""
-        return ray
+    @abc.abstractmethod
+    def transmitted_direction(self, surface, ray, geometry, container, adjacent) -> Tuple[float, float, float]:
+        pass
 
 
-class Surface(NullSurface):
-    """ Implements reflection and refraction at an interface of two dielectrics.
+class NullSurfaceDelegate(SurfaceDelegate):
+    """ Only transmits rays, no reflection or refraction.
     """
-    
-    def __init__(self, delegate=None):
-        """ Parameters
-            ----------
-            delegate: object
-                An object that implements the SurfaceDelegate protocol.
-        """
-        super(Surface, self).__init__()
-        self._delegate = delegate
-    
-    @property
-    def delegate(self):
-        return self._delegate
+    def reflectivity(self, surface, ray, geometry, container, adjacent):
+        return 0.0
 
-    def reflectivity(self, ray, geometry, container, adjacent):
-        if self.delegate:
-            r = self.delegate.reflectivity(self, ray, geometry, container, adjacent)
-            if r is not None:
-                return r
-        
+    def reflected_direction(self, surface, ray, geometry, container, adjacent):
+        # This method should never be called but must be implemented.
+        raise NotImplementedError("This surface delegate does not reflect.")
+
+    def transmitted_direction(self, surface, ray, geometry, container, adjacent):
+        return ray.direction
+
+
+class FresnelSurfaceDelegate(SurfaceDelegate):
+    """ Fresnel reflection and refraction on the surface.
+    """
+    def reflectivity(self, surface, ray, geometry, container, adjacent):
         # Calculate Fresnel reflectivity
         n1 = container.geometry.material.refractive_index
         n2 = adjacent.geometry.material.refractive_index
@@ -69,20 +55,15 @@ class Surface(NullSurface):
             normal = flip(normal)
         angle = angle_between(normal, np.array(ray.direction))
         r = fresnel_reflectivity(angle, n1, n2)
-        return r
+        return float(r)
 
-    def is_reflected(self, ray, geometry, container, adjacent):
-        """ Monte-Carlo sampling. Default is to transmit.
-        """
-        # to-do: express ray in local coordinate system
-        r = self.reflectivity(ray, geometry, container, adjacent)
-        gamma = np.random.uniform()
-        return gamma < r
+    def reflected_direction(self, surface, ray, geometry, container, adjacent):
+        normal = geometry.normal(ray.position)
+        direction = ray.direction
+        reflected_direction = specular_reflection(direction, normal)
+        return tuple(reflected_direction.tolist())
 
-    def transmit(self, ray, geometry, container, adjacent):
-        """ Refract through the interface.
-        """
-        # to-do: express ray in local coordinate system
+    def transmitted_direction(self, surface, ray, geometry, container, adjacent):
         n1 = container.geometry.material.refractive_index
         n2 = adjacent.geometry.material.refractive_index
         # Be tolerance with definition of surface normal
@@ -90,9 +71,86 @@ class Surface(NullSurface):
         if np.dot(normal, ray.direction) < 0.0:
             normal = flip(normal)
         refracted_direction = fresnel_refraction(ray.direction, normal, n1, n2)
-        ray = replace(
-            ray,
-            direction=tuple(refracted_direction.tolist())
-        )
-        return ray
+        return tuple(refracted_direction.tolist())
+
+
+class BaseSurface(abc.ABC):
+    
+    @property
+    @abc.abstractmethod
+    def delegate(self):
+        pass
+
+    @abc.abstractmethod
+    def is_reflected(self, ray, geometry, container, adjacent):
+        pass
+
+    @abc.abstractmethod
+    def reflect(self, ray, geometry, container, adjacent):
+        pass
+
+    @abc.abstractmethod
+    def transmit(self, ray, geometry, container, adjacent):
+        pass
+
+
+class Surface(BaseSurface):
+    """ Defines a set of possible events that can happen at a material's surface.
+    
+        A delegate object provides surface reflectivity and reflection and 
+        transmission angles.
+    
+        The default delegate provides Fresnel reflection and refraction.
+    
+        Custom surface reflection coefficients and transmission and reflection
+        directions can be implemented by supplying a custom objects which implements
+        SurfaceDelegate interface.
+    """
+    
+    def __init__(self, delegate=None):
+        """ Parameters
+            ----------
+            delegate: object
+                An object that implements the SurfaceDelegate protocol.
+        """
+        super(Surface, self).__init__()
+        self._delegate = FresnelSurfaceDelegate() if delegate is None else delegate
+
+    @property
+    def delegate(self):
+        return self._delegate
+
+    def is_reflected(self, ray, geometry, container, adjacent):
+        r = self.delegate.reflectivity(self, ray, geometry, container, adjacent)
+        if not isinstance(r, (int, float, np.float, np.int)):
+            raise ValueError("Reflectivity must be a number.")
+        if r == 0.0:
+            return False
+        gamma = np.random.uniform()
+        return gamma < r
+
+    def reflect(self, ray, geometry, container, adjacent):
+        direction = self.delegate.reflected_direction(self, ray, geometry, container, adjacent)
+        if not isinstance(direction, tuple):
+            raise ValueError("Delegate method `reflected_direction` should return a tuple.")
+        if len(direction) != 3:
+            raise ValueError("Delegate method `reflected_direction` should return a tuple of length 3.")
+        # If angle between initial and final is less than 90 then the ray
+        # has not been reflected.
+        #if angle_between(direction, ray.direction) < np.pi/2:
+        #    raise ValueError("Ray must reflect.", {"old": ray.direction, "new": direction})
+        return replace(ray, direction=direction)
+
+    def transmit(self, ray, geometry, container, adjacent):
+        direction = self.delegate.transmitted_direction(self, ray, geometry, container, adjacent)
+        if not isinstance(direction, tuple):
+            raise ValueError("Delegate method `transmitted_direction` should return a tuple.")
+        if len(direction) != 3:
+            raise ValueError("Delegate method `transmitted_direction` should return a tuple of length 3.")
+        # If angle between initial and final is greater than 90 then the ray
+        # has not been transmitted.
+        #if angle_between(direction, ray.direction) > np.pi/2:
+        #    raise ValueError("Ray must transmit.", {"old": ray.direction, "new": direction})
+        return replace(ray, direction=direction)
+
 

@@ -30,7 +30,12 @@ from .material.component import (
 )
 from .material.distribution import Distribution
 from .material.material import Material
-from .material.surface import NullSurface, Surface
+from .material.surface import (
+    Surface,
+    SurfaceDelegate,
+    NullSurfaceDelegate,
+    FresnelSurfaceDelegate
+)
 from .material.utils import isotropic, henyey_greenstein
 
 # scene

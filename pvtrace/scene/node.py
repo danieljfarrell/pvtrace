@@ -93,7 +93,7 @@ class Node(NodeMixin, Transformable):
             all_intersections = all_intersections + intersections_in_child
         return all_intersections
 
-    def emit(self, num_rays=None, to_world=True) -> Iterator[Ray]:
+    def emit(self, num_rays=None) -> Iterator[Ray]:
         """ Generator of rays using the node's light object.
 
             Parameters
@@ -118,8 +118,6 @@ class Node(NodeMixin, Transformable):
         if self.light is None:
             raise AppError("Not a lighting node.")
         for ray in self.light.emit(num_rays=num_rays):
-            if to_world:
-                ray = ray.representation(self, self.root)  # local ray to world
             yield ray
 
 if __name__ == '__main__':
