@@ -46,7 +46,6 @@ world = Node(
     geometry=Sphere(
         radius=10.0,
         material=Material(refractive_index=1.0),
-        surface=Surface()
     )
 )
 
@@ -55,8 +54,12 @@ box = Node(
     parent=world,
     geometry=Box(
         (0.5, 0.5, 0.5),
-        material=Material(refractive_index=1.5),
-        surface=Surface(delegate=CustomBoxReflection())
+        material=Material(
+            refractive_index=1.5,
+            surface=Surface(
+                delegate=CustomBoxReflection()
+            ),
+        ),
     ),
 )
 box.translate((0,0,1))

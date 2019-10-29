@@ -11,20 +11,11 @@ class Mesh(Geometry):
     """ Wrapper making trimesh conform to the pvtrace Geometry protocol.
     """
     
-    def __init__(self, trimesh, material=None, surface=None):
+    def __init__(self, trimesh, material=None):
         super(Mesh, self).__init__()
         trimesh.vertices -= trimesh.center_mass
         self.trimesh = trimesh
         self._material = material
-        self._surface = surface
-
-    @property
-    def surface(self):
-        return self._surface
-    
-    @surface.setter
-    def set_surface(self, new_value):
-        self._surface = new_value
 
     @property
     def material(self):

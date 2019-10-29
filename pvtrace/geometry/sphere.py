@@ -10,19 +10,10 @@ class Sphere(Geometry):
     in it's own coordinate system.
     """
 
-    def __init__(self, radius, material=None, surface=None):
+    def __init__(self, radius, material=None):
         super(Sphere, self).__init__()
         self.radius = radius
         self._material = material
-        self._surface = surface
-
-    @property
-    def surface(self):
-        return self._surface
-    
-    @surface.setter
-    def set_surface(self, new_value):
-        self._surface = new_value
 
     @property
     def material(self):

@@ -1,14 +1,16 @@
 from typing import Union, Tuple, List
 import numpy as np
 from pvtrace.material.component import Component
+from pvtrace.material.surface import Surface
 import logging
 logger = logging.getLogger(__name__)
 
 
 class Material(object):
     
-    def __init__(self, refractive_index: float, components=None):
+    def __init__(self, refractive_index: float, surface=None, components=None):
         self.refractive_index = refractive_index
+        self.surface = Surface() if surface is None else surface
         self.components = [] if components is None else components
 
     # Cache this function!

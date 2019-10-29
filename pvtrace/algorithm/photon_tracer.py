@@ -117,7 +117,7 @@ def trace(scene, ray, maxsteps=1000):
                 break
         else:
             ray = ray.propagate(full_distance)
-            surface = hit.geometry.surface
+            surface = hit.geometry.material.surface
             ray = ray.representation(scene.root, hit)
             if surface.is_reflected(ray, hit.geometry, container, adjacent):
                 ray = surface.reflect(ray, hit.geometry, container, adjacent)

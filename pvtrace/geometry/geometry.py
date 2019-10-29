@@ -14,20 +14,6 @@ class Geometry(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def surface(self):
-        """ Return the surface attached to this node.
-        """
-        pass
-
-    @surface.setter
-    @abc.abstractmethod
-    def surface(self, new_value):
-        """ Sets the surface.
-        """
-        pass
-
-    @property
-    @abc.abstractmethod
     def material(self):
         """ Return the material attached to this node.
         """

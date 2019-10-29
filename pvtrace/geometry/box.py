@@ -26,7 +26,7 @@ class Box(Mesh):
         
     """
     
-    def __init__(self, size, material=None, surface=None):
+    def __init__(self, size, material=None):
         """ Parameters
             ----------
             size : tuple of float
@@ -34,7 +34,7 @@ class Box(Mesh):
         """
         self._size = np.array(size)
         mesh = trimesh.creation.box(size)
-        super(Box, self).__init__(mesh,  material=material, surface=surface)
+        super(Box, self).__init__(mesh,  material=material)
 
     def is_on_surface(self, point):
         on_surf, _ = on_aabb_surface(self._size, point,  atol=2*EPS_ZERO)
