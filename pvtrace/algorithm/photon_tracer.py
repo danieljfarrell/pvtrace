@@ -42,7 +42,6 @@ def next_hit(scene, ray):
     intersections = \
         [x for x in intersections if not close_to_zero(x.distance)]
     
-    print(intersections)
     # Convert intersection points to world node
     intersections = [x.to(scene.root) for x in intersections]
     

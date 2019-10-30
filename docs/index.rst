@@ -102,13 +102,8 @@ Dependancies
    :maxdepth: 4
    :caption: Contents:
 
-   001 Quick Start
-   002 Materials
-   003 Lights
-   004 Nodes
-   005 LSC
-   006 Geometry
    info
+   design
    _modules/modules
 
 Indices and tables

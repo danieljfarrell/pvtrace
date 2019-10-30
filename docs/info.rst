@@ -5,9 +5,10 @@ Features
 
   * box
   * sphere
+  * cylinder
   * mesh
 
-* Arbitrary 3D transformation on scene nodes
+* Arbitrary 3D transformation of scene nodes
  
   * rotation
   * translation
@@ -28,6 +29,11 @@ Features
   * emission spectrum
   * quantum yield
   * multiple luminescent species
+  * volume scattering
+
+* Modification of surface properties
+
+  * Coatings
 
 * Light source properties
 
@@ -35,7 +41,7 @@ Features
   * angular distribution
   * position distribution
 
-    
+
 History
 -------
 
@@ -48,3 +54,5 @@ pvtrace v1 to v1.3 was originally written between 2008-2010 as apart of my PhD s
  * Markus Fuhrer (povray scene rendering and multiprocessing), 
  * Amanda Chatten (Windows friendly paths),
  * Dario Cambie (Bug fixs)
+
+Thank you to all contributors.
