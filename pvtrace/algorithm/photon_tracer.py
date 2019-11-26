@@ -8,6 +8,7 @@ from dataclasses import dataclass, replace
 from pvtrace.scene.scene import Scene
 from pvtrace.scene.node import Node
 from pvtrace.light.ray import Ray
+from pvtrace.material.component import Scatterer, Luminophore
 from pvtrace.geometry.utils import distance_between, close_to_zero, points_equal, EPS_ZERO
 from pvtrace.common.errors import TraceError
 import logging
@@ -15,9 +16,23 @@ logger = logging.getLogger(__name__)
 
 
 def find_container(intersections):
-    # Find container node that has two properties:
-    # 1. only appears in the intersection list once
-    # 2. of the above is the has closest intersection to ray position
+    """ Returns the container node.
+    
+        Parameters
+        ----------
+        intersections: List[Intersection]
+            Full list of intersections of ray with a scene.
+    
+        Returns
+        -------
+        Node
+            The container node
+
+        Example
+        -------
+        >>> intersections = scene.intersections(ray.position, ray.directions)
+        >>> container = find_container(intersections)
+    """
     if len(intersections) == 1:
         return intersections[0].hit
     count = collections.Counter([x.hit for x in intersections]).most_common()
@@ -35,6 +50,25 @@ def find_container(intersections):
 
 
 def next_hit(scene, ray):
+    """ Returns information about the next interface the ray makes with the scene.
+    
+        Parameters
+        ----------
+        scene : Scene
+        ray : Ray
+    
+        Returns
+        -------
+        hit_node : Node
+            The node corresponding to the geometry object that was hit.
+        interface : tuple of Node
+            Two node: the `container` and the `adjacent` which correspond to the
+            materials either side of the interface.
+        point: tuple of float
+            The intersection point.
+        distance: float
+            Distance to the intersection point.
+    """
     # Intersections are in the local node's coordinate system
     intersections = scene.intersections(ray.position, ray.direction)
     
@@ -76,18 +110,18 @@ class Event(Enum):
     SCATTER = 4
     EMIT = 5
     EXIT = 6
-    MAXSTEP = 7
+    KILL = 7
 
 
-def trace(scene, ray, maxsteps=1000):
+def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf):
     count = 0
     history = [(ray, Event.GENERATE)]
     while True:
         count += 1
-        if count > maxsteps:
-            history.append([ray, Event.MAXSTEP])
+        if count > maxsteps or ray.travelled > maxpathlength:
+            history.append([ray, Event.KILL])
             break
-
+    
         info = next_hit(scene, ray)
         if info is None:
             break

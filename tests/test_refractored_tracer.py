@@ -7,9 +7,8 @@ from pvtrace.scene.node import Node
 from pvtrace.light.light import Light
 from pvtrace.light.ray import Ray
 from pvtrace.algorithm.photon_tracer import follow
-from pvtrace.material.lumophore import Lumophore
-from pvtrace.material.dielectric import Dielectric, LossyDielectric
-from pvtrace.material.material import Decision
+from pvtrace.material.material import Material
+from pvtrace.data import lumogen_f_red_305
 import numpy as np
 import functools
 import sys
@@ -21,17 +20,15 @@ def make_embedded_scene(n1=1.5):
         name="world (air)",
         geometry=Sphere(
             radius=10.0,
-            material=Dielectric.air()
+            material=Material(refractive_index=1.0)
         )
     )
     box = Node(
         name="box (glass)",
         geometry=Box(
             (1.0, 1.0, 1.0),
-            material=Dielectric.make_constant(
-                x_range=(300.0, 4000.0), refractive_index=n1
-            )
-        ),
+            material=Material(refractive_index=n1)
+            ),
         parent=world
     )
     scene = Scene(world)
@@ -42,17 +39,18 @@ def make_embedded_lossy_scene(n1=1.5):
         name="world (air)",
         geometry=Sphere(
             radius=10.0,
-            material=Dielectric.air()
+            material=Material(refractive_index=1.0)
         )
     )
     box = Node(
-        name="box (glass)",
+        name="box (absorber)",
         geometry=Box(
             (1.0, 1.0, 1.0),
-            material=LossyDielectric.make_constant(
-                x_range=(300.0, 4000.0),
+            material=Material(
                 refractive_index=n1,
-                absorption_coefficient=10.0
+                components=[
+                    Absorber(coefficient=10.0)
+                ]
             ),
         ),
         parent=world
@@ -65,17 +63,22 @@ def make_embedded_lumophore_scene(n1=1.5):
         name="world (air)",
         geometry=Sphere(
             radius=10.0,
-            material=Dielectric.air()
+            material=Material(refractive_index=1.0)
         )
     )
     box = Node(
         name="box (lumophore)",
         geometry=Box(
             (1.0, 1.0, 1.0),
-            material=Lumophore.make_lumogen_f_red(
-                x=np.linspace(300.0, 4000.0),
-                absorption_coefficient=10.0,
-                quantum_yield=1.0
+            material=Material(
+                refractive_index=n1,
+                components=[
+                    Luminophore(
+                        x=np.linspace(300.0, 1000.0),
+                        coefficient=10.0, 
+                        quantum_yield=1.0
+                    )
+                ],
             )
         ),
         parent=world

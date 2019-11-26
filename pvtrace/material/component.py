@@ -1,7 +1,9 @@
 from typing import Union, Tuple, List
 from enum import Enum
+from dataclasses import replace
 import numpy as np
 from pvtrace.material.distribution import Distribution
+from pvtrace.material.utils import isotropic
 import logging
 logger = logging.getLogger(__name__)
 
@@ -9,8 +11,9 @@ logger = logging.getLogger(__name__)
 class Component(object):
     """ Base class for all things that can be added to a host material.
     """
-    def __init__(self):
+    def __init__(self, name="Component"):
         super(Component, self).__init__()
+        self.name = name
 
     def is_radiative(self, ray):
         return False
@@ -19,8 +22,8 @@ class Component(object):
 class Scatterer(Component):
     """Describes a scatterer center with attenuation coefficient per unit length."""
     
-    def __init__(self, coefficient, x=None, quantum_yield=1.0, phase_function=None):
-        super(Scatterer, self).__init__()
+    def __init__(self, coefficient, x=None, quantum_yield=1.0, phase_function=None, name="Scatterer"):
+        super(Scatterer, self).__init__(name=name)
         
         # Make absorption/scattering spectrum distribution
         self._coefficient = coefficient
@@ -53,7 +56,8 @@ class Scatterer(Component):
         direction = self.phase_function()
         ray = replace(
             ray,
-            direction=direction
+            direction=direction,
+            source=self
         )
         return ray
 
@@ -62,8 +66,14 @@ class Absorber(Scatterer):
     """ Absorption only.
     """
     
-    def __init__(self, coefficient, x=None):
-        super(Absorber, self).__init__(coefficient, x=x, quantum_yield=0.0, phase_function=None)
+    def __init__(self, coefficient, x=None, name="Absorber"):
+        super(Absorber, self).__init__(
+            coefficient,
+            x=x,
+            quantum_yield=0.0,
+            phase_function=None,
+            name=name
+        )
 
     def is_radiative(self, ray):
         return False
@@ -72,12 +82,21 @@ class Absorber(Scatterer):
 class Luminophore(Scatterer):
     """Describes molecule, nanocrystal or material which absorbs and emits light."""
     
-    def __init__(self, coefficient, emission=None, x=None, quantum_yield=1.0, phase_function=None):
+    def __init__(
+        self,
+        coefficient,
+        emission=None,
+        x=None,
+        quantum_yield=1.0,
+        phase_function=None,
+        name="Luminophore"
+        ):
         super(Luminophore, self).__init__(
             coefficient,
             x=x,
             quantum_yield=quantum_yield,
-            phase_function=phase_function
+            phase_function=phase_function,
+            name=name
         )
         
         # Make emission spectrum distribution
@@ -107,6 +126,7 @@ class Luminophore(Scatterer):
         ray = replace(
             ray,
             direction=direction,
-            wavelength=wavelength
+            wavelength=wavelength,
+            source=self
         )
         return ray

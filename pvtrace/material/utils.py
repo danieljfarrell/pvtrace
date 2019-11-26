@@ -33,11 +33,8 @@ def specular_reflection(direction, normal):
 
 
 def fresnel_refraction(direction, normal, n1, n2):
-    # print("Refraction", (direction, normal, n1, n2))
     vector = np.array(direction)
     normal = np.array(normal)
-    if np.dot(normal, vector) < 0.0:
-        normal = flip(normal)
     n = n1/n2
     dot = np.dot(vector, normal)
     c = np.sqrt(1 - n**2 * (1 - dot**2))

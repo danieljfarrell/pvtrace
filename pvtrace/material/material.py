@@ -38,7 +38,7 @@ class Material(object):
                 The penetration depth in centimetres or `float('inf')`.
         """
         alpha = self.total_attenutation_coefficient(wavelength)
-        logger.info('Got alpha({}) = {}'.format(wavelength, alpha))
+        #logger.debug('Got alpha({}) = {}'.format(wavelength, alpha))
         if np.isclose(alpha, 0.0):
             return float('inf')
         elif not np.isfinite(alpha):

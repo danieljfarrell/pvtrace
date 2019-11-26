@@ -1,15 +1,10 @@
-from pvtrace.material.lumophore import Lumophore
-from pvtrace.material.properties import Emissive, Absorptive, Refractive
-import numpy as np
+import pytest
+from pvtrace.material.material import Material
 
-def test_lumophore():
-    lum = Lumophore.make_lumogen_f_red(
-        x=np.array([300.0, 400.0, 500.0]),
-        absorption_coefficient=10.0,
-        quantum_yield=1.0
-    )
-    assert isinstance(lum, Lumophore)
-    assert isinstance(lum, Emissive)
-    assert not isinstance(lum, Refractive)
-    assert lum.quantum_yield == 1.0
+class TestMaterial:
     
+    def test_init(self):
+        assert type(Material(1.5) == Material)
+
+    def test_ior(self):
+        assert Material(1.5).refractive_index == 1.5
