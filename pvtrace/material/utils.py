@@ -51,6 +51,33 @@ gaussian = lambda x, c1, c2, c3: c1*np.exp(-((c2 - x)/c3)**2)
 
 bandgap = lambda x, cutoff, alpha: (1 - np.heaviside(x-cutoff, 0.5)) * alpha
 
+def simple_convert_spectum(spec):
+    """ Change spectrum x-axis only.
+    """
+    h = 6.62607015e-34  # J s
+    c = 299792458.0     # m s-1
+    q = 1.60217662e-19  # C
+    kb = 1.38064852e-23 # K K-1
+    conversion_constant = (h * c / q * 1e9)
+    xp = conversion_constant / spec[:, 0]
+    _spec = np.array(spec)
+    _spec[:, 0] = xp
+    return _spec
+
+
+def thermodynamic_emission(abs_spec, T=300, mu=0.5):
+    h = 6.62607015e-34  # J s
+    c = 299792458.0     # m s-1
+    q = 1.60217662e-19  # C
+    kb = 1.38064852e-23 # J K-1
+    conversion_constant = (h * c / q * 1e9) 
+    energy_spec = simple_convert_spectum(abs_spec)
+    x, y = energy_spec[:, 0], energy_spec[:, 1]
+    ems_energy = y * 2 * x**2 / (c**2 * (h/q)**3) / np.expm1((x-mu)/((kb/q)*T))
+    ems_energy /= np.max(ems_energy)
+    ems_wavelength = simple_convert_spectum(np.column_stack((x, ems_energy)))
+    return ems_wavelength
+    
 
 # Coordinates
 

@@ -44,6 +44,10 @@ def circular_mask(radius: float) -> Sequence[float]:
     y = r * np.sin(rads)
     return (x, y, 0.0)
 
+def cube_mask(X, Y, Z):
+    return (np.random.uniform(-X, X),
+            np.random.uniform(-Y, Y),
+            np.random.uniform(-Z, Z))
 
 class Light(object):
     """ Generic light source object which calls delegate functions to help generate rays that
