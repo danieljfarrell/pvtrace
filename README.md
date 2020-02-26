@@ -2,6 +2,10 @@
 
 > Optical ray tracing for luminescent materials and spectral converter photovoltaic devices 
 
+# Notice
+
+**The next version of pvtrace has gone through a significant refactor process on branch [redesign/materials](https://github.com/danieljfarrell/pvtrace/tree/redesign/materials). Any contributions will be gladly received there. I'm still working on updating the documentation before making the final release.**
+
 ## Introduction
 
 pvtrace is a statistical photon path tracer written in Python. It follows photons through a 3D scene and records their interactions with objects to build up statistical information about energy flow. This approach is particularly useful in photovoltaics and non-imaging optics where the goal is to design systems which efficiently transport light to target locations.
