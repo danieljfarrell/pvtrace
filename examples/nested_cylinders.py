@@ -27,6 +27,7 @@ cil1 = Node(
     ),
     parent=world
 )
+cil1.rotate(np.radians(-90), [1, 0, 0])
 cil1.translate((0, 0, 2))
 
 cil2 = Node(

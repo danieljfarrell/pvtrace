@@ -65,11 +65,7 @@ class MeshcatRenderer(object):
             )
             # meshcat cylinder is aligned along y-axis. Align along z then apply the
             # node's transform as normal.
-            vis[pathname].set_transform(
-                transform.dot(
-                    tf.rotation_matrix(np.radians(-90), [1, 0, 0])
-                )
-            )
+            vis[pathname].set_transform(transform)
         elif isinstance(geometry, Mesh):
                 obj = meshcat.geometry.StlMeshGeometry.from_stream(
                     io.BytesIO(trimesh.exchange.stl.export_stl(geometry.trimesh))

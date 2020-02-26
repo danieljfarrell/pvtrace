@@ -1,6 +1,6 @@
 from pvtrace.geometry.geometry import Geometry
 from pvtrace.common.errors import GeometryError
-from pvtrace.geometry.utils import angle_between, norm, close_to_zero, ray_z_cylinder
+from pvtrace.geometry.utils import angle_between, norm, close_to_zero, ray_y_cylinder
 import numpy as np
 import logging
 logger = logging.getLogger(__name__)
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class Cylinder(Geometry):
     """A cylinder defined by a length and radius with centre at (0, 0, 0) and aligned
-    along the z axis.
+    along the y axis.
     """
 
     def __init__(self, length, radius, material=None):
@@ -27,7 +27,7 @@ class Cylinder(Geometry):
         
     def is_on_surface(self, point):
         # Just use any direction for a fake ray, we only need the distance
-        _, dist = ray_z_cylinder(self.length, self.radius, point, norm((1,1,1)))
+        _, dist = ray_y_cylinder(self.length, self.radius, point, norm((1, 1, 1)))
         if len(dist) == 0:
             return False
         dist = dist[0]  # Only need closest intersection
@@ -38,26 +38,26 @@ class Cylinder(Geometry):
         return False
 
     def contains(self, point):
-        z = point[2]
-        r = np.sqrt(np.sum(np.array(point[:2])**2))
-        if z > -0.5 * self.length and z < 0.5 * self.length and r < self.radius:
+        y = point[1]
+        r = np.sqrt(np.sum(np.array(point[::2])**2))
+        if -0.5 * self.length < y < 0.5 * self.length and r < self.radius:
             return True
         return False
     
     def intersections(self, origin, direction):
-        points, _ = ray_z_cylinder(self.length, self.radius, origin, direction)
+        points, _ = ray_y_cylinder(self.length, self.radius, origin, direction)
         return points
 
     def normal(self, surface_point):
         """ Normal faces outwards by convention.
         """
-        z = surface_point[2]
-        if np.isclose(z, -0.5 * self.length):
-            return (0.0, 0.0, -1.0)
-        elif np.isclose(z, 0.5 * self.length):
-            return (0.0, 0.0, 1.0)
-        elif np.isclose(self.radius, np.sqrt(np.sum(np.array(surface_point[:2])**2))):
-            v = np.array(surface_point) - np.array([0.0, 0.0, surface_point[2]])
+        y = surface_point[1]
+        if np.isclose(y, -0.5 * self.length):
+            return (0.0, -1.0, 0.0)
+        elif np.isclose(y, 0.5 * self.length):
+            return (0.0, 1.0, 0.0)
+        elif np.isclose(self.radius, np.sqrt(np.sum(np.array(surface_point[::2])**2))):
+            v = np.array(surface_point) - np.array([0.0, surface_point[1], 0.0])
             n = tuple(norm(v).tolist())
             return n
         else:
