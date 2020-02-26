@@ -25,13 +25,19 @@ pvtrace may also be useful to researches or designers interested in ray-optics s
 A minimal working example that traces a glass sphere
 
 ```python
-from pvtrace.scene.node import Node
-from pvtrace.scene.scene import Scene
-from pvtrace.scene.renderer import MeshcatRenderer
-from pvtrace.geometry.sphere import Sphere
-from pvtrace.material.dielectric import Dielectric
-from pvtrace.light.light import Light
-from pvtrace.algorithm import photon_tracer
+from pvtrace import (
+    Node,
+    Scene,
+    MeshcatRenderer,
+    Sphere, Box,
+    Material,
+    Surface,
+    FresnelSurfaceDelegate,
+    Light
+)
+import pvtrace.material.utils as phase_functions
+from pvtrace import photon_tracer
+import time
 import functools
 import numpy as np
 
@@ -40,34 +46,52 @@ world = Node(
     name="world (air)",
     geometry=Sphere(
         radius=10.0,
-        material=Dielectric.air()
+        material=Material(refractive_index=1.0),
     )
 )
-sphere = Node(
-    name="sphere (glass)",
-    geometry=Sphere(
-        radius=1.0,
-        material=Dielectric.glass()
+
+box = Node(
+    name="box (glass)",
+    parent=world,
+    geometry=Box(
+        (0.5, 0.5, 0.5),
+        material=Material(
+            refractive_index=1.5,
+            surface=Surface(
+                delegate=CustomBoxReflection()
+            ),
+        ),
     ),
-    parent=world
 )
-sphere.translate((0,0,2))
+box.translate((0,0,1))
 
 # Add source of photons
 light = Node(
     name="Light (555nm)",
+    parent=world,
     light=Light(
-        divergence_delegate=functools.partial(
-            Light.cone_divergence, np.radians(20)
+        direction=functools.partial(
+            phase_functions.cone, np.arcsin(1/1.5)
         )
     )
 )
 
-# Trace the scene
+light.translate((0, 0, 1))
+light.rotate(np.pi, (1, 0, 0))
 scene = Scene(world)
-for ray in light.emit(100):
-    # Do something with this optical path information
-    path = photon_tracer.follow(ray, scene)
+viewer = MeshcatRenderer(open_browser=True)
+viewer.render(scene)
+for ray in scene.emit(100):
+    history = photon_tracer.follow(scene, ray)
+    path, events = zip(*history)
+    viewer.add_ray_path(path)  
+
+# Keep the script alive until Ctrl-C (optional)
+while True:
+    try:
+        time.sleep(0.1)
+    except KeyboardInterrupt:
+        break
 ```
 ## Install
 
