@@ -4,6 +4,7 @@ from pvtrace.material.mechanisms import (
     FresnelRefraction, FresnelReflection, TravelPath, Absorption
 )
 from pvtrace.geometry.utils import flip, angle_between
+from pvtrace.common.errors import TraceError
 from dataclasses import replace
 from typing import Tuple
 import numpy as np
