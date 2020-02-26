@@ -12,6 +12,7 @@ import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
 
+
 class Dielectric(Refractive, Material):
     """ A material with a refractive index.
     
