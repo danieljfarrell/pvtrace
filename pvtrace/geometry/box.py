@@ -1,5 +1,6 @@
 from pvtrace.geometry.mesh import Mesh
 from pvtrace.geometry.utils import angle_between, EPS_ZERO, allinrange, aabb_intersection, on_aabb_surface
+from pvtrace.common.errors import GeometryError
 import trimesh
 import numpy as np
 from collections import Counter
@@ -34,7 +35,6 @@ class Box(Mesh):
         self._size = np.array(size)
         mesh = trimesh.creation.box(size)
         super(Box, self).__init__(mesh,  material=material)
-
 
     def is_on_surface(self, point):
         on_surf, _ = on_aabb_surface(self._size, point,  atol=2*EPS_ZERO)

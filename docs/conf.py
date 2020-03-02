@@ -14,8 +14,9 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.join(os.path.abspath('.'), 'src'))
-sys.path.insert(0, os.path.join(os.path.abspath('.'), 'examples'))
+from pathlib import Path
+p = Path(__file__).parents[1]  # root
+sys.path.insert(0, p)
 
 
 # -- Project information -----------------------------------------------------
@@ -46,6 +47,10 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
 ]
+
+# DJF: Manually run
+#    sphinx-apidoc -o _modules ../pvtrace
+# To update API docs.
 
 autosummary_generate = True
 

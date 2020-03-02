@@ -27,6 +27,8 @@ class Ray:
     direction: tuple
     wavelength: Optional[float]
     is_alive: bool = True
+    travelled: float = 0.0
+    source: object = None
 
     def __repr__(self):
         position = "(" + ", ".join(["{:.2f}".format(x) for x in self.position]) + ")"
@@ -34,7 +36,7 @@ class Ray:
         wavelength = "{:.2f}".format(self.wavelength)
         is_alive = "True" if self.is_alive else "False"
         args = (position, direction, wavelength, is_alive)
-        return "Ray(position={}, direction={}, wavelength={}, is_alive={})".format(*args)
+        return "Ray(pos={}, dir={}, nm={}, alive={})".format(*args)
 
     def propagate(self, distance: float) -> Ray:
         """ Returns a new ray which has been moved the specified distance along
@@ -50,7 +52,7 @@ class Ray:
             raise ValueError('Ray is not alive.')
         new_position = np.array(self.position) + np.array(self.direction) * distance
         new_position = tuple(new_position.tolist())
-        new_ray = replace(self, position=new_position)
+        new_ray = replace(self, position=new_position, travelled=self.travelled+distance)
         return new_ray
     
     def representation(self, from_node: Node, to_node: Node) -> Ray:

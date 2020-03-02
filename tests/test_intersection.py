@@ -13,13 +13,13 @@ class TestIntersection:
     
     def test_init(self):
         node = Node(name='A')
-        inter = Intersection(coordsys=Node, hit=Node, point=(0.0, 0.0, 0.0))
+        inter = Intersection(coordsys=Node, hit=Node, point=(0.0, 0.0, 0.0), distance=0.0)
         assert type(inter) == Intersection
     
     def test_equality(self):
         node = Node(name='A')
-        inter1 = Intersection(coordsys=Node, hit=Node, point=(0.0, 0.0, 0.0))
-        inter2 = Intersection(coordsys=Node, hit=Node, point=(0.0, 0.0, 0.0))
+        inter1 = Intersection(coordsys=Node, hit=Node, point=(0.0, 0.0, 0.0), distance=0.0)
+        inter2 = Intersection(coordsys=Node, hit=Node, point=(0.0, 0.0, 0.0), distance=0.0)
         assert inter1 == inter2
         
 

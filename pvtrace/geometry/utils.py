@@ -5,9 +5,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# Set reasonable precision for comparing floats to zero. Originally the multipler was
+# Set reasonable precision for comparing floats to zero. Originally the multiplier was
 # 10, but I needed to set this to 1000 because some of the trimesh distance methods
-# do not see as accuate as with primative shapes.
+# do not see as accurate as with primitive shapes.
 EPS_ZERO = np.finfo(float).eps * 1000
 
 
@@ -391,6 +391,15 @@ def angle_between(normal, vector):
     elif np.allclose(-normal, vector): return np.pi
     dot = np.dot(normal, vector)
     return np.arccos(dot)
+
+def is_ahead(position, direction, point):
+    """ Tests whether point is ahead of the current position.
+    """
+    if points_equal(position, point):
+        return False
+    d1 = np.dot(self.direction, np.array(point))
+    d2 = np.dot(self.direction, self.position)
+    return (d1 - d2) > 0
 
 
 def smallest_angle_between(normal, vector):

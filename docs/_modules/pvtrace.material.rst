@@ -4,10 +4,10 @@ pvtrace.material package
 Submodules
 ----------
 
-pvtrace.material.dielectric module
-----------------------------------
+pvtrace.material.component module
+---------------------------------
 
-.. automodule:: pvtrace.material.dielectric
+.. automodule:: pvtrace.material.component
     :members:
     :undoc-members:
     :show-inheritance:
@@ -20,22 +20,6 @@ pvtrace.material.distribution module
     :undoc-members:
     :show-inheritance:
 
-pvtrace.material.host module
-----------------------------
-
-.. automodule:: pvtrace.material.host
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pvtrace.material.lumophore module
----------------------------------
-
-.. automodule:: pvtrace.material.lumophore
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 pvtrace.material.material module
 --------------------------------
 
@@ -44,18 +28,18 @@ pvtrace.material.material module
     :undoc-members:
     :show-inheritance:
 
-pvtrace.material.mechanisms module
-----------------------------------
+pvtrace.material.surface module
+-------------------------------
 
-.. automodule:: pvtrace.material.mechanisms
+.. automodule:: pvtrace.material.surface
     :members:
     :undoc-members:
     :show-inheritance:
 
-pvtrace.material.properties module
-----------------------------------
+pvtrace.material.utils module
+-----------------------------
 
-.. automodule:: pvtrace.material.properties
+.. automodule:: pvtrace.material.utils
     :members:
     :undoc-members:
     :show-inheritance:

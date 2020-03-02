@@ -82,6 +82,7 @@ def rgb_to_hex_int(rgb: Tuple[int]) -> int:
     hex_int = int(string_value, 0)
     return hex_int
 
+
 def wavelength_to_hex_int(nanometers: float) -> int:
     return rgb_to_hex_int(wavelength_to_rgb(nanometers))
 

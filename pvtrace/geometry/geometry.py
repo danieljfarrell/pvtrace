@@ -11,7 +11,7 @@ class Geometry(abc.ABC):
     abstract base class which defined the methods subclasses with a 
     concrete geometry should implement.
     """
-    
+
     @property
     @abc.abstractmethod
     def material(self):

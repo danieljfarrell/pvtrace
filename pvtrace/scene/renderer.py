@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class MeshcatRenderer(object):
     """Renders a scene nodes structure."""
 
-    def __init__(self, zmq_url=None, max_histories=10000, open_browser=False):
+    def __init__(self, zmq_url=None, max_histories=10000, open_browser=False, wireframe=False, transparency=True, opacity=0.5, reflectivity=1.0):
         super(MeshcatRenderer, self).__init__()
         self.vis = meshcat.Visualizer(zmq_url=zmq_url)
         if open_browser:
@@ -30,6 +30,10 @@ class MeshcatRenderer(object):
         self.ray_histories = deque(maxlen=max_histories)
         self.max_histories = max_histories
         self.added_index = 0
+        self.wireframe = wireframe
+        self.transparency = transparency
+        self.opacity = opacity
+        self.reflectivity = reflectivity
 
     def render(self, scene, show_root=False):
         """
@@ -41,22 +45,27 @@ class MeshcatRenderer(object):
             self.add_node(node)
 
     def add_node(self, node):
-        pathname = "/".join([x.name for x in node.path])
-        transform = node.pose
+        # Using a dot here as a quick fix to _avoid_ Meshcat automatically
+        # transforming the parent coordinate system. If you use `"/"` then 
+        # you would get that behaviour.
+        pathname = " | ".join([x.name for x in node.path])
         if node.geometry is not None:
-            self.add_geometry(node.geometry, pathname, transform)
+            # Transforming everything to global
+            self.add_geometry(node.geometry, pathname, node.transformation_to(node.root))
 
     def add_geometry(self, geometry, pathname, transform):
         vis = self.vis
-        material = g.MeshLambertMaterial(reflectivity=1.0, sides=0)
-        material.transparency = True
-        material.opacity = 0.5
+        material = g.MeshBasicMaterial(reflectivity=self.reflectivity, sides=0, wireframe=self.wireframe)
+        material.transparency = self.transparency
+        material.opacity = self.opacity
+
         if isinstance(geometry, Sphere):
             sphere = geometry
             vis[pathname].set_object(
                 g.Sphere(sphere.radius),
                 material)
             vis[pathname].set_transform(transform)
+
         elif isinstance(geometry, Cylinder):
             cyl = geometry
             vis[pathname].set_object(
@@ -65,11 +74,11 @@ class MeshcatRenderer(object):
             )
             # meshcat cylinder is aligned along y-axis. Align along z then apply the
             # node's transform as normal.
-            vis[pathname].set_transform(
-                transform.dot(
-                    tf.rotation_matrix(np.radians(-90), [1, 0, 0])
-                )
-            )
+            transform = np.copy(transform)
+            # Change basic XYZ -> XZY
+            transform[:, [1, 2]] = transform[:, [2, 1]]
+            vis[pathname].set_transform(transform)
+
         elif isinstance(geometry, Mesh):
                 obj = meshcat.geometry.StlMeshGeometry.from_stream(
                     io.BytesIO(trimesh.exchange.stl.export_stl(geometry.trimesh))
@@ -82,11 +91,6 @@ class MeshcatRenderer(object):
     def remove(self, scene):
         vis = self.vis
         vis.delete()
-    
-    def update_transform(self, node):
-        vis = self.vis
-        pathname = "/".join([x.name for x in node.path])
-        vis[pathname].set_transform(node.pose)
 
     def get_next_identifer(self):
         self.added_index += 1
@@ -121,7 +125,7 @@ class MeshcatRenderer(object):
         identifier = self.get_next_identifer()
         vis[identifier].set_object(
             g.Line(g.PointsGeometry(vertices),
-            g.MeshBasicMaterial(color=colour, transparency=True, opacity=0.5))
+            g.MeshBasicMaterial(color=colour, transparency=False, opacity=1))
         )
         self._did_add_expendable_to_scene(identifier)
         return identifier
@@ -155,7 +159,7 @@ class MeshcatRenderer(object):
         identifier = self.get_next_identifer()
         vis[identifier].set_object(
             g.Line(g.PointsGeometry(vertices),
-            g.MeshBasicMaterial(color=colour, transparency=True, opacity=0.5))
+            g.MeshBasicMaterial(color=colour, transparency=False, opacity=1.0))
         )
         self._did_add_expendable_to_scene(identifier)
         return identifier
@@ -213,12 +217,14 @@ class MeshcatRenderer(object):
         vis = self.vis
         if len(rays) < 2:
             raise AppError("Need at least two points to render a line.")
+        ids = []
         for (start_ray, end_ray) in zip(rays[:-1], rays[1:]):
             nanometers = start_ray.wavelength
             start = start_ray.position
             end = end_ray.position
             colour = wavelength_to_hex_int(nanometers)
-            self.add_line_segment(start, end, colour=colour)
+            ids.append(self.add_line_segment(start, end, colour=colour))
+        return ids
 
     def remove_object(self, identifier):
         """ Remove object by its identifier.

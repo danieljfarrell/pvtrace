@@ -1,57 +1,46 @@
-from pvtrace.scene.node import Node
-from pvtrace.scene.scene import Scene
-from pvtrace.scene.renderer import MeshcatRenderer
-from pvtrace.geometry.sphere import Sphere
-from pvtrace.material.dielectric import Dielectric
-from pvtrace.light.light import Light
-from pvtrace.algorithm import photon_tracer
 import time
+import sys
 import functools
 import numpy as np
+from pvtrace import *
 
-# Add nodes to the scene graph
 world = Node(
     name="world (air)",
     geometry=Sphere(
         radius=10.0,
-        material=Dielectric.air()
+        material=Material(refractive_index=1.0),
     )
 )
+
 sphere = Node(
     name="sphere (glass)",
     geometry=Sphere(
         radius=1.0,
-        material=Dielectric.glass()
+        material=Material(refractive_index=1.5),
     ),
     parent=world
 )
-sphere.translate((0,0,2))
+sphere.location = (0, 0, 2)
 
-# Add source of photons
 light = Node(
     name="Light (555nm)",
-    light=Light(
-        divergence_delegate=functools.partial(
-            Light.cone_divergence, np.radians(20)
-        )
-    )
+    light=Light(direction=functools.partial(cone, np.pi/8)),
+    parent=world
 )
 
-# Use meshcat to render the scene (optional)
-viewer = MeshcatRenderer(open_browser=True)
+renderer = MeshcatRenderer(wireframe=True, open_browser=True)
 scene = Scene(world)
-for ray in light.emit(100):
-    # Do something with the photon trace information...
-    info = photon_tracer.follow(ray, scene)
-    rays, events = zip(*info)
-    # Add rays to the renderer (optional)
-    viewer.add_ray_path(rays)
-# Open the scene in a new browser window (optional)
-viewer.render(scene)
+renderer.render(scene)
+for ray in scene.emit(100):
+    steps = photon_tracer.follow(scene, ray)
+    path, events = zip(*steps)
+    renderer.add_ray_path(path)
+    time.sleep(0.1)
 
-# Keep the script alive until Ctrl-C (optional)
+# Wait for Ctrl-C to terminate the script; keep the window open
+print("Ctrl-C to close")
 while True:
     try:
-        time.sleep(0.1)
+        time.sleep(.3)
     except KeyboardInterrupt:
-        break
+        sys.exit()

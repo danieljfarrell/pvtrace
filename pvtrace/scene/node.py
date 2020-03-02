@@ -7,6 +7,7 @@ from pvtrace.common.errors import AppError
 from pvtrace.geometry.intersection import Intersection
 from pvtrace.geometry import transformations as tf
 from pvtrace.geometry.transformable import Transformable
+from pvtrace.geometry.utils import distance_between
 import logging
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,16 @@ class Node(NodeMixin, Transformable):
 
     def transformation_to(self, node: Node) -> np.ndarray:
         """ Transformation matrix from this node to another node.
+        
+            Parameters
+            ----------
+            node : Node
+                The other node.
+        
+            Returns
+            -------
+            numpy.ndarray
+                Homogeneous transformation matrix.
         """
         if self == node:
             return np.identity(4)
@@ -48,8 +59,16 @@ class Node(NodeMixin, Transformable):
         return transform
 
     def point_to_node(self, point: tuple, node: Node) -> tuple:
-        """ Convert point in node coordinate system to the a point in the 
-        local coordinate system. Node must be somewhere in the hierarchy tree.
+        """ Convert local point into the the other node coordinate system.
+        
+            The `node` must be somewhere in the hierarchy tree.
+        
+        Parameters
+        ----------
+        point : tuple of float
+            Cartesian point `(x, y, z)` in the local coordinate system.
+        node : Node
+            Node in which the point should be represented.
         """
         mat = self.transformation_to(node)
         homogeneous_pt = np.ones(4)
@@ -59,6 +78,17 @@ class Node(NodeMixin, Transformable):
         return new_pt
 
     def vector_to_node(self, vector: tuple, node: Node) -> tuple:
+        """ Convert local vector into the the other node coordinate system.
+        
+            The `node` must be somewhere in the hierarchy tree.
+        
+        Parameters
+        ----------
+        point : tuple of float
+            Cartesian vector `(i, j, k)` in the local coordinate system.
+        node : Node
+            Node in which the point should be represented.
+        """
         mat = self.transformation_to(node)[0:3,0:3]
         new_vec = tuple(np.dot(mat, np.array(tuple(vector)))[0:3])
         return new_vec
@@ -70,12 +100,27 @@ class Node(NodeMixin, Transformable):
 
     def intersections(self, ray_origin, ray_direction) -> Sequence[Intersection]:
         """ Returns intersections with node's geometry and child subtree.
+        
+            Parameters
+            ----------
+            ray_origin : tuple of float
+                The ray position `(x, y, z)`.
+            ray_direction : tuple of float
+                The ray position `(a, b, c)`.
+        
+            Returns
+            -------
+            all_intersections : tuple of Intersection
+                All intersection with this scene and a list of Intersection objects.
         """
         all_intersections = []
         if self.geometry is not None:
             points = self.geometry.intersections(ray_origin, ray_direction)
             for point in points:
-                intersection = Intersection(coordsys=self, point=point, hit=self)
+                intersection = Intersection(
+                    coordsys=self, point=point, hit=self,
+                    distance=distance_between(ray_origin, point)
+                )
                 all_intersections.append(intersection)
         all_intersections = tuple(all_intersections)
 
@@ -98,6 +143,9 @@ class Node(NodeMixin, Transformable):
                 The maximum number of rays this light source will generate. If set to
                 None then the light will generate until manually terminated.
         
+            to_world: Bool
+                Represent the ray in the world's coordinate frame.
+            
             Returns
             -------
             ray : Ray
@@ -111,7 +159,6 @@ class Node(NodeMixin, Transformable):
         if self.light is None:
             raise AppError("Not a lighting node.")
         for ray in self.light.emit(num_rays=num_rays):
-            ray = ray.representation(self, self.root)  # local ray to world
             yield ray
 
 if __name__ == '__main__':

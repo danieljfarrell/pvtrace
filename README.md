@@ -2,9 +2,9 @@
 
 > Optical ray tracing for luminescent materials and spectral converter photovoltaic devices 
 
-# Notice
+## Install
 
-**The next version of pvtrace has gone through a significant refactor process on branch [redesign/materials](https://github.com/danieljfarrell/pvtrace/tree/redesign/materials). Any contributions will be gladly received there. I'm still working on updating the documentation before making the final release.**
+    pip install pvtrace
 
 ## Introduction
 
@@ -12,9 +12,9 @@ pvtrace is a statistical photon path tracer written in Python. It follows photon
 
 ## Documentation
 
-Interactive Jupyter notebooks examples and tutorial can be found in the [docs directory](https://github.com/danieljfarrell/pvtrace/tree/master/docs).
+Interactive Jupyter notebooks are in [examples directory](https://github.com/danieljfarrell/pvtrace/tree/master/examples), download and take a look, although they can be viewed online.
 
-Static versions are included in the project documentation, [https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
+API documentation and some background at [https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
 
 ## Capabilities
 
@@ -29,55 +29,79 @@ pvtrace may also be useful to researches or designers interested in ray-optics s
 A minimal working example that traces a glass sphere
 
 ```python
-from pvtrace.scene.node import Node
-from pvtrace.scene.scene import Scene
-from pvtrace.scene.renderer import MeshcatRenderer
-from pvtrace.geometry.sphere import Sphere
-from pvtrace.material.dielectric import Dielectric
-from pvtrace.light.light import Light
-from pvtrace.algorithm import photon_tracer
+import time
+import sys
 import functools
 import numpy as np
+from pvtrace import *
 
-# Add nodes to the scene graph
 world = Node(
     name="world (air)",
     geometry=Sphere(
         radius=10.0,
-        material=Dielectric.air()
+        material=Material(refractive_index=1.0),
     )
 )
+
 sphere = Node(
     name="sphere (glass)",
     geometry=Sphere(
         radius=1.0,
-        material=Dielectric.glass()
+        material=Material(refractive_index=1.5),
     ),
     parent=world
 )
-sphere.translate((0,0,2))
+sphere.location = (0, 0, 2)
 
-# Add source of photons
 light = Node(
     name="Light (555nm)",
-    light=Light(
-        divergence_delegate=functools.partial(
-            Light.cone_divergence, np.radians(20)
-        )
-    )
+    light=Light(direction=functools.partial(cone, np.pi/8)),
+    parent=world
 )
 
-# Trace the scene
+renderer = MeshcatRenderer(wireframe=True, open_browser=True)
 scene = Scene(world)
-for ray in light.emit(100):
-    # Do something with this optical path information
-    path = photon_tracer.follow(ray, scene)
+renderer.render(scene)
+for ray in scene.emit(100):
+    steps = photon_tracer.follow(scene, ray)
+    path, events = zip(*steps)
+    renderer.add_ray_path(path)
+    time.sleep(0.1)
+
+# Wait for Ctrl-C to terminate the script; keep the window open
+print("Ctrl-C to close")
+while True:
+    try:
+        time.sleep(.3)
+    except KeyboardInterrupt:
+        sys.exit()
 ```
-## Install
 
-Using pip
+## Architecture
 
-    pip install pvtrace
+![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/pvtrace-design.png)
+
+*pvtrace* is designed in layers each with as limited scope as possible.
+
+<dl>
+  <dt>Scene</dt>
+  <dd>Graph data structure of node and the thing that is ray-traced.</dd>
+  
+  <dt>Node</dt>
+  <dd>Provides a coordinate system, can be nested inside one another, perform arbitrary rotation and translation transformations.</dd>
+  
+  <dt>Geometry</dt>
+  <dd>Attached to nodes to define different shapes (Sphere, Box, Cylinder, Mesh) and handles all ray intersections.</dd>
+  
+  <dt>Material</dt>
+  <dd>Attached to geometry objects to assign physical properties to shapes such as refractive index.</dd>
+  
+  <dt>Surface</dt>
+  <dd>Handles details of interaction between material surfaces and a customisation point for simulation of wavelength selective coatings.</dd>
+  
+  <dt>Components</dt>
+  <dd>Specifies optical properties of the geometries volume, absorption coefficient, scattering coefficient, quantum yield, emission spectrum.</dd>
+</dl>
 
 ## Dependancies
 

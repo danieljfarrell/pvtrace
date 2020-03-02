@@ -1,286 +1,213 @@
+""" A rather slow but physically realistic photon path tracing algorithm.
+"""
 import traceback
 import collections
-from typing import Optional, Tuple, Sequence
-from dataclasses import dataclass, replace
+import traceback
 import numpy as np
+from typing import Optional, Tuple, Sequence
+from enum import Enum
+from dataclasses import dataclass, replace
 from pvtrace.scene.scene import Scene
 from pvtrace.scene.node import Node
 from pvtrace.light.ray import Ray
-from pvtrace.material.material import Decision
-from pvtrace.geometry.intersection import Intersection
+from pvtrace.material.component import Scatterer, Luminophore
 from pvtrace.geometry.utils import distance_between, close_to_zero, points_equal, EPS_ZERO
 from pvtrace.common.errors import TraceError
-from anytree import PostOrderIter
-import traceback
 import logging
 logger = logging.getLogger(__name__)
 
 
-
-def follow(ray: Ray, scene: Scene, max_iters=1000, renderer=None) -> [Tuple[Ray, Decision]]:
-    """ Follow the ray through a scene.
-    
-        This the highest level ray-tracing function. It moves the ray through the
-        scene and returns a list of rays a Monte Carlo decision events. Each decision
-        is an interaction which alters one of the rays properties such as position, 
-        direction or wavelength.
-
-        Raises
-        ------
-        TraceError
-            If an error occurred while tracing.
-
-        Returns
-        -------
-        List of (Ray, Decision) tuples.
-    
-    """
-    path = [(ray, Decision.EMIT)]
-    idx = 0
-    last_ray = ray
-    while ray.is_alive:
-        intersections = scene.intersections(ray.position, ray.direction)
-        points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-        for ray, decision in step(ray, points, nodes, renderer=renderer):
-            path.append((ray, decision))
-        if points_equal(ray.position, last_ray.position) and np.allclose(ray.direction, last_ray.direction):
-            raise TraceError("Ray did not move.")
-        last_ray = ray
-        if idx > max_iters:
-            raise TraceError("Ray got stuck.")
-    return path
-
-
-def find_container(ray, intersection_nodes):
-    """ Returns the container of the ray.
+def find_container(intersections):
+    """ Returns the container node.
     
         Parameters
         ----------
-        intersection_nodes : [Node]
-            List of future intersection nodes. This should be the return value of
-            `scene.intersections(position, direction)`.
+        intersections: List[Intersection]
+            Full list of intersections of ray with a scene.
     
-        Raises
-        ------
-        ValueError
-            If intersections_nodes is empty.
-        TraceError
-            If the ray is on the surface of a node or the container could not be found.
-
-        Notes
-        -----
-        This is not a general algorithm, this only works when the ray is not located
-        on the surface of a node.
-
         Returns
         -------
         Node
-            The container node.
-    """
-    nodes = intersection_nodes
-    if len(nodes) == 0:
-        raise ValueError("Node list is empty.")
-    
-    # This is an expensive operation; avoid in production
-    if __debug__:
-        for node in intersection_nodes:
-            local_ray = ray.representation(node.root, node)
-            if node.geometry.is_on_surface(local_ray.position):
-                raise TraceError("Ray cannot be on surface.")
+            The container node
 
-    c = collections.Counter(nodes)
-    container = None
-    if len(nodes) in (1, 2):
-        return nodes[0]
-    else:
-        for node, count in c.items():
-            if count == 1:
-                container = node
-                break
-    if container is None:
-        raise TraceError("Cannot determine container.")
+        Example
+        -------
+        >>> intersections = scene.intersections(ray.position, ray.directions)
+        >>> container = find_container(intersections)
+    """
+    if len(intersections) == 1:
+        return intersections[0].hit
+    count = collections.Counter([x.hit for x in intersections]).most_common()
+    candidates = [x[0] for x in count if x[1] == 1]
+    pairs = []
+    for intersection in intersections:
+        node = intersection.hit
+        if node in candidates:
+            pairs.append((node, intersection.distance))
+    # [(node, dist), (node, dist)... ]
+    pairs = sorted(pairs, key=lambda tup: tup[1])
+    containers, _ = zip(*pairs)
+    container = containers[0]
     return container
 
 
-def ray_status(ray, points, nodes):
-    """ Returns classification information about the location of the ray in the scene.
-
+def next_hit(scene, ray):
+    """ Returns information about the next interface the ray makes with the scene.
+    
         Parameters
         ----------
+        scene : Scene
         ray : Ray
-            The ray.
-        points : list of tuple
-            List of intersection points.
-        nodes : list of Node
-            The list of intersection nodes.
-
-        Notes
-        -----
-        This is not a general algorithm, this only works when the ray is not located
-        on the surface of a node.
-
+    
         Returns
         -------
-        status: tuple
-            Tuple like (container, to_node, surface_node) where,
-
-            container : Node
-                The node containing the ray.
-            to_node : Node
-                The node on the other side of the next hit location.
-            surface_node : Node
-                The node on this side of the next hit location.
-
+        hit_node : Node
+            The node corresponding to the geometry object that was hit.
+        interface : tuple of Node
+            Two node: the `container` and the `adjacent` which correspond to the
+            materials either side of the interface.
+        point: tuple of float
+            The intersection point.
+        distance: float
+            Distance to the intersection point.
     """
-    container = find_container(ray, nodes)
+    # Intersections are in the local node's coordinate system
+    intersections = scene.intersections(ray.position, ray.direction)
     
-    # Handle special case of last step where ray is hitting the world node
-    root = nodes[0].root
-    if container == root and len(nodes) == 1:
-        status = root, None, root
-        return status
+    # Remove on surface intersections
+    intersections = \
+        [x for x in intersections if not close_to_zero(x.distance)]
+    
+    # Convert intersection points to world node
+    intersections = [x.to(scene.root) for x in intersections]
+    
+    # Node which owns the surface
+    if len(intersections) == 0:
+        return None
 
-    if nodes[0] == container:
-        surface_node = nodes[0]
-        to_node = nodes[1]
+    # The surface being hit
+    hit = intersections[0]
+    if len(intersections) == 1:
+        hit_node = hit.hit
+        return hit_node, (hit_node, None), hit.point, hit.distance
+    
+    container = find_container(intersections)
+    hit = intersections[0]
+    # Intersection point and distance from ray
+    point = hit.point
+    hit_node = hit.hit
+    distance = distance_between(ray.position, point)
+    if container == hit_node:
+        adjacent = intersections[1].hit
     else:
-        surface_node = nodes[0]
-        to_node = nodes[0]
-    status = container, to_node, surface_node
-    return status
+        adjacent = hit_node
+    return hit_node, (container, adjacent), point, distance
 
 
-def step(ray, points, nodes, renderer=None):
-    """ Step the ray through the scene until the next Monte Carlo decision.
-        
-        This is generator function because it cannot be known exactly how many events
-        will occur on a give step and allows much of the state of the ray to be 
-        reused rather than recalculated.
-
-        Parameters
-        ----------
-        ray : Ray
-            The ray being traced. It must *not* be on the surface of a node.
-        points : tuple
-            A tuple of point tuples like ((float, float, float), ...)
-        nodes : tuple
-            A tuple of Node objects.
-
-        Raises
-        ------
-        TraceError
-            If logical error occurs.
-
-        Yields
-        ------
-        tuple
-            A tuple of (Ray, Decision) objects.
-    """
-    container, to_node, surface_node = ray_status(ray, points, nodes)
-    min_point = ray.position
-    max_point = points[0]
-    
-    dist = distance_between(min_point, max_point)
-    _ray = ray
-    for (ray, decision) in trace_path(ray, container, dist):
-        if renderer:
-            renderer.add_ray_path([_ray, ray])
-            _ray = ray
-        yield ray, decision
-
-    if to_node is None and container.parent is None:
-        # Case: Hit world node; kill ray here.
-        ray = replace(ray, is_alive=False)
-        yield ray, Decision.KILL
-    elif points_equal(ray.position, max_point):
-        # Case: Hit surface
-        # NB The ray argument of `trace_surface` *must* be a ray on the surface of the 
-        # node and the returned ray must *not* be on the node!
-        before_ray = ray
-        _ray = ray
-        for ray, decision in trace_surface(ray, container, to_node, surface_node):
-            if renderer:
-                renderer.add_ray_path([_ray, ray])
-                _ray = ray
-            yield ray, decision
-        # Avoid error checks in production
-        if __debug__:
-            local_ray = ray.representation(surface_node.root, surface_node)
-            if surface_node.geometry.is_on_surface(local_ray.position):
-                logger.warning("(before) pos: {}".format(before_ray.position))
-                logger.warning("(after) pos: {}".format(ray.position))
-                raise TraceError("After tracing a surface the ray cannot still be on the surface.")
-
-def trace_path(ray, container_node, distance):
-    """ Trace the ray through the material of the container node.
-        
-        Parameters
-        ----------
-        ray : Ray
-            The ray being traced.
-        container_node : Node
-            The node container the ray. The material of this node will be used to 
-            calculate optical absorption.
-        distance : float
-            The maximum distance the ray can travel in the material before hitting
-            a surface. Units of centimetres.
-
-        Yields
-        ------
-        tuple
-            A tuple of (Ray, Decision) objects.
-    """
-    if distance < 2*EPS_ZERO:
-        # This is a very small step size. It could occur naturally, but it is much
-        # more likely to be a bug
-        raise TraceError("Distance is on the order of trace epsilon.")
-
-    # Trace the ray through the material
-    local_ray = ray.representation(
-        container_node.root, container_node
-    )
-    for (local_ray, decision) in container_node.geometry.material.trace_path(
-            local_ray, container_node.geometry, distance):
-        new_ray = local_ray.representation(
-            container_node, container_node.root
-        )
-        yield new_ray, decision
+class Event(Enum):
+    GENERATE = 0
+    REFLECT = 1
+    TRANSMIT = 2
+    ABSORB = 3
+    SCATTER = 4
+    EMIT = 5
+    EXIT = 6
+    KILL = 7
 
 
-def trace_surface(ray, container_node, to_node, surface_node):
-    """ Trace ray with a surface.
+def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method='kT'):
+    """ The main ray-tracing function. Provide a scene and a ray and get a full photon
+        path history and list of events.
     
         Parameters
         ----------
-        ray : Ray
-            Ray in the world coordinate system.
-        container_node : Node
-            The node containing the ray.
-        to_node : Node
-            The node that will contain the ray if it cross the surface.
-        surface_node : Node
-            The surface normal of this node should be used to calculate
-            incident angle to the surface.
+        scene: Scene
+            The `Scene` to trace.
+        ray: Ray
+            The `Ray` to trace through the scene.
+        maxsteps: int
+            Abort ray tracing after this number of steps. Default is 1000.
+        maxpathlength: float
+            Abort ray tracing after ray has travelled more than this distance. Default
+            is infinity.
+        emit_method: str
+            Either `'kT'`, `'redshift'` or `'full'`.
 
-        Notes
-        -----
-        The container_node and to_node allow refractive index data to be 
-        gather from either side of the interace. The surface_node will
-        be either container_node or to_node and this node should be used
-        for surface normal calculations.
+            `'kT'` option allowed emitted rays to have a wavelength
+            within 3kT of the absorbed value.
+
+            `'redshift'` option ensures the emitted ray has a longer of equal
+            wavelength.
+
+            `'full'` option samples the full emission spectrum allowing the emitted
+            ray to take any value.
     
-        Yields
-        ------
-        tuple
-            A tuple of (Ray, Decision) objects.
+        Returns
+        -------
+        history: tuple
+            Elements are 2-tuples (Ray, Event)
+    
+        Example
+        -------
+    
+        Trace a scene with 10 rays::
+
+            for ray in scene.emit(10):
+                history = photon_tracer.follow(ray, scene)
+                rays, events = zip(*history)
     """
-    local_ray = ray.representation(
-        surface_node.root, surface_node
-    )
-    for local_ray, decision in surface_node.geometry.material.trace_surface(
-        local_ray, container_node.geometry, to_node.geometry, surface_node.geometry):
-        new_ray = local_ray.representation(
-            surface_node, surface_node.root
-        )
-        yield new_ray, decision
+    count = 0
+    history = [(ray, Event.GENERATE)]
+    while True:
+        count += 1
+        if count > maxsteps or ray.travelled > maxpathlength:
+            history.append([ray, Event.KILL])
+            break
+    
+        info = next_hit(scene, ray)
+        if info is None:
+            break
+
+        hit, (container, adjacent), point, full_distance = info
+        if hit is scene.root:
+            history.append((ray.propagate(full_distance), Event.EXIT))
+            break
+
+        material = container.geometry.material
+        absorbed, at_distance = material.is_absorbed(ray, full_distance)
+        if absorbed:
+            ray = ray.propagate(at_distance)
+            component = material.component(ray.wavelength)
+            if component.is_radiative(ray):
+                ray = component.emit(ray.representation(scene.root, container), emit_method=emit_method)
+                ray = ray.representation(container, scene.root)
+                if isinstance(component, Luminophore):
+                    event = Event.EMIT
+                elif isinstance(component, Scatterer):
+                    event = Event.SCATTER
+                history.append((ray, event))
+                continue
+            else:
+                history.append((ray, Event.ABSORB))
+                break
+        else:
+            ray = ray.propagate(full_distance)
+            surface = hit.geometry.material.surface
+            ray = ray.representation(scene.root, hit)
+            if surface.is_reflected(ray, hit.geometry, container, adjacent):
+                ray = surface.reflect(ray, hit.geometry, container, adjacent)
+                ray = ray.representation(hit, scene.root)
+                history.append((ray, Event.REFLECT))
+                #print("REFLECT", ray)
+                continue
+            else:
+                ref_ray = surface.transmit(ray, hit.geometry, container, adjacent)
+                #if points_equal(ref_ray.direction, ray.direction):
+                #    raise ValueError("Ray did not refract.")
+                ray = ref_ray
+                ray = ray.representation(hit, scene.root)
+                history.append((ray, Event.TRANSMIT))
+                #print("TRANSMIT", ray)
+                continue
+    return history
 
