@@ -4,8 +4,6 @@
 
 ## Install
 
-Using pip
-
     pip install pvtrace
 
 ## Introduction
@@ -14,9 +12,9 @@ pvtrace is a statistical photon path tracer written in Python. It follows photon
 
 ## Documentation
 
-Interactive Jupyter notebooks examples and tutorial can be found in the [docs directory](https://github.com/danieljfarrell/pvtrace/tree/master/docs).
+Interactive Jupyter notebooks are in [examples directory](https://github.com/danieljfarrell/pvtrace/tree/master/examples), download and take a look, although they can be viewed online.
 
-Static versions are included in the project documentation, [https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
+API documentation and some background at [https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
 
 ## Capabilities
 
