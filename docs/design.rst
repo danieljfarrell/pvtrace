@@ -5,7 +5,7 @@ This section is intended of readers who are interested in software architectures
 
 `pvtrace` uses nested data structures which enable huge versatility and easy to read code. The hierarchy is shown below.
 
-.. image:: resources/pvtrace-design.png
+.. image:: pvtrace-design.png
     :width: 600px
     :alt: Visualiser
     :align: center
@@ -18,7 +18,7 @@ The data structures now move away from coordinate system and geometry, to object
 
 However, real materials also attenuate, scatter and possibly reemit light by luminescence, these processes can occur either at surfaces or within the volume. `pvtrace` allows a material to be assigned a `surface` and multiple `components` such as `scatterers`, `absorbers` and `luminophores`.
 
-The surface object performs automatic Fresnel reflection and refraction at interaces but also has a powerful plugin (or delegate) system that enables these interactions to be fully customised. For example, to simulate surface coatings that have wavelength, angle or spacial dependence. 
+The surface object performs automatic Fresnel reflection and refraction at interfaces but also has a powerful plugin (or delegate) system that enables these interactions to be fully customised. For example, to simulate surface coatings that have wavelength, angle or spacial dependence. 
 
 Multiple `components` can be added to simulate materials properties such as volume scattering, absorption, and emission. This is particularly useful for performing simulations of luminescent concentrators or other luminescent materials.
 

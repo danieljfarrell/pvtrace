@@ -2,9 +2,11 @@
 
 > Optical ray tracing for luminescent materials and spectral converter photovoltaic devices 
 
-# Notice
+## Install
 
-This is the redesign/material branch which will be the next version of pvtrace. Any contributions should go here.
+Using pip
+
+    pip install pvtrace
 
 ## Introduction
 
@@ -29,23 +31,12 @@ pvtrace may also be useful to researches or designers interested in ray-optics s
 A minimal working example that traces a glass sphere
 
 ```python
-from pvtrace import (
-    Node,
-    Scene,
-    MeshcatRenderer,
-    Sphere, Box,
-    Material,
-    Surface,
-    FresnelSurfaceDelegate,
-    Light
-)
-import pvtrace.material.utils as phase_functions
-from pvtrace import photon_tracer
 import time
+import sys
 import functools
 import numpy as np
+from pvtrace import *
 
-# Add nodes to the scene graph
 world = Node(
     name="world (air)",
     geometry=Sphere(
@@ -54,54 +45,64 @@ world = Node(
     )
 )
 
-box = Node(
-    name="box (glass)",
-    parent=world,
-    geometry=Box(
-        (0.5, 0.5, 0.5),
-        material=Material(
-            refractive_index=1.5,
-            surface=Surface(
-                delegate=CustomBoxReflection()
-            ),
-        ),
+sphere = Node(
+    name="sphere (glass)",
+    geometry=Sphere(
+        radius=1.0,
+        material=Material(refractive_index=1.5),
     ),
+    parent=world
 )
-box.translate((0,0,1))
+sphere.location = (0, 0, 2)
 
-# Add source of photons
 light = Node(
     name="Light (555nm)",
-    parent=world,
-    light=Light(
-        direction=functools.partial(
-            phase_functions.cone, np.arcsin(1/1.5)
-        )
-    )
+    light=Light(direction=functools.partial(cone, np.pi/8)),
+    parent=world
 )
 
-light.translate((0, 0, 1))
-light.rotate(np.pi, (1, 0, 0))
+renderer = MeshcatRenderer(wireframe=True, open_browser=True)
 scene = Scene(world)
-viewer = MeshcatRenderer(open_browser=True)
-viewer.render(scene)
+renderer.render(scene)
 for ray in scene.emit(100):
-    history = photon_tracer.follow(scene, ray)
-    path, events = zip(*history)
-    viewer.add_ray_path(path)  
+    steps = photon_tracer.follow(scene, ray)
+    path, events = zip(*steps)
+    renderer.add_ray_path(path)
+    time.sleep(0.1)
 
-# Keep the script alive until Ctrl-C (optional)
+# Wait for Ctrl-C to terminate the script; keep the window open
+print("Ctrl-C to close")
 while True:
     try:
-        time.sleep(0.1)
+        time.sleep(.3)
     except KeyboardInterrupt:
-        break
+        sys.exit()
 ```
-## Install
 
-Using pip
+## Architecture
 
-    pip install pvtrace
+![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/pvtrace-design.png)
+
+*pvtrace* is designed in layers each with as limited scope as possible.
+
+Scene
+: Graph data structure of node and the thing that is ray-traced.
+
+Node
+: Provides a coordinate system, can be nested inside one another, perform arbitrary rotation and translation transformations.
+
+Geometry
+: Attached to nodes to define different shapes (Sphere, Box, Cylinder, Mesh) and handles all ray intersections.
+
+Material
+: Attached to geometry objects to assign physical properties to shapes such as refractive index.
+
+Surface
+: Handles details of interaction between material surfaces and a customisation point for simulation of wavelength selective coatings.
+
+Components
+: Specifies optical properties of the geometries volume, absorption coefficient, scattering coefficient, quantum yield, emission spectrum.
+
 
 ## Dependancies
 

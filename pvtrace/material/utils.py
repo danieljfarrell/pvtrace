@@ -93,6 +93,8 @@ def spherical_to_cart(theta, phi, r=1):
 #  Volume scattering
 
 def isotropic():
+    """ Isotropic phase function.
+    """
     g1, g2 = np.random.uniform(0, 1, 2)
     phi = 2 * np.pi * g1
     mu = 2 * g2 - 1 # mu = cos(theta)
@@ -101,6 +103,8 @@ def isotropic():
     return coords
 
 def henyey_greenstein(g=0.0):
+    """ Henyey-Greenstein phase function.
+    """
     # https://www.astro.umd.edu/~jph/HG_note.pdf
     p = np.random.uniform(0, 1)
     s = 2 * p - 1
@@ -122,7 +126,7 @@ def cone(theta_max):
     
         Notes
         -----
-        Derived as follows using sympy:
+        Derived as follows using sympy::
     
             from sympy import *
             theta, theta_max, p = symbols('theta theta_max p')
@@ -141,7 +145,7 @@ def cone(theta_max):
 
 def lambertian():
     """ Samples the Lambertian directions emitted from a surface with normal
-        pointing along the postive z-direction.
+        pointing along the positive z-direction.
         
         This never produces directions in the negative z-direction.
     """

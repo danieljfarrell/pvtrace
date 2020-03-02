@@ -8,6 +8,13 @@ pvtrace
 
 Optical ray tracing for luminescent materials and spectral converter photovoltaic devices.
 
+Install
+-------
+
+Using pip::
+
+    pip install pvtrace
+
 Introduction
 ------------
 
@@ -26,68 +33,88 @@ However, it may also be useful to researches or designers interesting in ray-opt
     
 A minimal working example that traces a glass sphere::
 
-    from pvtrace.scene.node import Node
-    from pvtrace.scene.scene import Scene
-    from pvtrace.scene.renderer import MeshcatRenderer
-    from pvtrace.geometry.sphere import Sphere
-    from pvtrace.material.dielectric import Dielectric
-    from pvtrace.light.light import Light
-    from pvtrace.algorithm import photon_tracer
     import time
+    import sys
     import functools
     import numpy as np
+    from pvtrace import *
 
-    # Add nodes to the scene graph
     world = Node(
         name="world (air)",
         geometry=Sphere(
             radius=10.0,
-            material=Dielectric.air()
+            material=Material(refractive_index=1.0),
         )
     )
+
     sphere = Node(
         name="sphere (glass)",
         geometry=Sphere(
             radius=1.0,
-            material=Dielectric.glass()
+            material=Material(refractive_index=1.5),
         ),
         parent=world
     )
-    sphere.translate((0,0,2))
+    sphere.location = (0, 0, 2)
 
-    # Add source of photons
     light = Node(
         name="Light (555nm)",
-        light=Light(
-            divergence_delegate=functools.partial(
-                Light.cone_divergence, np.radians(20)
-            )
-        )
+        light=Light(direction=functools.partial(cone, np.pi/8)),
+        parent=world
     )
 
+    renderer = MeshcatRenderer(wireframe=True, open_browser=True)
     scene = Scene(world)
-    for ray in light.emit(100):
-        # Do something with the photon step information...
-        steps = photon_tracer.follow(ray, scene)
-        rays, events = zip(*steps)
+    renderer.render(scene)
+    for ray in scene.emit(100):
+        steps = photon_tracer.follow(scene, ray)
+        path, events = zip(*steps)
+        renderer.add_ray_path(path)
+        time.sleep(0.1)
 
-
-
-Install
--------
-
-Using pip::
-
-    pip install pvtrace
-
-or conda::
-
-    conda install pvtrace
+    # Wait for Ctrl-C to terminate the script; keep the window open
+    print("Ctrl-C to close")
+    while True:
+        try:
+            time.sleep(.3)
+        except KeyboardInterrupt:
+            sys.exit()
 
 Examples
 --------
 
-The following documentation are Jupyter notebook tutorials converted to static HTML. I recommend that you install pvtrace and run these notebooks locally to get benefit of visualising the scene being ray traced.
+Please see the download and try the Jupyter notebook interactive tutorials to learn more about pvtrace. These can be found in the 
+`examples <https://github.com/danieljfarrell/pvtrace/tree/master/examples>`_ directory in the GitHub repository.
+
+Architecture
+------------
+
+*pvtrace* is designed in layers each with as limited scope as possible.
+
+.. image:: pvtrace-design.png
+    :width: 600px
+    :alt: Design overview
+    :align: center
+
+
+Scene
+    Graph data structure of node and the thing that is ray-traced.
+
+Node
+    Provides a coordinate system, can be nested inside one another, perform arbitrary rotation and translation transformations.
+
+Geometry/Light
+    Attached to nodes to define different shapes (Sphere, Box, Cylinder, Mesh) and handles all ray intersections and generation.
+
+Material
+    Attached to geometry objects to assign physical properties to shapes such as refractive index.
+
+Surface
+    Handles details of interaction between material surfaces and a customisation point for simulation of wavelength selective coatings.
+
+Component
+    Specifies optical properties of the geometries volume, absorption coefficient, scattering coefficient, quantum yield, emission spectrum.
+
 
 Dependancies
 ------------
@@ -105,6 +132,7 @@ Dependancies
    info
    design
    _modules/modules
+
 
 Indices and tables
 ==================

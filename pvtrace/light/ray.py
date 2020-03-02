@@ -36,7 +36,7 @@ class Ray:
         wavelength = "{:.2f}".format(self.wavelength)
         is_alive = "True" if self.is_alive else "False"
         args = (position, direction, wavelength, is_alive)
-        return "Ray(position={}, direction={}, wavelength={}, is_alive={})".format(*args)
+        return "Ray(pos={}, dir={}, nm={}, alive={})".format(*args)
 
     def propagate(self, distance: float) -> Ray:
         """ Returns a new ray which has been moved the specified distance along

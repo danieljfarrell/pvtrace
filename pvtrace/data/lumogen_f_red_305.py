@@ -1,4 +1,4 @@
-
+import numpy as np
 
 def absorption(x):
     """ Fit to Lumogen F Red absorption coefficient spectrum using five Gaussians.

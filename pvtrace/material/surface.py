@@ -17,28 +17,81 @@ class SurfaceDelegate(abc.ABC):
     """
     @abc.abstractmethod
     def reflectivity(self, surface, ray, geometry, container, adjacent) -> float:
+        """ Returns the reflectivity given the interaction.
+        
+            Parameters
+            ----------
+            surface: Surface
+                The surface object owned by the material.
+            ray: Ray
+                The incident ray.
+            geometry: Geometry
+                The geometry being hit.
+            container: Node
+                The node containing the incident ray.
+            adjacent: Node
+                The node that would contain the ray if transmitted.
+        """
         pass
 
     @abc.abstractmethod
     def reflected_direction(self, surface, ray, geometry, container, adjacent) -> Tuple[float, float, float]:
+        """ Returns the reflected direction vector (ix, iy, iz).
+        
+            Parameters
+            ----------
+            surface: Surface
+                The surface object owned by the material.
+            ray: Ray
+                The incident ray.
+            geometry: Geometry
+                The geometry being hit.
+            container: Node
+                The node containing the incident ray.
+            adjacent: Node
+                The node that would contain the ray if transmitted.
+        """
         pass
 
     @abc.abstractmethod
     def transmitted_direction(self, surface, ray, geometry, container, adjacent) -> Tuple[float, float, float]:
+        """ Returns the transmitted direction vector (ix, iy, iz).
+        
+            Parameters
+            ----------
+            surface: Surface
+                The surface object owned by the material.
+            ray: Ray
+                The incident ray.
+            geometry: Geometry
+                The geometry being hit.
+            container: Node
+                The node containing the incident ray.
+            adjacent: Node
+                The node that would contain the ray if transmitted.
+        """
         pass
 
 
 class NullSurfaceDelegate(SurfaceDelegate):
     """ Only transmits rays, no reflection or refraction.
+        
+        This is useful for counting rays.
     """
     def reflectivity(self, surface, ray, geometry, container, adjacent):
+        """ Returns zero.
+        """
         return 0.0
 
     def reflected_direction(self, surface, ray, geometry, container, adjacent):
+        """ raises NotImplementedError if called.
+        """
         # This method should never be called but must be implemented.
         raise NotImplementedError("This surface delegate does not reflect.")
 
     def transmitted_direction(self, surface, ray, geometry, container, adjacent):
+        """ Simply returns `ray.direction.`
+        """
         return ray.direction
 
 
@@ -46,6 +99,21 @@ class FresnelSurfaceDelegate(SurfaceDelegate):
     """ Fresnel reflection and refraction on the surface.
     """
     def reflectivity(self, surface, ray, geometry, container, adjacent):
+        """ Returns the reflectivity given the interaction.
+        
+            Parameters
+            ----------
+            surface: Surface
+                The surface object owned by the material.
+            ray: Ray
+                The incident ray.
+            geometry: Geometry
+                The geometry being hit.
+            container: Node
+                The node containing the incident ray.
+            adjacent: Node
+                The node that would contain the ray if transmitted.
+        """
         # Calculate Fresnel reflectivity
         n1 = container.geometry.material.refractive_index
         n2 = adjacent.geometry.material.refractive_index
@@ -58,12 +126,42 @@ class FresnelSurfaceDelegate(SurfaceDelegate):
         return float(r)
 
     def reflected_direction(self, surface, ray, geometry, container, adjacent):
+        """ Returns the reflected direction vector (ix, iy, iz).
+        
+            Parameters
+            ----------
+            surface: Surface
+                The surface object owned by the material.
+            ray: Ray
+                The incident ray.
+            geometry: Geometry
+                The geometry being hit.
+            container: Node
+                The node containing the incident ray.
+            adjacent: Node
+                The node that would contain the ray if transmitted.
+        """
         normal = geometry.normal(ray.position)
         direction = ray.direction
         reflected_direction = specular_reflection(direction, normal)
         return tuple(reflected_direction.tolist())
 
     def transmitted_direction(self, surface, ray, geometry, container, adjacent):
+        """ Returns the transmitted direction vector (ix, iy, iz).
+        
+            Parameters
+            ----------
+            surface: Surface
+                The surface object owned by the material.
+            ray: Ray
+                The incident ray.
+            geometry: Geometry
+                The geometry being hit.
+            container: Node
+                The node containing the incident ray.
+            adjacent: Node
+                The node that would contain the ray if transmitted.
+        """
         n1 = container.geometry.material.refractive_index
         n2 = adjacent.geometry.material.refractive_index
         # Be tolerance with definition of surface normal
@@ -79,19 +177,23 @@ class BaseSurface(abc.ABC):
     @property
     @abc.abstractmethod
     def delegate(self):
-        pass
+        """ Return an object which implements the `SurfaceDelegate` protocol.
+        """
 
     @abc.abstractmethod
     def is_reflected(self, ray, geometry, container, adjacent):
-        pass
+        """ Returns `True` is the ray is reflected.
+        """
 
     @abc.abstractmethod
     def reflect(self, ray, geometry, container, adjacent):
-        pass
+        """ Returns ray which is reflected from the interface.
+        """
 
     @abc.abstractmethod
     def transmit(self, ray, geometry, container, adjacent):
-        pass
+        """ Returns ray which is transmitted from the interface.
+        """
 
 
 class Surface(BaseSurface):
@@ -118,9 +220,13 @@ class Surface(BaseSurface):
 
     @property
     def delegate(self):
+        """ Return an object which implements the `SurfaceDelegate` protocol.
+        """
         return self._delegate
 
     def is_reflected(self, ray, geometry, container, adjacent):
+        """ Returns `True` is the ray is reflected.
+        """
         r = self.delegate.reflectivity(self, ray, geometry, container, adjacent)
         if not isinstance(r, (int, float, np.float, np.int)):
             raise ValueError("Reflectivity must be a number.")
@@ -130,6 +236,8 @@ class Surface(BaseSurface):
         return gamma < r
 
     def reflect(self, ray, geometry, container, adjacent):
+        """ Returns ray which is reflected from the interface.
+        """
         direction = self.delegate.reflected_direction(self, ray, geometry, container, adjacent)
         if not isinstance(direction, tuple):
             raise ValueError("Delegate method `reflected_direction` should return a tuple.")
@@ -142,6 +250,8 @@ class Surface(BaseSurface):
         return replace(ray, direction=direction)
 
     def transmit(self, ray, geometry, container, adjacent):
+        """ Returns ray which is transmitted from the interface.
+        """
         direction = self.delegate.transmitted_direction(self, ray, geometry, container, adjacent)
         if not isinstance(direction, tuple):
             raise ValueError("Delegate method `transmitted_direction` should return a tuple.")

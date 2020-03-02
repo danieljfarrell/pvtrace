@@ -16,7 +16,7 @@ default_position: callable
     Returns a null distribution with zero variation in position.
 default_divergence: callable
     Returns a null distribution with zero variation in divergence.
-square_mask: callable
+rectangular_mask: callable
     A function which uniformly positions rays over a square in the xy-plane. 
     Requires functools.partial to be used with the constructor (see examples).
 circular_mask: callable
@@ -32,7 +32,7 @@ def default_position():
 def default_direction():
     return (0.0, 0.0, 1.0)
 
-def square_mask(X, Y):
+def rectangular_mask(X, Y):
     return (np.random.uniform(-X, X),
             np.random.uniform(-Y, Y),
             0.0)
@@ -81,7 +81,7 @@ class Light(object):
     of one unit::
     
         import functools
-        Light(position=functools.partial(square_mask, 1, 1)
+        Light(position=functools.partial(rectangular_mask, 1, 1)
 
     To generate a circular spatial distribution in the xy-plane with radius one::
     
@@ -136,6 +136,8 @@ class Light(object):
                 The maximum number of rays this light source will generate. If set to
             None then the light will generate until manually terminated.
         """
+        if num_rays is None or num_rays == 0:
+            return
         count = 0
         while True:
             count += 1

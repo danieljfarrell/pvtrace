@@ -91,11 +91,6 @@ class MeshcatRenderer(object):
     def remove(self, scene):
         vis = self.vis
         vis.delete()
-    
-    def update_transform(self, node):
-        vis = self.vis
-        pathname = "/".join([x.name for x in node.path])
-        vis[pathname].set_transform(node.pose)
 
     def get_next_identifer(self):
         self.added_index += 1
@@ -130,7 +125,7 @@ class MeshcatRenderer(object):
         identifier = self.get_next_identifer()
         vis[identifier].set_object(
             g.Line(g.PointsGeometry(vertices),
-            g.MeshBasicMaterial(color=colour, transparency=True, opacity=0.5))
+            g.MeshBasicMaterial(color=colour, transparency=False, opacity=1))
         )
         self._did_add_expendable_to_scene(identifier)
         return identifier
@@ -222,12 +217,14 @@ class MeshcatRenderer(object):
         vis = self.vis
         if len(rays) < 2:
             raise AppError("Need at least two points to render a line.")
+        ids = []
         for (start_ray, end_ray) in zip(rays[:-1], rays[1:]):
             nanometers = start_ray.wavelength
             start = start_ray.position
             end = end_ray.position
             colour = wavelength_to_hex_int(nanometers)
-            self.add_line_segment(start, end, colour=colour)
+            ids.append(self.add_line_segment(start, end, colour=colour))
+        return ids
 
     def remove_object(self, identifier):
         """ Remove object by its identifier.

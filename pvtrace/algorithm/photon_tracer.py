@@ -1,3 +1,5 @@
+""" A rather slow but physically realistic photon path tracing algorithm.
+"""
 import traceback
 import collections
 import traceback
@@ -114,6 +116,46 @@ class Event(Enum):
 
 
 def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method='kT'):
+    """ The main ray-tracing function. Provide a scene and a ray and get a full photon
+        path history and list of events.
+    
+        Parameters
+        ----------
+        scene: Scene
+            The `Scene` to trace.
+        ray: Ray
+            The `Ray` to trace through the scene.
+        maxsteps: int
+            Abort ray tracing after this number of steps. Default is 1000.
+        maxpathlength: float
+            Abort ray tracing after ray has travelled more than this distance. Default
+            is infinity.
+        emit_method: str
+            Either `'kT'`, `'redshift'` or `'full'`.
+
+            `'kT'` option allowed emitted rays to have a wavelength
+            within 3kT of the absorbed value.
+
+            `'redshift'` option ensures the emitted ray has a longer of equal
+            wavelength.
+
+            `'full'` option samples the full emission spectrum allowing the emitted
+            ray to take any value.
+    
+        Returns
+        -------
+        history: tuple
+            Elements are 2-tuples (Ray, Event)
+    
+        Example
+        -------
+    
+        Trace a scene with 10 rays::
+
+            for ray in scene.emit(10):
+                history = photon_tracer.follow(ray, scene)
+                rays, events = zip(*history)
+    """
     count = 0
     history = [(ray, Event.GENERATE)]
     while True:

@@ -1,5 +1,5 @@
-API Reference
-=============
+pvtrace
+=======
 
 .. toctree::
    :maxdepth: 4

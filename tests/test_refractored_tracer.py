@@ -1,14 +1,7 @@
-from pvtrace.geometry.box import Box
-from pvtrace.geometry.sphere import Sphere
+from pvtrace import *
+from pvtrace.algorithm.photon_tracer import Event
 from pvtrace.geometry.utils import EPS_ZERO
-from pvtrace.scene.renderer import MeshcatRenderer
-from pvtrace.scene.scene import Scene
-from pvtrace.scene.node import Node
-from pvtrace.light.light import Light
-from pvtrace.light.ray import Ray
-from pvtrace.algorithm.photon_tracer import follow
-from pvtrace.material.material import Material
-from pvtrace.data import lumogen_f_red_305
+from pvtrace.material.utils import gaussian
 import numpy as np
 import functools
 import sys
@@ -92,26 +85,23 @@ def make_touching_scene(n1=1.5, n2=1.5, n3=1.5):
         name="world (air)",
         geometry=Sphere(
             radius=10.0,
-            material=Dielectric.air()
+            material=Material(refractive_index=1.0)
         )
     )
     box1 = Node(
         name="box one (glass)",
         geometry=Box(
             (1.0, 1.0, 1.0),
-            material=Dielectric.make_constant(
-                x_range=(300.0, 4000.0), refractive_index=n1
-            )
-        ),
+            material=Material(refractive_index=n1)
+            ),
         parent=world
     )
+
     box2 = Node(
         name="box two (glass)",
         geometry=Box(
             (1.0, 1.0, 1.0),
-            material=Dielectric.make_constant(
-                x_range=(300.0, 4000.0), refractive_index=n2
-            )
+            material=Material(refractive_index=n2)
         ),
         parent=world
     )
@@ -120,9 +110,7 @@ def make_touching_scene(n1=1.5, n2=1.5, n3=1.5):
         name="box three (glass)",
         geometry=Box(
             (1.0, 1.0, 1.0),
-            material=Dielectric.make_constant(
-                x_range=(300.0, 4000.0), refractive_index=n3
-            )
+            material=Material(refractive_index=n3)
         ),
         parent=world
     )
@@ -141,29 +129,23 @@ def test_follow_embedded_scene_1():
     )
     scene, world, box = make_embedded_scene()
     np.random.seed(0)
-    path = follow(ray, scene)
-    path, decisions = zip(*path)
+    path = photon_tracer.follow(scene, ray)
+    path, events = zip(*path)
     positions = [x.position for x in path]
     expected_positions = [
         (0.00, 0.00, -1.00), # Starting
-        (0.00, 0.00, -0.50), # Hit box
         (0.00, 0.00, -0.50), # Refraction into box
-        (0.00, 0.00,  0.50), # Hit box
         (0.00, 0.00,  0.50), # Refraction out of box
         (0.00, 0.00, 10.0),  # Hit world node
-        (0.00, 0.00, 10.0),  # Kill ray
     ]
-    expected_decisions = [
-        Decision.EMIT,
-        Decision.TRAVEL,
-        Decision.TRANSIT,
-        Decision.TRAVEL,
-        Decision.TRANSIT,
-        Decision.TRAVEL,
-        Decision.KILL
+    expected_events = [
+        Event.GENERATE,
+        Event.TRANSMIT,
+        Event.TRANSMIT,
+        Event.EXIT
     ]
-    for expected_point, point, expected_decision, decision in zip(expected_positions, positions, expected_decisions, decisions):
-        assert expected_decision == decision
+    for expected_point, point, expected_event, event in zip(expected_positions, positions, expected_events, events):
+        assert expected_event == event
         assert np.allclose(expected_point, point, atol=EPS_ZERO)
 
 
@@ -177,25 +159,22 @@ def test_follow_embedded_scene_2():
     )
     scene, world, box = make_embedded_scene(n1=100.0)
     np.random.seed(0)
-    path = follow(ray, scene)
-    path, decisions = zip(*path)
+    path = photon_tracer.follow(scene, ray)
+    path, events = zip(*path)
     positions = [x.position for x in path]
     expected_positions = [
         (0.00, 0.00, -1.00), # Starting
-        (0.00, 0.00, -0.50), # Hit box
         (0.00, 0.00, -0.50), # Reflection
-        (0.00, 0.00, -10.0),   # Hit world node
-        (0.00, 0.00, -10.0)   # Ray killed
+        (0.00, 0.00, -10.0), # Hit world node
     ]
-    expected_decisions = [
-        Decision.EMIT,
-        Decision.TRAVEL,
-        Decision.RETURN,
-        Decision.TRAVEL,
-        Decision.KILL
+    expected_events = [
+        Event.GENERATE,
+        Event.REFLECT,
+        Event.EXIT
     ]
-    for expected_point, point, expected_decision, decision in zip(expected_positions, positions, expected_decisions, decisions):
-        assert expected_decision == decision
+    
+    for expected_point, point, expected_event, event in zip(expected_positions, positions, expected_events, events):
+        assert expected_event == event
         assert np.allclose(expected_point, point, atol=EPS_ZERO)
 
 
@@ -209,24 +188,22 @@ def test_follow_lossy_embedded_scene_1():
     )
     scene, world, box = make_embedded_lossy_scene()
     np.random.seed(0)
-    path = follow(ray, scene)
-    path, decisions = zip(*path)
+    path = photon_tracer.follow(scene, ray)
+    path, events = zip(*path)
     positions = [x.position for x in path]
     expected_positions = [
         (0.00, 0.00, -1.00), # Starting
         (0.00, 0.00, -0.50), # Hit box
-        (0.00, 0.00, -0.50), # Reflection
         (0.00, 0.00, -0.3744069237034118), # Absorbed
     ]
-    expected_decisions = [
-        Decision.EMIT,
-        Decision.TRAVEL,
-        Decision.TRANSIT,
-        Decision.ABSORB,
+    expected_events = [
+        Event.GENERATE,
+        Event.TRANSMIT,
+        Event.ABSORB,
     ]
-    for expected_point, point, expected_decision, decision in zip(
-        expected_positions, positions, expected_decisions, decisions):
-        assert expected_decision == decision
+    for expected_point, point, expected_event, event in zip(
+        expected_positions, positions, expected_events, events):
+        assert expected_event == event
         assert np.allclose(expected_point, point, atol=EPS_ZERO)
 
 
@@ -240,8 +217,8 @@ def test_follow_embedded_lumophore_scene_1():
     )
     scene, world, box = make_embedded_lumophore_scene()
     np.random.seed(0)
-    path = follow(ray, scene)
-    path, decisions = zip(*path)
+    path = photon_tracer.follow(scene, ray)
+    path, events = zip(*path)
     positions = [x.position for x in path]
     # First two are before box
     expected_positions = [
@@ -280,45 +257,34 @@ def test_follow_touching_scene():
     )
     scene, world, box1, box2, box3 = make_touching_scene()
     np.random.seed(0)
-    path = follow(ray, scene)
-    path, decisions = zip(*path)
+    path = photon_tracer.follow(scene, ray)
+    path, events = zip(*path)
     positions = [x.position for x in path]
-    print(decisions)
+    print(events)
     expected_positions = [
         (0.00, 0.00, -1.00), # Starting
-        (0.00, 0.00, -0.50), # Hit box
-        (0.00, 0.00, -0.50), # Refraction into box
-        (0.00, 0.00,  0.50), # Hit box 
+        (0.00, 0.00, -0.50), # Refraction
         (0.00, 0.00,  0.50), # Refraction
-        (0.00, 0.00,  1.50), # Hit box 
         (0.00, 0.00,  1.50), # Refraction
-        (0.00, 0.00,  2.50), # Hit box 
         (0.00, 0.00,  2.50), # Refraction
         (0.00, 0.00, 10.0),  # Hit world node
-        (0.00, 0.00, 10.0)   # Kill
     ]
-    expected_decisions = [
-        Decision.EMIT,
-        Decision.TRAVEL,
-        Decision.TRANSIT,
-        Decision.TRAVEL,
-        Decision.TRANSIT,
-        Decision.TRAVEL,
-        Decision.TRANSIT,
-        Decision.TRAVEL,
-        Decision.TRANSIT,
-        Decision.TRAVEL,
-        Decision.KILL
+    expected_events = [
+        Event.GENERATE,
+        Event.TRANSMIT,
+        Event.TRANSMIT,
+        Event.TRANSMIT,
+        Event.TRANSMIT,
+        Event.EXIT
     ]
-    for expected_point, point, expected_decision, decision in zip(
-        expected_positions, positions, expected_decisions, decisions):
+    for expected_point, point, expected_event, event in zip(
+        expected_positions, positions, expected_events, events):
         assert np.allclose(expected_point, point, atol=EPS_ZERO)
-        assert expected_decision == decision
+        assert expected_event == event
 
 
 
 def test_find_container_embedded_scene():
-    from pvtrace.algorithm.photon_tracer import find_container
     scene, world, box = make_embedded_scene()
     ray = Ray(
         position=(0.0, 0.0, -1.0),
@@ -327,8 +293,7 @@ def test_find_container_embedded_scene():
         is_alive=True
     )
     intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    container = find_container(ray, nodes)
+    container = photon_tracer.find_container(intersections)
     assert container == world
 
     ray = Ray(
@@ -338,8 +303,7 @@ def test_find_container_embedded_scene():
         is_alive=True
     )
     intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    container = find_container(ray, nodes)
+    container = photon_tracer.find_container(intersections)
     assert container == box
     
     ray = Ray(
@@ -349,13 +313,11 @@ def test_find_container_embedded_scene():
         is_alive=True
     )
     intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    status = find_container(ray, nodes)
+    status = photon_tracer.find_container(intersections)
     assert status == world
 
 
 def test_find_container_touching_scene():
-    from pvtrace.algorithm.photon_tracer import find_container
     scene, world, box1, box2, box3 = make_touching_scene()
     ray = Ray(
         position=(0.0, 0.0, -1.0),
@@ -364,8 +326,7 @@ def test_find_container_touching_scene():
         is_alive=True
     )
     intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    container = find_container(ray, nodes)
+    container = photon_tracer.find_container(intersections)
     assert container == world
 
     ray = Ray(
@@ -375,8 +336,7 @@ def test_find_container_touching_scene():
         is_alive=True
     )
     intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    container = find_container(ray, nodes)
+    container = photon_tracer.find_container(intersections)
     assert container == box1
     
     ray = Ray(
@@ -386,8 +346,7 @@ def test_find_container_touching_scene():
         is_alive=True
     )
     intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    status = find_container(ray, nodes)
+    status = photon_tracer.find_container(intersections)
     assert status == box2
 
     ray = Ray(
@@ -397,8 +356,7 @@ def test_find_container_touching_scene():
         is_alive=True
     )
     intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    status = find_container(ray, nodes)
+    status = photon_tracer.find_container(intersections)
     assert status == box3
 
     ray = Ray(
@@ -408,143 +366,6 @@ def test_find_container_touching_scene():
         is_alive=True
     )
     intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    status = find_container(ray, nodes)
+    status = photon_tracer.find_container(intersections)
     assert status == world
 
-
-
-def test_ray_status_embedded_scene():
-    from pvtrace.algorithm.photon_tracer import ray_status
-    ray = Ray(
-        position=(0.0, 0.0, -1.0),
-        direction=(0.0, 0.0, 1.0),
-        wavelength=555.0,
-        is_alive=True
-    )
-    scene, world, box = make_embedded_scene()
-    intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    container, to_node, surface_node = ray_status(ray, points, nodes)
-    assert all([
-        container == world,
-        to_node == box,
-        surface_node == box
-        ]
-    )
-    
-    ray = Ray(
-        position=(0.0, 0.0, -0.4),
-        direction=(0.0, 0.0, 1.0),
-        wavelength=555.0,
-        is_alive=True
-    )
-    intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    container, to_node, surface_node = ray_status(ray, points, nodes)
-    assert all([
-        container == box,
-        to_node == world,
-        surface_node == box
-        ]
-    )
-    
-    ray = Ray(
-        position=(0.0, 0.0, 0.6),
-        direction=(0.0, 0.0, 1.0),
-        wavelength=555.0,
-        is_alive=True
-    )
-    intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    container, to_node, surface_node = ray_status(ray, points, nodes)
-    assert all([
-        container == world,
-        to_node == None,
-        surface_node == world
-        ]
-    )
-
-
-def test_ray_status_touching_scene():
-    from pvtrace.algorithm.photon_tracer import ray_status
-    ray = Ray(
-        position=(0.0, 0.0, -1.0),
-        direction=(0.0, 0.0, 1.0),
-        wavelength=555.0,
-        is_alive=True
-    )
-    scene, world, box1, box2, box3 = make_touching_scene()
-    intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    container, to_node, surface_node = ray_status(ray, points, nodes)
-    assert all([
-        container == world,
-        to_node == box1,
-        surface_node == box1
-        ]
-    )
-    
-    ray = Ray(
-        position=(0.0, 0.0, -0.4),
-        direction=(0.0, 0.0, 1.0),
-        wavelength=555.0,
-        is_alive=True
-    )
-    intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    container, to_node, surface_node = ray_status(ray, points, nodes)
-    assert all([
-        container == box1,
-        to_node == box2,
-        surface_node == box1
-        ]
-    )
-    
-    ray = Ray(
-        position=(0.0, 0.0, 0.6),
-        direction=(0.0, 0.0, 1.0),
-        wavelength=555.0,
-        is_alive=True
-    )
-    intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    container, to_node, surface_node = ray_status(ray, points, nodes)
-    assert all([
-        container == box2,
-        to_node == box3,
-        surface_node == box2
-        ]
-    )
-
-    ray = Ray(
-        position=(0.0, 0.0, 1.6),
-        direction=(0.0, 0.0, 1.0),
-        wavelength=555.0,
-        is_alive=True
-    )
-    intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    container, to_node, surface_node = ray_status(ray, points, nodes)
-    assert all([
-        container == box3,
-        to_node == world,
-        surface_node == box3
-        ]
-    )
-    
-    ray = Ray(
-        position=(0.0, 0.0, 2.6),
-        direction=(0.0, 0.0, 1.0),
-        wavelength=555.0,
-        is_alive=True
-    )
-    intersections = scene.intersections(ray.position, ray.direction)
-    points, nodes = zip(*[(x.point, x.hit) for x in intersections])
-    container, to_node, surface_node = ray_status(ray, points, nodes)
-    assert all([
-        container == world,
-        to_node == None,
-        surface_node == world
-        ]
-    )

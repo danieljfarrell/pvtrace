@@ -8,6 +8,7 @@ Subpackages
 
     pvtrace.algorithm
     pvtrace.common
+    pvtrace.data
     pvtrace.geometry
     pvtrace.light
     pvtrace.material

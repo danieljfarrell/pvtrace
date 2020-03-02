@@ -1,46 +1,9 @@
-from pvtrace import (
-    Node,
-    Scene,
-    MeshcatRenderer,
-    Sphere, Box,
-    Material,
-    Surface,
-    FresnelSurfaceDelegate,
-    Light
-)
-import pvtrace.material.utils as phase_functions
-from pvtrace import photon_tracer
 import time
+import sys
 import functools
 import numpy as np
+from pvtrace import *
 
-
-class CustomBoxReflection(FresnelSurfaceDelegate):
-    """ Gives the bottom surface a reflectivity of 1.
-    """
-
-    def reflectivity(self, surface, ray, geometry, container, adjacent):
-        normal = geometry.normal(ray.position)
-        # find bottom facet, it has normal (0, 0, -1)
-        if np.allclose((0, 0, -1), normal):
-            l, w, d = geometry._size
-            print("strip", ray.position)
-            if ray.position[1] > 0.0:  # to the RHS of the y 
-                return 1.0  #  the bottom surface is perfect mirror
-        return super(CustomBoxReflection, self).reflectivity(surface, ray, geometry, container, adjacent)  # opt-out of handling custom reflection
-
-    def reflected_direction(self, surface, ray, geometry, container, adjacent):
-        normal = geometry.normal(ray.position)
-        # find bottom facet, it has normal (0, 0, -1)
-        if np.allclose((0, 0, -1), normal):
-            return tuple(phase_functions.lambertian().tolist())
-        return super(CustomBoxReflection, self).reflected_direction(surface, ray, geometry, container, adjacent)  # opt-out of handling custom reflection
-
-    def transmitted_direction(self, surface, ray, geometry, container, adjacent):
-        return super(CustomBoxReflection, self).transmitted_direction(surface, ray, geometry, container, adjacent)  # opt-out of handling custom reflection
-
-
-# Add nodes to the scene graph
 world = Node(
     name="world (air)",
     geometry=Sphere(
@@ -49,45 +12,35 @@ world = Node(
     )
 )
 
-box = Node(
-    name="box (glass)",
-    parent=world,
-    geometry=Box(
-        (0.5, 0.5, 0.5),
-        material=Material(
-            refractive_index=1.5,
-            surface=Surface(
-                delegate=CustomBoxReflection()
-            ),
-        ),
+sphere = Node(
+    name="sphere (glass)",
+    geometry=Sphere(
+        radius=1.0,
+        material=Material(refractive_index=1.5),
     ),
+    parent=world
 )
-box.translate((0,0,1))
+sphere.location = (0, 0, 2)
 
-# Add source of photons
 light = Node(
     name="Light (555nm)",
-    parent=world,
-    light=Light(
-        direction=functools.partial(
-            phase_functions.cone, np.arcsin(1/1.5)
-        )
-    )
+    light=Light(direction=functools.partial(cone, np.pi/8)),
+    parent=world
 )
 
-light.translate((0, 0, 1))
-light.rotate(np.pi, (1, 0, 0))
+renderer = MeshcatRenderer(wireframe=True, open_browser=True)
 scene = Scene(world)
-viewer = MeshcatRenderer(open_browser=True)
-viewer.render(scene)
+renderer.render(scene)
 for ray in scene.emit(100):
-    history = photon_tracer.follow(scene, ray)
-    path, events = zip(*history)
-    viewer.add_ray_path(path)  
+    steps = photon_tracer.follow(scene, ray)
+    path, events = zip(*steps)
+    renderer.add_ray_path(path)
+    time.sleep(0.1)
 
-# Keep the script alive until Ctrl-C (optional)
+# Wait for Ctrl-C to terminate the script; keep the window open
+print("Ctrl-C to close")
 while True:
     try:
-        time.sleep(0.1)
+        time.sleep(.3)
     except KeyboardInterrupt:
-        break
+        sys.exit()

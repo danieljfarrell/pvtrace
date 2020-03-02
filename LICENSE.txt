@@ -1,4 +1,4 @@
-Copyright (c) 2019, Daniel Farrell
+Copyright (c) 2020, Daniel Farrell
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
