@@ -86,23 +86,23 @@ while True:
 *pvtrace* is designed in layers each with as limited scope as possible.
 
 <dl>
-    <dt>Scene</dt>
-    <dd>Graph data structure of node and the thing that is ray-traced.</dd>
-
-    <dt>Node</dt>
-    <dd>Provides a coordinate system, can be nested inside one another, perform arbitrary rotation and translation transformations.</dd>
-
-    <dt>Geometry</dt>
-    <dd>Attached to nodes to define different shapes (Sphere, Box, Cylinder, Mesh) and handles all ray intersections.</dd>
-
-    <dt>Material</dt>
-    <dd>Attached to geometry objects to assign physical properties to shapes such as refractive index.</dd>
-
-    <dt>Surface</dt>
-    <dd>Handles details of interaction between material surfaces and a customisation point for simulation of wavelength selective coatings.</dd>
-
-    <dt>Components</dt>
-    <dd>Specifies optical properties of the geometries volume, absorption coefficient, scattering coefficient, quantum yield, emission spectrum.</dd>
+  <dt>Scene</dt>
+  <dd>Graph data structure of node and the thing that is ray-traced.</dd>
+  
+  <dt>Node</dt>
+  <dd>Provides a coordinate system, can be nested inside one another, perform arbitrary rotation and translation transformations.</dd>
+  
+  <dt>Geometry</dt>
+  <dd>Attached to nodes to define different shapes (Sphere, Box, Cylinder, Mesh) and handles all ray intersections.</dd>
+  
+  <dt>Material</dt>
+  <dd>Attached to geometry objects to assign physical properties to shapes such as refractive index.</dd>
+  
+  <dt>Surface</dt>
+  <dd>Handles details of interaction between material surfaces and a customisation point for simulation of wavelength selective coatings.</dd>
+  
+  <dt>Components</dt>
+  <dd>Specifies optical properties of the geometries volume, absorption coefficient, scattering coefficient, quantum yield, emission spectrum.</dd>
 </dl>
 
 ## Dependancies
