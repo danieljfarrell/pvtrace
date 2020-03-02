@@ -10,6 +10,16 @@ Tutorials are in Jupyter notebook form so to view those
 
     pip install jupyter
 
+### pyenv
+
+You may want to use [pyenv](https://github.com/pyenv/pyenv) to create a clean virtual environment for pvtrace.
+
+    pyenv virtualenv 3.7.2 pvtrace-env
+    pyenv activate pvtrace-env
+    pip install pvtrace
+    # download the examples/hello_world.py from GitHub
+    python hello_world.py
+
 ## Introduction
 
 pvtrace is a statistical photon path tracer written in Python. It follows photons through a 3D scene and records their interactions with objects to build up statistical information about energy flow. This approach is particularly useful in photovoltaics and non-imaging optics where the goal is to design systems which efficiently transport light to target locations.
