@@ -85,24 +85,25 @@ while True:
 
 *pvtrace* is designed in layers each with as limited scope as possible.
 
-Scene
-: Graph data structure of node and the thing that is ray-traced.
+<dl>
+    <dt>Scene</dt>
+    <dd>Graph data structure of node and the thing that is ray-traced.</dd>
 
-Node
-: Provides a coordinate system, can be nested inside one another, perform arbitrary rotation and translation transformations.
+    <dt>Node</dt>
+    <dd>Provides a coordinate system, can be nested inside one another, perform arbitrary rotation and translation transformations.</dd>
 
-Geometry
-: Attached to nodes to define different shapes (Sphere, Box, Cylinder, Mesh) and handles all ray intersections.
+    <dt>Geometry</dt>
+    <dd>Attached to nodes to define different shapes (Sphere, Box, Cylinder, Mesh) and handles all ray intersections.</dd>
 
-Material
-: Attached to geometry objects to assign physical properties to shapes such as refractive index.
+    <dt>Material</dt>
+    <dd>Attached to geometry objects to assign physical properties to shapes such as refractive index.</dd>
 
-Surface
-: Handles details of interaction between material surfaces and a customisation point for simulation of wavelength selective coatings.
+    <dt>Surface</dt>
+    <dd>Handles details of interaction between material surfaces and a customisation point for simulation of wavelength selective coatings.</dd>
 
-Components
-: Specifies optical properties of the geometries volume, absorption coefficient, scattering coefficient, quantum yield, emission spectrum.
-
+    <dt>Components</dt>
+    <dd>Specifies optical properties of the geometries volume, absorption coefficient, scattering coefficient, quantum yield, emission spectrum.</dd>
+</dl>
 
 ## Dependancies
 
