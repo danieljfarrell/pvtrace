@@ -6,6 +6,10 @@
 
     pip install pvtrace
 
+Tutorials are in Jupyter notebook form so to view those
+
+    pip install jupyter
+
 ## Introduction
 
 pvtrace is a statistical photon path tracer written in Python. It follows photons through a 3D scene and records their interactions with objects to build up statistical information about energy flow. This approach is particularly useful in photovoltaics and non-imaging optics where the goal is to design systems which efficiently transport light to target locations.
@@ -105,8 +109,11 @@ while True:
 
 ## Dependancies
 
+Basic environment requires the following packages which will be installed with `pip` automatically
+
 * python >= 3.7.2
-* trimesh (for mesh shapes)
-* meshcat (for visualisation)
 * numpy
+* trimesh[easy]
+* meshcat >= 0.0.16
 * anytree
+

@@ -6,14 +6,14 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
    name='pvtrace',
-   version='2.1.0',
+   version='2.1.1',
    description='Optical ray tracing for luminescent materials and spectral converter photovoltaic devices.',
    long_description=long_description,
    long_description_content_type='text/markdown',
    author='Daniel Farrell',
    author_email='dan@excitonlabs.com',
    url='https://github.com/danieljfarrell/pvtrace',
-   download_url = 'https://github.com/danieljfarrell/pvtrace/archive/v2.1.0.tar.gz',
+   download_url = 'https://github.com/danieljfarrell/pvtrace/archive/v2.1.1.tar.gz',
    python_requires='>=3.7.2',
    packages=find_packages(),
    keywords=[
@@ -29,11 +29,9 @@ setup(
    ],
    install_requires=[
        "numpy",
-       "scipy",
-       "pandas",
        "anytree",
-       "meshcat>=0.0.16",
-       "trimesh[easy]"
+       "trimesh[easy]",
+       "meshcat>=0.0.16"
    ],
    classifiers=[
      'Development Status :: 4 - Beta',
