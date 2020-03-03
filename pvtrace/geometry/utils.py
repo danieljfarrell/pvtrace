@@ -1,6 +1,4 @@
 import numpy as np
-import numpy
-import math
 import logging
 logger = logging.getLogger(__name__)
 
@@ -13,7 +11,12 @@ EPS_ZERO = np.finfo(float).eps * 1000
 
 def on_aabb_surface(size, point, centre=(0.0, 0.0, 0.0), atol=EPS_ZERO):
     """ Surface test for axis-aligned bounding box with absolute distance 
-        tolerance along surface normal direction.
+        tolerance along surface normal direction. 
+    
+        Notes
+        -----
+        As a test for being on surface THIS IS VERY SLOW but if you need absolute
+        distance from surface use it.
     
         >>> size = (1.0, 1.0, 1.0)
         >>> centre = (0.0, 0.0, 0.0)
@@ -57,8 +60,8 @@ def on_aabb_surface(size, point, centre=(0.0, 0.0, 0.0), atol=EPS_ZERO):
     
     dists = (xmin_dist, xmax_dist, ymin_dist, ymax_dist, zmin_dist, zmax_dist)
     tests = [np.abs(dist) < (atol/2) for dist in dists]
-    surfaces = np.where(np.array(tests) == True)[0].tolist()
-    return np.any(tests), surfaces
+    #surfaces = np.where(np.array(tests) == True)[0].tolist()
+    return np.any(tests)#, surfaces
 
 
 def aabb_intersection(min_point, max_point, ray_position, ray_direction):
@@ -83,52 +86,55 @@ def aabb_intersection(min_point, max_point, ray_position, ray_direction):
         Peter Shirley, "An Efficient and Robust Ray-Box Intersection Algorithm" 
         Journal of graphics tools, 10(1):49-54, 2005
     """
-    rpos = np.array(ray_position)
-    rdir = np.array(ray_direction)
-    origin = np.array(min_point)
-    extent = np.array(max_point)
-    pts = (origin, extent)
+    with np.errstate(divide='ignore'):
+        rpos = np.array(ray_position, dtype=np.float)
+        rdir = np.array(ray_direction, dtype=np.float)
+        pts = [np.array(min_point), np.array(max_point)]
     
-    rinvd = 1.0/rdir
-    rsgn =  1.0 / (rinvd < 0.0)
-    tmin = (origin[rsgn[0]] - rpos[0]) * rinvd[0]
-    tmax = (origin[1-rsgn[0]] - rpos[0]) * rinvd[0]
-    tymin = (extent[rsgn[1]] - rpos[1]) * rinvd[1]
-    tymax = (extent[1-rsgn[1]] - rpos[1]) * rinvd[1]
+        rinvd = [1.0/rdir[0], 1.0/rdir[1], 1.0/rdir[2]]
+        rsgn = [bool(1.0/rinvd[0] < 0.0), bool(1.0/rinvd[1] < 0.0), bool(1.0/rinvd[2] < 0.0)]
+        tmin = (pts[rsgn[0]][0] - rpos[0]) * rinvd[0]
+        tmax = (pts[1-rsgn[0]][0] - rpos[0]) * rinvd[0]
+        tymin = (pts[rsgn[1]][1] - rpos[1]) * rinvd[1]
+        tymax = (pts[1-rsgn[1]][1] - rpos[1]) * rinvd[1]
     
-    if (tmin > tymax) or (tymin > tmax): 
-        return None
+        if (tmin > tymax) or (tymin > tmax): 
+            return []
         
-    if tymin > tmin:
-        tmin = tymin
-    if tymax < tmax:
-        tmax = tymax
+        if tymin > tmin:
+            tmin = tymin
         
-    tzmin = (extent[rsgn[2]] - rpos[2]) * rinvd[2]
-    tzmax = (extent[1-rsgn[2]] - rpos[2]) * rinvd[2]
+        if tymax < tmax:
+            tmax = tymax
+        
+        tzmin = (pts[rsgn[2]][2] - rpos[2]) * rinvd[2]
+        tzmax = (pts[1-rsgn[2]][2] - rpos[2]) * rinvd[2]
     
-    if (tmin > tzmax) or  (tzmin > tmax): 
-        return None
-    if tzmin > tmin:
-        tmin = tzmin
-    if tzmax < tmax:
-        tmax = tzmax
+        if (tmin > tzmax) or  (tzmin > tmax): 
+            return []
+        
+        if tzmin > tmin:
+            tmin = tzmin
+        
+        if tzmax < tmax:
+            tmax = tzmax
     
-    # Calculate the hit coordinates then if the solution is in 
-    # the forward direction append to the hit list.
-    hit_coordinates = []
-    pt1 = tuple(rpos + tmin * rdir)
-    pt2 = tuple(rpos + tmax * rdir)
+        # Calculate the hit coordinates then if the solution is in the forward direction append to the hit list.
+        hit_coordinates = []
+        pt1 = rpos + tmin * rdir
+        pt2 = rpos + tmax * rdir
+
+        if tmin >= 0.0:
+            hit_coordinates.append(pt1)
     
-    if tmin >= 0.0:
-        hit_coordinates.append(pt1)
-    if tmax >= 0.0:
-        hit_coordinates.append(pt2)
-    return tuple(hit_coordinates)
+        if tmax >= 0.0:
+            hit_coordinates.append(pt2)
+    
+        return tuple(map(tuple, hit_coordinates))
 
 
 def ray_z_cylinder(length, radius, ray_origin, ray_direction):
-    """ Returns ray-cylinder intersection points for a cylinder aligned
+    r""" Returns ray-cylinder intersection points for a cylinder aligned
         along the z-axis with centre at (0, 0, 0).
         
         Parameters
@@ -299,7 +305,6 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
         [1] https://www.cl.cam.ac.uk/teaching/1999/AGraphHCI/
 
         [2] https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection
-        
     """
     p0 = np.array(ray_origin)
     n0 = np.array(ray_direction)
