@@ -19,8 +19,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements_dev.txt
+        pip install numpy meshcat anytree trimesh[easy]
     - name: Test with pytest
       run: |
-        pip install pytest
+        pip install pytest pytest-benchmark
         pytest tests
