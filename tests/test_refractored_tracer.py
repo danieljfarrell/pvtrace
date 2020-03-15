@@ -1,5 +1,5 @@
 from pvtrace import *
-from pvtrace.algorithm.photon_tracer import Event
+from pvtrace.light.event import Event
 from pvtrace.geometry.utils import EPS_ZERO
 from pvtrace.material.utils import gaussian
 import numpy as np

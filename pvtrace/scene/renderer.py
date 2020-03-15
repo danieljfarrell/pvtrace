@@ -11,7 +11,7 @@ from pvtrace.geometry.cylinder import Cylinder
 from pvtrace.geometry.mesh import Mesh
 from pvtrace.light.ray import Ray
 from pvtrace.light.utils import wavelength_to_rgb, rgb_to_hex_int, wavelength_to_hex_int
-from pvtrace.algorithm.photon_tracer import Event  # Refactor to remove dependency on trace algorithm!
+from pvtrace.light.event import Event
 import trimesh
 import meshcat
 import meshcat.geometry as g
@@ -146,10 +146,6 @@ class MeshcatRenderer(object):
             colour : int (optional)
                 An optional colour specified as a hex integer. The default colour is
                 white.
-            baubles: bool (optional)
-                Default is True. Draws baubles at intersection points.
-            exclude_world_segment: bool (optional)
-                Default is True. Will not render path segment which hits the world node.
 
             See also
             --------

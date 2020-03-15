@@ -27,13 +27,13 @@ import pvtrace
 # -- Project information -----------------------------------------------------
 
 project = 'pvtrace'
-copyright = '2019, Daniel J Farrell'
+copyright = '2008--2020 Daniel J Farrell'
 author = 'Daniel J Farrell'
 
 # The short X.Y version
-version = ''
+version = '.'.join(v.split('.')[0:2])
 # The full version, including alpha/beta/rc tags
-release = '2.1.3'
+release = pvtrace.__version__
 
 
 # -- General configuration ---------------------------------------------------

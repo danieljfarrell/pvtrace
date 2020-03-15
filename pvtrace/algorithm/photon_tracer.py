@@ -5,11 +5,11 @@ import collections
 import traceback
 import numpy as np
 from typing import Optional, Tuple, Sequence
-from enum import Enum
 from dataclasses import dataclass, replace
 from pvtrace.scene.scene import Scene
 from pvtrace.scene.node import Node
 from pvtrace.light.ray import Ray
+from pvtrace.light.event import Event
 from pvtrace.material.component import Scatterer, Luminophore
 from pvtrace.geometry.utils import distance_between, close_to_zero, points_equal, EPS_ZERO
 from pvtrace.common.errors import TraceError
@@ -102,17 +102,6 @@ def next_hit(scene, ray):
     else:
         adjacent = hit_node
     return hit_node, (container, adjacent), point, distance
-
-
-class Event(Enum):
-    GENERATE = 0
-    REFLECT = 1
-    TRANSMIT = 2
-    ABSORB = 3
-    SCATTER = 4
-    EMIT = 5
-    EXIT = 6
-    KILL = 7
 
 
 def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method='kT'):
