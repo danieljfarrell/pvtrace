@@ -16,7 +16,8 @@ import os
 import sys
 from pathlib import Path
 p = Path(__file__).parents[1]  # root
-sys.path.insert(0, p)
+sys.path.insert(0, str(p))
+import pvtrace
 
 
 # -- Project information -----------------------------------------------------
@@ -28,7 +29,7 @@ author = 'Daniel J Farrell'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '2.0'
+release = '2.1.3'
 
 
 # -- General configuration ---------------------------------------------------

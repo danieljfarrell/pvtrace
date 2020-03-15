@@ -1,4 +1,4 @@
 anytree
 meshcat>=0.0.16
 numpy
-trimesh
+trimesh[easy]
