@@ -11,6 +11,7 @@ from pvtrace.geometry.cylinder import Cylinder
 from pvtrace.geometry.mesh import Mesh
 from pvtrace.light.ray import Ray
 from pvtrace.light.utils import wavelength_to_rgb, rgb_to_hex_int, wavelength_to_hex_int
+from pvtrace.light.event import Event
 import trimesh
 import meshcat
 import meshcat.geometry as g
@@ -130,7 +131,11 @@ class MeshcatRenderer(object):
         self._did_add_expendable_to_scene(identifier)
         return identifier
 
-    def add_path(self, vertices: Tuple[Tuple[float, float, float]], colour=0xffffff) -> str:
+    def add_path(
+        self,
+        vertices: Tuple[Tuple[float, float, float]],
+        colour=0xffffff
+        ) -> str:
         """ Add a line to the scene and return the identifier. The line is made from 
             multiple line segments. The line will be drawn with a single colour.
         
@@ -163,7 +168,7 @@ class MeshcatRenderer(object):
         )
         self._did_add_expendable_to_scene(identifier)
         return identifier
-    
+
     def add_ray(self, ray : Ray, length: float) -> str:
         """ Add the ray path as a single connected line and return an identifier. 
         
@@ -225,6 +230,79 @@ class MeshcatRenderer(object):
             colour = wavelength_to_hex_int(nanometers)
             ids.append(self.add_line_segment(start, end, colour=colour))
         return ids
+
+    def add_history(
+        self,
+        history: Tuple,
+        baubles: bool =True,
+        world_segment: str ='short',
+        short_length: float = 1.0,
+        bauble_radius: float = 0.01
+    ):
+        """ Similar to `add_ray_path` but with improved visualisation options.
+    
+            Parameters
+            ----------
+            history: tuple
+                Tuple of rays and events as returned from `photon_tracer.follow`
+            baubles: bool (optional)
+                Default is True. Draws baubles at exit location.
+            world_segment: str (optional)
+                Opt-out (`'exclude'`) or draw short (`'short`) path segments to the
+                world node.
+            short_length: float
+                The length of the final path segment when `world_segment='short'`.
+            bauble_radius: float
+                The bauble radius when `baubles=True`.
+        """
+        vis = self.vis
+        if not world_segment in {'exclude', 'short'}:
+            raise ValueError("`world_segment` should be either `'exclude'` or `'short'`.")
+        
+        if world_segment == 'exclude':
+            rays, events = zip(*history)
+            try:
+                idx = events.index(Event.EXIT)
+                history = history[0:idx]
+                if len(history) < 2:
+                    # nothing left to render
+                    return
+            except ValueError:
+                pass
+
+        if len(history) < 2:
+            raise AppError("Need at least two points to render a line.")
+
+        ids = []
+        rays, events = zip(*history)
+        for (start_part, end_part) in zip(history[:-1], history[1:]):
+            start_ray, end_ray = start_part[0], end_part[0]
+            nanometers = start_ray.wavelength
+            start = start_ray.position
+            end = end_ray.position
+            if world_segment == 'short':
+                if end_ray == history[-1][0]:
+                    end = np.array(start_ray.position) + np.array(start_ray.direction) * short_length
+            colour = wavelength_to_hex_int(nanometers)
+            ids.append(self.add_line_segment(start, end, colour=colour))
+            
+            if baubles:
+                event = start_part[1]
+                if event in {Event.TRANSMIT}:
+                    baubid = self.get_next_identifer()
+                    vis[f'exit/{baubid}'].set_object(
+                        g.Sphere(bauble_radius),
+                        g.MeshBasicMaterial(
+                            color=colour,
+                            transparency=False,
+                            opacity=1
+                        )
+                    )
+                    vis[f'exit/{baubid}'].set_transform(tf.translation_matrix(start))
+                    
+                    ids.append(baubid)
+        return ids
+        
 
     def remove_object(self, identifier):
         """ Remove object by its identifier.

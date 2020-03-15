@@ -14,21 +14,26 @@
 #
 import os
 import sys
+from unittest import mock
+MOCK_MODULES = ['trimesh']
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
 from pathlib import Path
 p = Path(__file__).parents[1]  # root
-sys.path.insert(0, p)
+sys.path.insert(0, str(p))
+import pvtrace
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'pvtrace'
-copyright = '2019, Daniel J Farrell'
+copyright = '2008--2020 Daniel J Farrell'
 author = 'Daniel J Farrell'
 
 # The short X.Y version
-version = ''
+version = '.'.join(v.split('.')[0:2])
 # The full version, including alpha/beta/rc tags
-release = '2.0'
+release = pvtrace.__version__
 
 
 # -- General configuration ---------------------------------------------------

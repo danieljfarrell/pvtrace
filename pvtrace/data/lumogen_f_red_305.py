@@ -27,7 +27,7 @@ def absorption(x):
 
             spectrum = absorption(np.linspace(300, 800, 200))
     """
-    spec = 0.9454846839252642*np.exp(-((578.6167306868869 - x)/22.6976093987002)**2) + \
+    spec = 0.9454846839252642*np.exp(-((578.6167306868869 - x)/22.69760939870020)**2) +\
            0.6430326869158796*np.exp(-((535.1850303736512 - x)/28.63029894331116)**2) +\
            0.1243340609168971*np.exp(-((494.5721783546976 - x)/13.98438275367119)**2) +\
            0.3651471532322375*np.exp(-((440.4679754085741 - x)/34.91923613222621)**2) +\
@@ -37,7 +37,7 @@ def absorption(x):
 
 
 def emission(x):
-    """ Fit to Lumogen F Red emission spectrum using five Gaussians.
+    """ Fit to Lumogen F Red emission spectrum using a Gaussians.
 
         Parameters
         ----------

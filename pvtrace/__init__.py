@@ -1,3 +1,4 @@
+__version__ = "2.1.3.dev0"
 """
 Optical ray tracing for luminescent materials and spectral converter photovoltaic devices
 """
@@ -24,6 +25,8 @@ from .geometry.sphere import Sphere
 # light
 from .light.light import Light, rectangular_mask, circular_mask, cube_mask
 from .light.ray import Ray
+from .light.event import Event
+
 
 # material
 from .material.component import (

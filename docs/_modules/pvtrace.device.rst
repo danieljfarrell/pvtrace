@@ -1,13 +1,13 @@
-pvtrace.common package
+pvtrace.device package
 ======================
 
 Submodules
 ----------
 
-pvtrace.common.errors module
-----------------------------
+pvtrace.device.lsc module
+-------------------------
 
-.. automodule:: pvtrace.common.errors
+.. automodule:: pvtrace.device.lsc
    :members:
    :undoc-members:
    :show-inheritance:
@@ -16,7 +16,7 @@ pvtrace.common.errors module
 Module contents
 ---------------
 
-.. automodule:: pvtrace.common
+.. automodule:: pvtrace.device
    :members:
    :undoc-members:
    :show-inheritance:
