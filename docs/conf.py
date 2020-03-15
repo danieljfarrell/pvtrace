@@ -31,7 +31,7 @@ copyright = '2008--2020 Daniel J Farrell'
 author = 'Daniel J Farrell'
 
 # The short X.Y version
-version = '.'.join(v.split('.')[0:2])
+version = '.'.join(pvtrace.__version__.split('.')[0:2])
 # The full version, including alpha/beta/rc tags
 release = pvtrace.__version__
 
