@@ -4,9 +4,13 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+with open('pvtrace/__init__.py', 'r') as fp:
+    # binds local __version__ to the line that look like  "__version__ = '2.1.3'"
+    exec(next(line for line in fp if '__version__' in line))
+    
 setup(
    name='pvtrace',
-   version='2.1.2',
+   version=__version__,
    description='Optical ray tracing for luminescent materials and spectral converter photovoltaic devices.',
    long_description=long_description,
    long_description_content_type='text/markdown',

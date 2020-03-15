@@ -14,14 +14,14 @@
 #
 import os
 import sys
+from unittest import mock
+MOCK_MODULES = ['trimesh']
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
 from pathlib import Path
 p = Path(__file__).parents[1]  # root
 sys.path.insert(0, str(p))
 import pvtrace
-
-from sys import platform
-if platform == "linux" or platform == "linux2":
-    os.system("apt-get install libspatialindex-dev")
 
 
 # -- Project information -----------------------------------------------------
