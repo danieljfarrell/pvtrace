@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 from typing import Optional
 import numpy as np
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,6 +24,7 @@ class Ray:
     is_alive : bool
         Indicates if the ray is not dead
     """
+
     position: tuple
     direction: tuple
     wavelength: Optional[float]
@@ -49,12 +51,14 @@ class Ray:
         ray will be moved backwards.
         """
         if not self.is_alive:
-            raise ValueError('Ray is not alive.')
+            raise ValueError("Ray is not alive.")
         new_position = np.array(self.position) + np.array(self.direction) * distance
         new_position = tuple(new_position.tolist())
-        new_ray = replace(self, position=new_position, travelled=self.travelled+distance)
+        new_ray = replace(
+            self, position=new_position, travelled=self.travelled + distance
+        )
         return new_ray
-    
+
     def representation(self, from_node: Node, to_node: Node) -> Ray:
         """ Representation of the ray in another coordinate system.
         

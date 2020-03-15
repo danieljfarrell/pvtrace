@@ -2,19 +2,18 @@ import abc
 import numpy as np
 from typing import Tuple
 from dataclasses import replace
-from pvtrace.geometry.utils import (
-    flip,
-    angle_between
-)
+from pvtrace.geometry.utils import flip, angle_between
 from pvtrace.material.utils import (
     fresnel_reflectivity,
     specular_reflection,
-    fresnel_refraction
+    fresnel_refraction,
 )
+
 
 class SurfaceDelegate(abc.ABC):
     """ Defines a interface for custom surface interactions.
     """
+
     @abc.abstractmethod
     def reflectivity(self, surface, ray, geometry, container, adjacent) -> float:
         """ Returns the reflectivity given the interaction.
@@ -35,7 +34,9 @@ class SurfaceDelegate(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def reflected_direction(self, surface, ray, geometry, container, adjacent) -> Tuple[float, float, float]:
+    def reflected_direction(
+        self, surface, ray, geometry, container, adjacent
+    ) -> Tuple[float, float, float]:
         """ Returns the reflected direction vector (ix, iy, iz).
         
             Parameters
@@ -54,7 +55,9 @@ class SurfaceDelegate(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def transmitted_direction(self, surface, ray, geometry, container, adjacent) -> Tuple[float, float, float]:
+    def transmitted_direction(
+        self, surface, ray, geometry, container, adjacent
+    ) -> Tuple[float, float, float]:
         """ Returns the transmitted direction vector (ix, iy, iz).
         
             Parameters
@@ -78,6 +81,7 @@ class NullSurfaceDelegate(SurfaceDelegate):
         
         This is useful for counting rays.
     """
+
     def reflectivity(self, surface, ray, geometry, container, adjacent):
         """ Returns zero.
         """
@@ -98,6 +102,7 @@ class NullSurfaceDelegate(SurfaceDelegate):
 class FresnelSurfaceDelegate(SurfaceDelegate):
     """ Fresnel reflection and refraction on the surface.
     """
+
     def reflectivity(self, surface, ray, geometry, container, adjacent):
         """ Returns the reflectivity given the interaction.
         
@@ -173,7 +178,6 @@ class FresnelSurfaceDelegate(SurfaceDelegate):
 
 
 class BaseSurface(abc.ABC):
-    
     @property
     @abc.abstractmethod
     def delegate(self):
@@ -208,7 +212,7 @@ class Surface(BaseSurface):
         directions can be implemented by supplying a custom objects which implements
         SurfaceDelegate interface.
     """
-    
+
     def __init__(self, delegate=None):
         """ Parameters
             ----------
@@ -238,29 +242,31 @@ class Surface(BaseSurface):
     def reflect(self, ray, geometry, container, adjacent):
         """ Returns ray which is reflected from the interface.
         """
-        direction = self.delegate.reflected_direction(self, ray, geometry, container, adjacent)
+        direction = self.delegate.reflected_direction(
+            self, ray, geometry, container, adjacent
+        )
         if not isinstance(direction, tuple):
-            raise ValueError("Delegate method `reflected_direction` should return a tuple.")
+            raise ValueError(
+                "Delegate method `reflected_direction` should return a tuple."
+            )
         if len(direction) != 3:
-            raise ValueError("Delegate method `reflected_direction` should return a tuple of length 3.")
-        # If angle between initial and final is less than 90 then the ray
-        # has not been reflected.
-        #if angle_between(direction, ray.direction) < np.pi/2:
-        #    raise ValueError("Ray must reflect.", {"old": ray.direction, "new": direction})
+            raise ValueError(
+                "Delegate method `reflected_direction` should return a tuple of length 3."
+            )
         return replace(ray, direction=direction)
 
     def transmit(self, ray, geometry, container, adjacent):
         """ Returns ray which is transmitted from the interface.
         """
-        direction = self.delegate.transmitted_direction(self, ray, geometry, container, adjacent)
+        direction = self.delegate.transmitted_direction(
+            self, ray, geometry, container, adjacent
+        )
         if not isinstance(direction, tuple):
-            raise ValueError("Delegate method `transmitted_direction` should return a tuple.")
+            raise ValueError(
+                "Delegate method `transmitted_direction` should return a tuple."
+            )
         if len(direction) != 3:
-            raise ValueError("Delegate method `transmitted_direction` should return a tuple of length 3.")
-        # If angle between initial and final is greater than 90 then the ray
-        # has not been transmitted.
-        #if angle_between(direction, ray.direction) > np.pi/2:
-        #    raise ValueError("Ray must transmit.", {"old": ray.direction, "new": direction})
+            raise ValueError(
+                "Delegate method `transmitted_direction` should return a tuple of length 3."
+            )
         return replace(ray, direction=direction)
-
-

@@ -2,6 +2,7 @@ import abc
 from typing import Optional, Sequence, Tuple
 import numpy as np
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,7 +50,7 @@ class Geometry(abc.ABC):
             by convention.
         """
         pass
-    
+
     @abc.abstractmethod
     def is_entering(self, surface_point: tuple, direction: tuple) -> bool:
         """ Returns the unit surface normal at the surface_point.

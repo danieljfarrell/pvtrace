@@ -1,7 +1,11 @@
 import numpy as np
-from pvtrace.geometry.transformations import \
-    rotation_matrix, translation_matrix, translation_from_matrix
+from pvtrace.geometry.transformations import (
+    rotation_matrix,
+    translation_matrix,
+    translation_from_matrix,
+)
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,7 +45,9 @@ class Transformable(object):
             The object.
         """
         super(Transformable, self).__init__()
-        self._location = np.zeros(3, dtype=np.float) if location is None else np.array(location)
+        self._location = (
+            np.zeros(3, dtype=np.float) if location is None else np.array(location)
+        )
         self._pose = translation_matrix(self._location)
 
     @classmethod
@@ -77,10 +83,7 @@ class Transformable(object):
         the vector is defined in the parent's coordinate system.
         """
         self._location += np.array(vector)
-        self._pose = np.dot(
-            translation_matrix(vector),
-            self._pose
-        )
+        self._pose = np.dot(translation_matrix(vector), self._pose)
         return self
 
     def rotate(self, angle, axis):
@@ -88,8 +91,6 @@ class Transformable(object):
         axis specifies a direction in the node's coordinate system.
         """
         self._pose = np.dot(
-            rotation_matrix(
-                angle, axis, point=self._location),
-            self._pose
+            rotation_matrix(angle, axis, point=self._location), self._pose
         )
         return self

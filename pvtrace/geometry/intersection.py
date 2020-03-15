@@ -3,7 +3,9 @@ from typing import Tuple
 import numpy as np
 from pvtrace.geometry.utils import distance_between, floats_close
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 class Intersection:
     pass
@@ -27,15 +29,15 @@ class Intersection:
             coordsys=other_node,
             point=self.coordsys.point_to_node(self.point, other_node),
             hit=self.hit,
-            distance=self.distance
+            distance=self.distance,
         )
-    
+
     def __eq__(self, other):
         return all(
             [
                 self.coordsys == other.coordsys,
-                 np.allclose(self.point, other.point),
-                 self.hit == other.hit,
-                 floats_close(self.distance, other.distance)
+                np.allclose(self.point, other.point),
+                self.hit == other.hit,
+                floats_close(self.distance, other.distance),
             ]
         )

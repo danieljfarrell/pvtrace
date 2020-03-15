@@ -3,8 +3,9 @@ __version__ = "2.1.3.dev0"
 Optical ray tracing for luminescent materials and spectral converter photovoltaic devices
 """
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger('pvtrace')
+logger = logging.getLogger("pvtrace")
 
 # Import commonly used classes to pvtrace namespace so users don't
 # have to understand module layout.
@@ -40,7 +41,7 @@ from .material.surface import (
     Surface,
     SurfaceDelegate,
     NullSurfaceDelegate,
-    FresnelSurfaceDelegate
+    FresnelSurfaceDelegate,
 )
 from .material.utils import isotropic, henyey_greenstein, cone
 
@@ -48,4 +49,3 @@ from .material.utils import isotropic, henyey_greenstein, cone
 from .scene.node import Node
 from .scene.scene import Scene
 from .scene.renderer import MeshcatRenderer
-

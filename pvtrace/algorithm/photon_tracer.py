@@ -11,9 +11,15 @@ from pvtrace.scene.node import Node
 from pvtrace.light.ray import Ray
 from pvtrace.light.event import Event
 from pvtrace.material.component import Scatterer, Luminophore
-from pvtrace.geometry.utils import distance_between, close_to_zero, points_equal, EPS_ZERO
+from pvtrace.geometry.utils import (
+    distance_between,
+    close_to_zero,
+    points_equal,
+    EPS_ZERO,
+)
 from pvtrace.common.errors import TraceError
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -73,14 +79,13 @@ def next_hit(scene, ray):
     """
     # Intersections are in the local node's coordinate system
     intersections = scene.intersections(ray.position, ray.direction)
-    
+
     # Remove on surface intersections
-    intersections = \
-        [x for x in intersections if not close_to_zero(x.distance)]
-    
+    intersections = [x for x in intersections if not close_to_zero(x.distance)]
+
     # Convert intersection points to world node
     intersections = [x.to(scene.root) for x in intersections]
-    
+
     # Node which owns the surface
     if len(intersections) == 0:
         return None
@@ -90,7 +95,7 @@ def next_hit(scene, ray):
     if len(intersections) == 1:
         hit_node = hit.hit
         return hit_node, (hit_node, None), hit.point, hit.distance
-    
+
     container = find_container(intersections)
     hit = intersections[0]
     # Intersection point and distance from ray
@@ -104,7 +109,7 @@ def next_hit(scene, ray):
     return hit_node, (container, adjacent), point, distance
 
 
-def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method='kT'):
+def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
     """ The main ray-tracing function. Provide a scene and a ray and get a full photon
         path history and list of events.
     
@@ -152,7 +157,7 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method='kT'):
         if count > maxsteps or ray.travelled > maxpathlength:
             history.append([ray, Event.KILL])
             break
-    
+
         info = next_hit(scene, ray)
         if info is None:
             break
@@ -168,7 +173,9 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method='kT'):
             ray = ray.propagate(at_distance)
             component = material.component(ray.wavelength)
             if component.is_radiative(ray):
-                ray = component.emit(ray.representation(scene.root, container), emit_method=emit_method)
+                ray = component.emit(
+                    ray.representation(scene.root, container), emit_method=emit_method
+                )
                 ray = ray.representation(container, scene.root)
                 if isinstance(component, Luminophore):
                     event = Event.EMIT
@@ -187,16 +194,15 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method='kT'):
                 ray = surface.reflect(ray, hit.geometry, container, adjacent)
                 ray = ray.representation(hit, scene.root)
                 history.append((ray, Event.REFLECT))
-                #print("REFLECT", ray)
+                # print("REFLECT", ray)
                 continue
             else:
                 ref_ray = surface.transmit(ray, hit.geometry, container, adjacent)
-                #if points_equal(ref_ray.direction, ray.direction):
+                # if points_equal(ref_ray.direction, ray.direction):
                 #    raise ValueError("Ray did not refract.")
                 ray = ref_ray
                 ray = ray.representation(hit, scene.root)
                 history.append((ray, Event.TRANSMIT))
-                #print("TRANSMIT", ray)
+                # print("TRANSMIT", ray)
                 continue
     return history
-

@@ -1,14 +1,13 @@
-
 from __future__ import annotations
-from typing import Optional, Sequence, Iterator
-from anytree import NodeMixin, Walker, PostOrderIter
+from typing import Sequence, Iterator
+from anytree import NodeMixin, Walker
 import numpy as np
 from pvtrace.common.errors import AppError
 from pvtrace.geometry.intersection import Intersection
-from pvtrace.geometry import transformations as tf
 from pvtrace.geometry.transformable import Transformable
 from pvtrace.geometry.utils import distance_between
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +16,9 @@ class Node(NodeMixin, Transformable):
     with position and orientation relative to it's parent node.
     """
 
-    def __init__(self, name=None, parent=None, location=None, geometry=None, light=None):
+    def __init__(
+        self, name=None, parent=None, location=None, geometry=None, light=None
+    ):
         super(Node, self).__init__(location=location)
         self.name = name
         self.parent = parent
@@ -89,7 +90,7 @@ class Node(NodeMixin, Transformable):
         node : Node
             Node in which the point should be represented.
         """
-        mat = self.transformation_to(node)[0:3,0:3]
+        mat = self.transformation_to(node)[0:3, 0:3]
         new_vec = tuple(np.dot(mat, np.array(tuple(vector)))[0:3])
         return new_vec
 
@@ -118,8 +119,10 @@ class Node(NodeMixin, Transformable):
             points = self.geometry.intersections(ray_origin, ray_direction)
             for point in points:
                 intersection = Intersection(
-                    coordsys=self, point=point, hit=self,
-                    distance=distance_between(ray_origin, point)
+                    coordsys=self,
+                    point=point,
+                    hit=self,
+                    distance=distance_between(ray_origin, point),
                 )
                 all_intersections.append(intersection)
         all_intersections = tuple(all_intersections)
@@ -129,8 +132,9 @@ class Node(NodeMixin, Transformable):
             ray_origin_in_child = self.point_to_node(ray_origin, child)
             ray_direction_in_child = self.vector_to_node(ray_direction, child)
             # Intersections with node's subtree
-            intersections_in_child = \
-                child.intersections(ray_origin_in_child, ray_direction_in_child)
+            intersections_in_child = child.intersections(
+                ray_origin_in_child, ray_direction_in_child
+            )
             all_intersections = all_intersections + intersections_in_child
         return all_intersections
 
@@ -161,5 +165,6 @@ class Node(NodeMixin, Transformable):
         for ray in self.light.emit(num_rays=num_rays):
             yield ray
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     pass

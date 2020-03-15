@@ -1,8 +1,7 @@
-from pvtrace.common.errors import AppError
 from pvtrace.geometry.utils import allinrange
 import numpy as np
-import traceback
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,19 +38,21 @@ class Distribution(object):
             if not np.isfinite(y).any():
                 raise ValueError("All values of y must be finite.")
             if np.any(y < 0.0):
-                raise ValueError("Distributions are like histograms all counts must be positive.")
+                raise ValueError(
+                    "Distributions are like histograms all counts must be positive."
+                )
 
             self._x_range = np.min(x), np.max(x)
             self._x = x
             self._y = y
             if hist:
                 cdf = np.cumsum(y, dtype=np.float)
-                cdf *= (1.0/cdf[-1])
+                cdf *= 1.0 / cdf[-1]
                 self._cdf = cdf
                 self._edges = np.insert(x, x.size, 2 * x[-1] - x[-2])
             else:
-                cdf = np.cumsum((y[:-1] + y[1:])*0.5)
-                cdf = cdf/np.max(cdf)
+                cdf = np.cumsum((y[:-1] + y[1:]) * 0.5)
+                cdf = cdf / np.max(cdf)
                 cdf = np.hstack([0.0, cdf])
                 self._cdf = cdf
 
@@ -77,7 +78,7 @@ class Distribution(object):
 
         if not allinrange(x, self._x_range):
             raise ValueError("x is outside data range.")
-        
+
         if self.hist:
             idx = np.searchsorted(self._edges[:-1], x)
             return self._y[idx]
@@ -122,7 +123,7 @@ class Distribution(object):
         """
         if not allinrange(x, self._x_range):
             raise ValueError("x is outside data range.")
-        
+
         if self.hist:
             idx = np.searchsorted(self._edges[:-1], x)
             return self._cdf[idx]
@@ -166,7 +167,7 @@ class Distribution(object):
         """
         if not allinrange(p, (0.0, 1.0)):
             raise ValueError("p is outside valid range.")
-        
+
         if self.hist:
             idx = np.searchsorted(self._cdf, p)
             try:
@@ -178,7 +179,7 @@ class Distribution(object):
             if xval.size == 1:
                 xval = xval.tolist()  # actually a float
             return xval
-    
+
     @classmethod
     def from_functions(cls, x, callables, hist=False):
         x = np.array(x)
@@ -190,6 +191,3 @@ class Distribution(object):
             y_[np.where(~np.isfinite(y_))] = 0.0
             y += y_
         return Distribution(x=x, y=y, hist=hist)
-
-
-    

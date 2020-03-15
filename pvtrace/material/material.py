@@ -1,13 +1,13 @@
-from typing import Union, Tuple, List
+from typing import Tuple
 import numpy as np
 from pvtrace.material.component import Component
 from pvtrace.material.surface import Surface
 import logging
+
 logger = logging.getLogger(__name__)
 
 
 class Material(object):
-    
     def __init__(self, refractive_index: float, surface=None, components=None):
         self.refractive_index = refractive_index
         self.surface = Surface() if surface is None else surface
@@ -38,13 +38,12 @@ class Material(object):
                 The penetration depth in centimetres or `float('inf')`.
         """
         alpha = self.total_attenutation_coefficient(wavelength)
-        #logger.debug('Got alpha({}) = {}'.format(wavelength, alpha))
         if np.isclose(alpha, 0.0):
-            return float('inf')
+            return float("inf")
         elif not np.isfinite(alpha):
             return 0.0
         # Sample exponential distribution
-        depth = -np.log(1 - np.random.uniform())/alpha
+        depth = -np.log(1 - np.random.uniform()) / alpha
         return depth
 
     def component(self, wavelength: float) -> Component:

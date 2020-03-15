@@ -2,6 +2,7 @@ import numpy as np
 import numpy
 import math
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,12 +32,12 @@ def on_aabb_surface(size, point, centre=(0.0, 0.0, 0.0), atol=EPS_ZERO):
     # xmin
     xmin_point = np.array(point)
     xmin_point[0] = origin[0]
-    #print("point: {}, xmin_point: {}".format(point, xmin_point))
+    # print("point: {}, xmin_point: {}".format(point, xmin_point))
     xmin_dist = distance_between(point, xmin_point)
     # xmax
     xmax_point = np.array(point)
     xmax_point[0] = extent[0]
-    #print("point: {}, xmax_point: {}".format(point, xmax_point))
+    # print("point: {}, xmax_point: {}".format(point, xmax_point))
     xmax_dist = distance_between(point, xmax_point)
     # ymin
     ymin_point = np.array(point)
@@ -54,9 +55,9 @@ def on_aabb_surface(size, point, centre=(0.0, 0.0, 0.0), atol=EPS_ZERO):
     zmax_point = np.array(point)
     zmax_point[2] = extent[2]
     zmax_dist = distance_between(point, zmax_point)
-    
+
     dists = (xmin_dist, xmax_dist, ymin_dist, ymax_dist, zmin_dist, zmax_dist)
-    tests = [np.abs(dist) < (atol/2) for dist in dists]
+    tests = [np.abs(dist) < (atol / 2) for dist in dists]
     surfaces = np.where(np.array(tests) == True)[0].tolist()
     return np.any(tests), surfaces
 
@@ -88,38 +89,38 @@ def aabb_intersection(min_point, max_point, ray_position, ray_direction):
     origin = np.array(min_point)
     extent = np.array(max_point)
     pts = (origin, extent)
-    
-    rinvd = 1.0/rdir
-    rsgn =  1.0 / (rinvd < 0.0)
+
+    rinvd = 1.0 / rdir
+    rsgn = 1.0 / (rinvd < 0.0)
     tmin = (origin[rsgn[0]] - rpos[0]) * rinvd[0]
-    tmax = (origin[1-rsgn[0]] - rpos[0]) * rinvd[0]
+    tmax = (origin[1 - rsgn[0]] - rpos[0]) * rinvd[0]
     tymin = (extent[rsgn[1]] - rpos[1]) * rinvd[1]
-    tymax = (extent[1-rsgn[1]] - rpos[1]) * rinvd[1]
-    
-    if (tmin > tymax) or (tymin > tmax): 
+    tymax = (extent[1 - rsgn[1]] - rpos[1]) * rinvd[1]
+
+    if (tmin > tymax) or (tymin > tmax):
         return None
-        
+
     if tymin > tmin:
         tmin = tymin
     if tymax < tmax:
         tmax = tymax
-        
+
     tzmin = (extent[rsgn[2]] - rpos[2]) * rinvd[2]
-    tzmax = (extent[1-rsgn[2]] - rpos[2]) * rinvd[2]
-    
-    if (tmin > tzmax) or  (tzmin > tmax): 
+    tzmax = (extent[1 - rsgn[2]] - rpos[2]) * rinvd[2]
+
+    if (tmin > tzmax) or (tzmin > tmax):
         return None
     if tzmin > tmin:
         tmin = tzmin
     if tzmax < tmax:
         tmax = tzmax
-    
-    # Calculate the hit coordinates then if the solution is in 
+
+    # Calculate the hit coordinates then if the solution is in
     # the forward direction append to the hit list.
     hit_coordinates = []
     pt1 = tuple(rpos + tmin * rdir)
     pt2 = tuple(rpos + tmax * rdir)
-    
+
     if tmin >= 0.0:
         hit_coordinates.append(pt1)
     if tmax >= 0.0:
@@ -307,30 +308,39 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
     xd, yd, zd = n0
 
     # Look for intersections on the cylinder surface
-    a = xd**2 + yd**2
-    b = 2 * (xe*xd + ye*yd)
-    c = xe**2 + ye**2 - radius**2
-    tcyl = [t for t in np.roots([a, b, c]) if np.isfinite(t) and np.isreal(t) and t >= 0]
-        
+    a = xd ** 2 + yd ** 2
+    b = 2 * (xe * xd + ye * yd)
+    c = xe ** 2 + ye ** 2 - radius ** 2
+    tcyl = [
+        t for t in np.roots([a, b, c]) if np.isfinite(t) and np.isreal(t) and t >= 0
+    ]
+
     # Look for intersections on the cap surfaces
-    with np.errstate(divide='ignore'):
+    with np.errstate(divide="ignore"):
         # top cap
-        point = np.array([0.0, 0.0, 0.5*length])
-        normal = np.array([0.0, 0.0, 1.0]) # outward facing at z = length
+        point = np.array([0.0, 0.0, 0.5 * length])
+        normal = np.array([0.0, 0.0, 1.0])  # outward facing at z = length
         ttopcap = (point - p0).dot(normal) / n0.dot(normal)
         # bottom cap
-        point = np.array([0.0, 0.0, -0.5*length])
-        normal = np.array([0.0, 0.0, -1.0]) # outward facing at z = 0
+        point = np.array([0.0, 0.0, -0.5 * length])
+        normal = np.array([0.0, 0.0, -1.0])  # outward facing at z = 0
         tbotcap = (point - p0).dot(normal) / n0.dot(normal)
         tcap = [t for t in (tbotcap, ttopcap) if np.isfinite(t) and t >= 0.0]
-    
+
     # Reject point cap points which are not in the cap's circle radius
     # and cylinder points which outside the length.
     cap_candidates = [(p0 + t * n0, t) for t in tcap]
-    cap_candidates = [(point, t) for (point, t) in cap_candidates
-                      if np.sqrt(point[0]**2 + point[1]**2) < radius]
+    cap_candidates = [
+        (point, t)
+        for (point, t) in cap_candidates
+        if np.sqrt(point[0] ** 2 + point[1] ** 2) < radius
+    ]
     cyl_candidates = [(p0 + t * n0, t) for t in tcyl]
-    cyl_candidates = [(point, t) for (point, t) in cyl_candidates if point[2] > -0.5*length and point[2] < 0.5*length]
+    cyl_candidates = [
+        (point, t)
+        for (point, t) in cyl_candidates
+        if point[2] > -0.5 * length and point[2] < 0.5 * length
+    ]
     intersection_info = tuple(cyl_candidates) + tuple(cap_candidates)
     intersection_info = sorted(intersection_info, key=lambda pair: pair[1])
     if len(intersection_info) == 0:
@@ -345,14 +355,14 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
 
 def close_to_zero(value) -> bool:
     return np.all(np.absolute(value) < EPS_ZERO)
-    
+
 
 def points_equal(point1: tuple, point2: tuple) -> bool:
     return close_to_zero(distance_between(point1, point2))
 
 
-def floats_close(a,b):
-    return close_to_zero(a-b)
+def floats_close(a, b):
+    return close_to_zero(a - b)
 
 
 def allinrange(x, x_range):
@@ -366,7 +376,7 @@ def allinrange(x, x_range):
         x_range : tuple of float
             A tuple defining a range like (xmin, xmax)
     """
-    return np.where(np.logical_or(x<x_range[0], x>x_range[1]))[0].size == 0
+    return np.where(np.logical_or(x < x_range[0], x > x_range[1]))[0].size == 0
 
 
 # Vector helpers
@@ -377,7 +387,7 @@ def flip(vector):
 
 
 def magnitude(vector):
-   return np.sqrt(np.dot(np.array(vector),np.array(vector)))
+    return np.sqrt(np.dot(np.array(vector), np.array(vector)))
 
 
 def norm(vector):
@@ -387,10 +397,13 @@ def norm(vector):
 def angle_between(normal, vector):
     normal = np.array(normal)
     vector = np.array(vector)
-    if np.allclose(normal, vector): return 0.0
-    elif np.allclose(-normal, vector): return np.pi
+    if np.allclose(normal, vector):
+        return 0.0
+    elif np.allclose(-normal, vector):
+        return np.pi
     dot = np.dot(normal, vector)
     return np.arccos(dot)
+
 
 def is_ahead(position, direction, point):
     """ Tests whether point is ahead of the current position.
@@ -404,7 +417,7 @@ def is_ahead(position, direction, point):
 
 def smallest_angle_between(normal, vector):
     rads = angle_between(normal, vector)
-    return np.arctan2(np.sin(rads), np.cos(rads))   
+    return np.arctan2(np.sin(rads), np.cos(rads))
 
 
 def distance_between(point1: tuple, point2: tuple) -> float:
@@ -421,6 +434,5 @@ def intersection_point_is_ahead(ray_position, ray_direction, intersection_point)
         The intersection point must be a point on the line, p(a) = p0 + a * n.
     """
     return (
-        np.dot(ray_direction, intersection_point) - 
-        np.dot(ray_direction, ray_position)
+        np.dot(ray_direction, intersection_point) - np.dot(ray_direction, ray_position)
     ) > EPS_ZERO
