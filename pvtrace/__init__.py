@@ -1,4 +1,4 @@
-__version__ = "2.1.3-dev"
+__version__ = "2.1.3.dev0"
 """
 Optical ray tracing for luminescent materials and spectral converter photovoltaic devices
 """
