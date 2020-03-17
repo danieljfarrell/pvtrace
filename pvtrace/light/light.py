@@ -156,6 +156,6 @@ class Light(object):
                 position=self.position(),
                 direction=self.direction(),
                 is_alive=True,
-                source=self,
+                source=self.name,
             )
             yield ray

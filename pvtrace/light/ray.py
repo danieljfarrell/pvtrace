@@ -23,6 +23,10 @@ class Ray:
         The wavelength in nanometers.
     is_alive : bool
         Indicates if the ray is not dead
+    travelled : float
+        Total propagation distance. This gets updated when when calling `propagate`.
+    source: float
+        Identifier of the light source of luminophore that emitted the ray.
     """
 
     position: tuple
@@ -30,7 +34,7 @@ class Ray:
     wavelength: Optional[float]
     is_alive: bool = True
     travelled: float = 0.0
-    source: object = None
+    source: Optional[str] = None
 
     def __repr__(self):
         position = "(" + ", ".join(["{:.2f}".format(x) for x in self.position]) + ")"

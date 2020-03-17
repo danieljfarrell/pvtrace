@@ -112,7 +112,7 @@ class Scatterer(Component):
         """ Change ray direction or wavelength based on physics of the interaction.
         """
         direction = self.phase_function()
-        ray = replace(ray, direction=direction, source=self)
+        ray = replace(ray, direction=direction, source=self.name)
         return ray
 
 
@@ -321,5 +321,5 @@ class Luminophore(Scatterer):
         p2 = 1.0
         gamma = np.random.uniform(p1, p2)
         wavelength = dist.sample(gamma)
-        ray = replace(ray, direction=direction, wavelength=wavelength, source=self)
+        ray = replace(ray, direction=direction, wavelength=wavelength, source=self.name)
         return ray
