@@ -55,6 +55,18 @@ class Scene(object):
                 found_nodes.append(node)
         return found_nodes
 
+    @property
+    def component_nodes(self) -> Sequence[Component]:
+        """ Returns all lights in the scene.
+        """
+        root = self.root
+        found_nodes = []
+        for node in LevelOrderIter(root):
+            if node.geometry:
+                if node.geometry.material:
+                    found_nodes.extend(node.geometry.material.components)
+        return found_nodes
+
     def emit(self, num_rays):
         """ Rays are emitted in the coordinate system of the world node.
         
