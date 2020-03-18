@@ -3,9 +3,11 @@ __version__ = "2.1.3.dev0"
 Optical ray tracing for luminescent materials and spectral converter photovoltaic devices
 """
 import logging
-
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("pvtrace")
+logging.getLogger('trimesh').setLevel(logging.CRITICAL)
+logging.getLogger('shapely.geos').setLevel(logging.CRITICAL)
+
 
 # Import commonly used classes to pvtrace namespace so users don't
 # have to understand module layout.
@@ -15,6 +17,8 @@ from .algorithm import photon_tracer
 
 # data
 from .data import lumogen_f_red_305
+
+from .device.lsc import LSC
 
 # geometry
 from .geometry.box import Box
