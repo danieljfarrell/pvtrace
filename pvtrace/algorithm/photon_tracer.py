@@ -174,7 +174,7 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
             component = material.component(ray.wavelength)
             if component.is_radiative(ray):
                 ray = component.emit(
-                    ray.representation(scene.root, container), emit_method=emit_method
+                    ray.representation(scene.root, container), method=emit_method
                 )
                 ray = ray.representation(container, scene.root)
                 if isinstance(component, Luminophore):

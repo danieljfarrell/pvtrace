@@ -16,7 +16,7 @@ logging.getLogger('shapely.geos').setLevel(logging.CRITICAL)
 from .algorithm import photon_tracer
 
 # data
-from .data import lumogen_f_red_305
+from .data import lumogen_f_red_305, fluro_red
 
 from .device.lsc import LSC
 
