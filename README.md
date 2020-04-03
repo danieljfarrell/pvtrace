@@ -33,25 +33,62 @@ Conda can also be used but you must manually install the Rtree dependency *befor
     
 ## Introduction
 
-pvtrace is a statistical photon path tracer written in Python. It follows photons through a 3D scene and records their interactions with objects to build up statistical information about energy flow. This approach is particularly useful in photovoltaics and non-imaging optics where the goal is to design systems which efficiently transport light to target locations.
 
-## Documentation
+*pvtrace* is a statistical photon path tracer written in Python. 
 
-Interactive Jupyter notebooks are in [examples directory](https://github.com/danieljfarrell/pvtrace/tree/master/examples), download and take a look, although they can be viewed online.
+Rays are followed through a 3D scene and their interactions with objects are recorded to build up statistical information about energy flow.
 
-API documentation and some background at [https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
+This is useful in photovoltaics and non-imaging optics where the goal is to design systems which efficiently transport light to target locations.
 
-## Capabilities
+## Features
 
-pvtrace was originally written to characterise the performance of Luminescent Solar Concentrators (LSC) and takes a Monte-Carlo approach to ray-tracing. Each ray is independent and can interact with objects in the scene via reflection and refraction. Objects can have different optical properties: refractive index, absorption coefficient, emission spectrum and quantum yield.
+### Luminescent solar concentrators
 
-One of the key features of pvtrace is the ability to simulate re-absorption of photons in luminescent materials. This requires following thousands of rays to build intensity profiles and spectra of incoming and outgoing photons because these process cannot be approximated in a continuous way.
 
-pvtrace may also be useful to researches or designers interested in ray-optics simulations but will be slower at running these simulations compared to other software packages because it follows each ray individually.
+One of the key features of pvtrace is the ability to simulate re-absorption of photons in devices like Luminescent Solar Concentrators.
+
+
+A basic LSC can be simulated and visualised in a few lines of code,
+
+```python
+from pvtrace import *
+lsc = LSC((5.0, 5.0, 1.0))  # size in cm
+lsc.show()  # open visualiser
+lsc.simulate(100)  # emit 100 rays
+lsc.report()  # print report
+```
+
+This script will render the ray-tracing in real time,
+
+![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/pvtrace-demo.gif)
+
+
+
+### Ray optics simulations
+
+
+*pvtrace* supports ray-tracing a 3D scene of shapes,
+
+* box
+* sphere
+* cylinder
+* mesh
+
+The optical properties of each shape can be customised,
+
+* refractive index
+* absorption coefficient
+* scattering coefficient
+* emission lineshape
+* quantum yield
+* surface reflection
+* surface scattering
+
+Currently, there are no optical components such as lenses, beam-splitter, gratings but these would be constructed using the scene API.
 
 ![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/example.png)
-    
-A minimal working example that traces a glass sphere
+
+For example, the script to ray trace this glass sphere is below,
 
 ```python
 import time
@@ -102,11 +139,12 @@ while True:
         sys.exit()
 ```
 
-## Architecture
+### Scene API
+
+*pvtrace* is designed in layers each with as limited scope as possible.
 
 ![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/pvtrace-design.png)
 
-*pvtrace* is designed in layers each with as limited scope as possible.
 
 <dl>
   <dt>Scene</dt>
@@ -126,7 +164,59 @@ while True:
   
   <dt>Components</dt>
   <dd>Specifies optical properties of the geometries volume, absorption coefficient, scattering coefficient, quantum yield, emission spectrum.</dd>
+  
+  <dt>Ray-tracing engine</dt>
+  <dd>The algorithm which spawns rays, computes intersections, samples probabilities and travers the rays through the scene.</dd>
 </dl>
+
+Currently *pvtrace* supports only one ray-tracing engine: a photon path tracer. This is physically accurate, down to treating individual absorption and emission events, but is slow because the problem cannot be vectorised as each ray is followed individually.
+
+## Documentation
+
+Interactive Jupyter notebooks are in [examples directory](https://github.com/danieljfarrell/pvtrace/tree/master/examples), download and take a look, although they can be viewed online.
+
+API documentation and some background at [https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
+
+## Contributing
+
+Please use the github [issue](https://github.com/danieljfarrell/pvtrace/issues) tracker for bug fixes, suggestions, or support questions.
+ 
+### Creating a development environment
+
+Get started by creating a development environment. On MaOS or Linux this is easy using `pyenv`,
+
+```bash
+# Make workspace and python runtime
+mkdir pvtrace-dev
+cd pvtrace-dev
+pyenv virtualenv 3.7.2 pvtrace-dev
+pyenv local pvtrace-dev
+
+# Pull from master
+git clone https://github.com/danieljfarrell/pvtrace.git
+
+# Get development dependencies
+pip install -r pvtrace/requirements_dev.txt 
+
+# Add local `pvtrace` directory to known packages
+pip install -e pvtrace
+
+# Run units tests
+pytest pvtrace/tests
+
+# Run an example
+python pvtrace/examples/hello_world.py
+```
+
+You should now be able to edit the source code and simply run scripts directly without the need to reinstall anything.
+
+### Unit tests
+
+Please add or modifty an exsiting unit tests in the `pvtrace/tests` directory if you are adding new code. This will make it much easier to include your changes in the project.
+ 
+## Questions
+
+You can get in contact with me directly at [dan@excitonlabs.com](mailto:dan@excitonlabs.com?subject=GitHub pvtrace question)
 
 ## Dependancies
 
