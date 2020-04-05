@@ -17,7 +17,7 @@ setup(
    author='Daniel Farrell',
    author_email='dan@excitonlabs.com',
    url='https://github.com/danieljfarrell/pvtrace',
-   download_url = 'https://github.com/danieljfarrell/pvtrace/archive/v2.1.2.tar.gz',
+   download_url = 'https://github.com/danieljfarrell/pvtrace/archive/v{}.tar.gz'.format(__version__),
    python_requires='>=3.7.2',
    packages=find_packages(),
    keywords=[
