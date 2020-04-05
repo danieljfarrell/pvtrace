@@ -84,8 +84,6 @@ The optical properties of each shape can be customised,
 * surface reflection
 * surface scattering
 
-Currently, there are no optical components such as lenses, beam-splitter, gratings but these would be constructed using the scene API.
-
 ![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/example.png)
 
 For example, the script to ray trace this glass sphere is below,
