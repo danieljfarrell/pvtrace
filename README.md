@@ -10,15 +10,27 @@ Tutorials are in Jupyter notebook form so to view those
 
     pip install jupyter
 
-### pyenv
+### pyenv (macOS)
 
-You may want to use [pyenv](https://github.com/pyenv/pyenv) to create a clean virtual environment for pvtrace.
+If using macOS you may want to use [pyenv](https://github.com/pyenv/pyenv) to create a clean virtual environment for pvtrace.
 
     pyenv virtualenv 3.7.2 pvtrace-env
     pyenv activate pvtrace-env
     pip install pvtrace
-    # download the examples/hello_world.py from GitHub
+    # download https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py
     python hello_world.py
+
+### conda (Windows, Linux an macOS)
+
+Conda can also be used but you must manually installed the Rtree dependency *before* the `pip install pvtrace` command!
+
+    conda create --name pvtrace-env python=3.7
+    conda activate pvtrace-env
+    conda install Rtree
+    pip install pvtrace
+    # download https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py
+    python hello_world.py
+    
 
 ## Introduction
 
