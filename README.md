@@ -22,7 +22,7 @@ If using macOS you may want to use [pyenv](https://github.com/pyenv/pyenv) to cr
 
 ### conda (Windows, Linux and macOS)
 
-Conda can also be used but you must manually installed the Rtree dependency *before* the `pip install pvtrace` command!
+Conda can also be used but you must manually install the Rtree dependency *before* the `pip install pvtrace` command!
 
     conda create --name pvtrace-env python=3.7
     conda activate pvtrace-env
@@ -31,7 +31,6 @@ Conda can also be used but you must manually installed the Rtree dependency *bef
     # download https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py
     python hello_world.py
     
-
 ## Introduction
 
 pvtrace is a statistical photon path tracer written in Python. It follows photons through a 3D scene and records their interactions with objects to build up statistical information about energy flow. This approach is particularly useful in photovoltaics and non-imaging optics where the goal is to design systems which efficiently transport light to target locations.
