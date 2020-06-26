@@ -20,7 +20,7 @@ If using macOS you may want to use [pyenv](https://github.com/pyenv/pyenv) to cr
     # download https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py
     python hello_world.py
 
-### conda (Windows, Linux an macOS)
+### conda (Windows, Linux and macOS)
 
 Conda can also be used but you must manually installed the Rtree dependency *before* the `pip install pvtrace` command!
 
