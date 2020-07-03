@@ -7,6 +7,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Don't like forcing units! This makes the distance units
+# in pvtrace centimetres.
+speed_of_light_cm_per_s = 299792458.0 * 100.0
+
 
 @dataclass(frozen=True)
 class Ray:
@@ -24,7 +28,11 @@ class Ray:
     is_alive : bool
         Indicates if the ray is not dead
     travelled : float
-        Total propagation distance. This gets updated when when calling `propagate`.
+        Total propagation distance. This gets updated when calling `propagate`.
+    duration: float
+        Total time the ray has been propagating. Unlike travelled this includes the
+        radiative lifetime of emissive states. This gets updated when calling
+        `propagate`.
     source: float
         Identifier of the light source of luminophore that emitted the ray.
     """
@@ -34,6 +42,7 @@ class Ray:
     wavelength: Optional[float]
     is_alive: bool = True
     travelled: float = 0.0
+    duration: float = 0.0
     source: Optional[str] = None
 
     def __repr__(self):
@@ -44,7 +53,7 @@ class Ray:
         args = (position, direction, wavelength, is_alive)
         return "Ray(pos={}, dir={}, nm={}, alive={})".format(*args)
 
-    def propagate(self, distance: float) -> Ray:
+    def propagate(self, distance: float, refractive_index: float) -> Ray:
         """ Returns a new ray which has been moved the specified distance along
         its direction.
         
@@ -52,14 +61,22 @@ class Ray:
         ----------
         distance : float
             The distance to move the ray. Can be negative in which case the new
-        ray will be moved backwards.
+            ray will be moved backwards.
+        refractive_index: float
+            The refractive index of material in which the ray is propagating. This
+            is used to calculate the time to travel the distance.
+
         """
         if not self.is_alive:
             raise ValueError("Ray is not alive.")
         new_position = np.array(self.position) + np.array(self.direction) * distance
         new_position = tuple(new_position.tolist())
         new_ray = replace(
-            self, position=new_position, travelled=self.travelled + distance
+            self,
+            position=new_position,
+            travelled=self.travelled + distance,
+            duration=self.duration
+            + 1 / (speed_of_light_cm_per_s / refractive_index / distance),
         )
         return new_ray
 

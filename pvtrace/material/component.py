@@ -121,16 +121,16 @@ class Absorber(Scatterer):
     
         Examples
         --------
-        Create `Absorber` with isotropic and constant probability of scattering::
+        Create `Absorber` with isotropic and constant scattering coefficient::
 
             Absorber(1.0)
 
-        With spectrally varying scattering probability using a numpy array::
+        With spectrally varying scattering coefficient using a numpy array::
 
             arr = numpy.column_stack((x, y))
             Absorber(arr)
 
-        With spectrally varying scattering probability using `x` lists::
+        With spectrally varying scattering coefficient using `x` lists::
 
             Absorber(y, x=x)
     """
@@ -187,7 +187,7 @@ class Luminophore(Scatterer):
             absorption_spectrum = np.column_stack((x_abs, y_abs))
             emission_spectrum = np.column_stack((x_ems, y_ems))
             Luminophore(
-                absorption_spectrum=absorption_spectrum,
+                coefficient=absorption_spectrum,
                 emission=emission_spectrum,
                 quantum_yield=1.0
             )
@@ -197,7 +197,7 @@ class Luminophore(Scatterer):
             absorption_histogram = np.column_stack((x_abs, y_abs))
             emission_histogram = np.column_stack((x_ems, y_ems))
             Luminophore(
-                absorption_spectrum=absorption_histogram,
+                coefficient=absorption_histogram,
                 emission=emission_histogram,
                 quantum_yield=1.0,
                 hist=True
@@ -214,6 +214,7 @@ class Luminophore(Scatterer):
         x=None,
         hist=False,
         quantum_yield=1.0,
+        lifetime=None,
         phase_function=None,
         name="Luminophore",
     ):
@@ -245,6 +246,8 @@ class Luminophore(Scatterer):
                 The probability of re-emitting a ray.
             phase_function callable (optional)
                 Specifies the direction of emitted rays.
+            lifetime: float (optional)
+                Specifies the radiative lifetime in seconds for the emission
             hist: Bool
                 Specifies how the absorption and emission spectra are sampled. If `True`
                 the values are treated as a histogram. If `False` the values are 
@@ -260,6 +263,8 @@ class Luminophore(Scatterer):
             hist=hist,
             name=name,
         )
+
+        self._lifetime = lifetime
 
         # Make emission spectrum distribution
         self._emission = emission
@@ -321,5 +326,17 @@ class Luminophore(Scatterer):
         p2 = 1.0
         gamma = np.random.uniform(p1, p2)
         wavelength = dist.sample(gamma)
-        ray = replace(ray, direction=direction, wavelength=wavelength, source=self.name)
+
+        # Delay emission using the radiative lifetime
+        emission_delay = 0.0
+        if self._lifetime:
+            emission_delay = -np.log(1 - np.random.uniform()) * self._lifetime
+
+        ray = replace(
+            ray,
+            direction=direction,
+            wavelength=wavelength,
+            source=self.name,
+            duration=ray.duration + emission_delay,
+        )
         return ray
