@@ -186,6 +186,8 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
                 history.append((ray, event))
                 continue
             else:
+                ray = component.nonradiative_absorb(ray)
+                history.append((ray, Event.NONRADIATIVE))
                 break
         else:
             ray = ray.propagate(full_distance, refractive_index)
