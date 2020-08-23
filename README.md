@@ -63,6 +63,7 @@ This script will render the ray-tracing in real time,
 ![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/dev/lsc-device/docs/pvtrace-demo.gif)
 
 
+pvtrace has been validate against three other luminescent concentrator codes see [Validation.ipynb](https://github.com/danieljfarrell/pvtrace/blob/dev/lsc-device/examples/Validation.ipynb)
 
 ### Ray optics simulations
 
@@ -164,7 +165,7 @@ while True:
   <dd>Specifies optical properties of the geometries volume, absorption coefficient, scattering coefficient, quantum yield, emission spectrum.</dd>
   
   <dt>Ray-tracing engine</dt>
-  <dd>The algorithm which spawns rays, computes intersections, samples probabilities and travers the rays through the scene.</dd>
+  <dd>The algorithm which spawns rays, computes intersections, samples probabilities and traverses the rays through the scene.</dd>
 </dl>
 
 Currently *pvtrace* supports only one ray-tracing engine: a photon path tracer. This is physically accurate, down to treating individual absorption and emission events, but is slow because the problem cannot be vectorised as each ray is followed individually.
@@ -178,7 +179,9 @@ API documentation and some background at [https://pvtrace.readthedocs.io](https:
 ## Contributing
 
 Please use the github [issue](https://github.com/danieljfarrell/pvtrace/issues) tracker for bug fixes, suggestions, or support questions.
- 
+
+If you are considering contributing to pvtrace, first fork the project. This will make it easier to include your contributions using pull requests.
+
 ### Creating a development environment
 
 Get started by creating a development environment. On MaOS or Linux this is easy using `pyenv`,
@@ -190,8 +193,10 @@ cd pvtrace-dev
 pyenv virtualenv 3.7.2 pvtrace-dev
 pyenv local pvtrace-dev
 
-# Pull from master
-git clone https://github.com/danieljfarrell/pvtrace.git
+# Pull from your fork
+git clone https://github.com/<your username>/pvtrace.git
+# or the main repo.
+# git clone https://github.com/danieljfarrell/pvtrace.git
 
 # Get development dependencies
 pip install -r pvtrace/requirements_dev.txt 
@@ -210,13 +215,13 @@ You should now be able to edit the source code and simply run scripts directly w
 
 ### Unit tests
 
-Please add or modifty an exsiting unit tests in the `pvtrace/tests` directory if you are adding new code. This will make it much easier to include your changes in the project.
+Please add or modify an existing unit tests in the `pvtrace/tests` directory if you are adding new code. This will make it much easier to include your changes in the project.
  
 ## Questions
 
 You can get in contact with me directly at dan@excitonlabs.com.
 
-## Dependancies
+## Dependencies
 
 Basic environment requires the following packages which will be installed with `pip` automatically
 
