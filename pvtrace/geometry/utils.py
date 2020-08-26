@@ -376,6 +376,8 @@ def allinrange(x, x_range):
         x_range : tuple of float
             A tuple defining a range like (xmin, xmax)
     """
+    if isinstance(x, (int, float, np.float, np.int)):
+        x = np.array([x])
     return np.where(np.logical_or(x < x_range[0], x > x_range[1]))[0].size == 0
 
 
