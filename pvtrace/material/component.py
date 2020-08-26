@@ -302,6 +302,7 @@ class Luminophore(Scatterer):
         nm = ray.wavelength
         # Different ways of sampling the emission distribution.
         if method == "kT":
+            # Known issue: this can blue shift outside simulation range!
             # Emission energy can be within 3kT above current value. Simple bolzmann.
             eV = 1240.0 / nm
             eV = eV + 3 / 2 * kB * T  # Assumes 3 dimensional degrees of freedom

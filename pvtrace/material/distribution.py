@@ -77,7 +77,7 @@ class Distribution(object):
                 return self._y
 
         if not allinrange(x, self._x_range):
-            raise ValueError("x is outside data range.")
+            raise ValueError("x is outside data range.", {"x": x, "x_range": self._x_range})
 
         if self.hist:
             idx = np.searchsorted(self._edges[:-1], x)
@@ -122,7 +122,7 @@ class Distribution(object):
 
         """
         if not allinrange(x, self._x_range):
-            raise ValueError("x is outside data range.")
+            raise ValueError("x is outside data range.", {"x": x, "x_range": self._x_range})
 
         if self.hist:
             idx = np.searchsorted(self._edges[:-1], x)
