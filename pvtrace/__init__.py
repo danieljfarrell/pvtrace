@@ -1,12 +1,13 @@
-__version__ = "2.1.3.dev0"
+__version__ = "2.1.3"
 """
 Optical ray tracing for luminescent materials and spectral converter photovoltaic devices
 """
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("pvtrace")
-logging.getLogger('trimesh').setLevel(logging.CRITICAL)
-logging.getLogger('shapely.geos').setLevel(logging.CRITICAL)
+logging.getLogger("trimesh").setLevel(logging.CRITICAL)
+logging.getLogger("shapely.geos").setLevel(logging.CRITICAL)
 
 
 # Import commonly used classes to pvtrace namespace so users don't
@@ -34,11 +35,7 @@ from .light.event import Event
 
 
 # material
-from .material.component import (
-    Scatterer,
-    Absorber,
-    Luminophore,
-)
+from .material.component import Scatterer, Absorber, Luminophore
 from .material.distribution import Distribution
 from .material.material import Material
 from .material.surface import (
