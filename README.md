@@ -22,11 +22,11 @@ lsc.report()                # print report
 
 This script will render the ray-tracing in real time,
 
-![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/dev/lsc-device/docs/pvtrace-demo.gif)
+![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/pvtrace-demo.gif)
 
 pvtrace has been validate against three other luminescent concentrator codes. For full details see [Validation.ipynb](https://github.com/danieljfarrell/pvtrace/blob/dev/lsc-device/examples/Validation.ipynb) notebook
 
-![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/dev/lsc-device/examples/Validation.png)
+![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/Validation.png)
 
 # Install
 
