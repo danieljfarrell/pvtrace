@@ -24,7 +24,7 @@ This script will render the ray-tracing in real time,
 
 ![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/pvtrace-demo.gif)
 
-pvtrace has been validate against three other luminescent concentrator codes. For full details see [Validation.ipynb](https://github.com/danieljfarrell/pvtrace/blob/dev/lsc-device/examples/Validation.ipynb) notebook
+pvtrace has been validate against three other luminescent concentrator codes. For full details see [Validation.ipynb](https://github.com/danieljfarrell/pvtrace/blob/master/examples/Validation.ipynb) notebook
 
 ![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/Validation.png)
 
@@ -36,21 +36,21 @@ On MacOS *pvtrace* can be installed easily using [pyenv](https://github.com/pyen
 
 Create a clean virtual environment for pvtrace
 
-    pyenv virtualenv 3.7.2 pvtrace-env
+    pyenv virtualenv 3.8.4 pvtrace-env
     pyenv activate pvtrace-env
     pip install pvtrace
-    # download https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py
+    curl https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py > hello_world.py
     python hello_world.py
 
 ## Linux and Windows using Conda
 
 On Linux and Windows you must use conda to create the python environment. Optionally you can also use this method on MacOS too if you prefer Conda over pyenv.
 
-    conda create --name pvtrace-env python=3.7
+    conda create --name pvtrace-env python=3.8
     conda activate pvtrace-env
     conda install Rtree
     pip install pvtrace
-    # download https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py
+    curl https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py > hello_world.py
     python hello_world.py
 
 # Features
@@ -223,6 +223,7 @@ Basic environment requires the following packages which will be installed with `
 
 * python >= 3.7.2
 * numpy
+* pandas
 * trimesh[easy]
 * meshcat >= 0.0.16
 * anytree
