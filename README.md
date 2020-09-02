@@ -39,8 +39,6 @@ Create a clean virtual environment for pvtrace
     pyenv virtualenv 3.8.4 pvtrace-env
     pyenv activate pvtrace-env
     pip install pvtrace
-    curl https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py > hello_world.py
-    python hello_world.py
 
 ## Linux and Windows using Conda
 
@@ -50,7 +48,17 @@ On Linux and Windows you must use conda to create the python environment. Option
     conda activate pvtrace-env
     conda install Rtree
     pip install pvtrace
+
+## Run the example script
+
+Download the [hello_world.py](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py) example script either manually or using `curl`,
+
+    # Download example script
     curl https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py > hello_world.py
+
+The example script requires pandas so install that and run the script,
+
+    pip install pandas
     python hello_world.py
 
 # Features
