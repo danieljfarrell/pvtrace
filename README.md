@@ -49,7 +49,7 @@ On Linux and Windows you must use conda to create the python environment. Option
     conda install Rtree
     pip install pvtrace
 
-## Run the example script
+# Run the example script and notebooks
 
 Download the [hello_world.py](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py) example script either manually or using `curl`,
 
@@ -58,8 +58,28 @@ Download the [hello_world.py](https://raw.githubusercontent.com/danieljfarrell/p
 
 The example script requires pandas so install that and run the script,
 
-    pip install pandas
     python hello_world.py
+
+Also take a look at the online Jupyter notebook tutorial series which provide an overview of pvtrace and examples,
+
+ 1. [Quick Start.ipynb](https://github.com/danieljfarrell/pvtrace/blob/master/examples/001%20Quick%20Start.ipynb), an interactive ray-tracing tutorial (download an run locally)
+ 2. [Materials.ipynb](https://github.com/danieljfarrell/pvtrace/blob/master/examples/002%20Materials.ipynb), include physical properties with materials
+ 3. [Lights.ipynb](https://github.com/danieljfarrell/pvtrace/blob/master/examples/003%20Lights.ipynb), place photon sources in the scene and customise their properties
+ 4. [Nodes.ipynb](https://github.com/danieljfarrell/pvtrace/blob/master/examples/004%20Nodes.ipynb) translate and rotate scene objects with nodes
+ 5. [Geometry.ipynb](https://github.com/danieljfarrell/pvtrace/blob/master/examples/005%20Geometry.ipynb) define the shapes of objects in your scene
+ 6. [Coatings.ipynb](https://github.com/danieljfarrell/pvtrace/blob/master/examples/006%20Coatings.ipynb) introduce custom reflections with coatings
+
+Download and run these notebooks locally for a more interactive experience, but first install jupyter,
+
+    pip install jupyter
+
+or with conda,
+
+    conda install jupyter
+
+Then launch the jupyter notebook,
+
+    jupyter notebook
 
 # Features
 
