@@ -56,7 +56,7 @@ Download the [hello_world.py](https://raw.githubusercontent.com/danieljfarrell/p
     # Download example script
     curl https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py > hello_world.py
 
-The example script requires pandas so install that and run the script,
+With your pvtrace python environment active run the script,
 
     python hello_world.py
 
