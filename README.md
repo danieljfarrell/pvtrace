@@ -36,15 +36,16 @@ On MacOS *pvtrace* can be installed easily using [pyenv](https://github.com/pyen
 
 Create a clean virtual environment for pvtrace
 
-    pyenv virtualenv 3.8.4 pvtrace-env
+    pyenv install 3.7.9
+    pyenv virtualenv 3.7.9 pvtrace-env
     pyenv activate pvtrace-env
     pip install pvtrace
 
 ## Linux and Windows using Conda
 
-On Linux and Windows you must use conda to create the python environment. Optionally you can also use this method on MacOS too if you prefer Conda over pyenv.
+On Linux and Windows you must use conda to create the python environment. Optionally you can also use this method on MacOS too if you prefer conda over pyenv.
 
-    conda create --name pvtrace-env python=3.8
+    conda create --name pvtrace-env python=3.7.9
     conda activate pvtrace-env
     conda install Rtree
     pip install pvtrace
