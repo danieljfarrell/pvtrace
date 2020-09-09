@@ -34,5 +34,5 @@ jobs:
         pip install numpy meshcat anytree trimesh[easy]
     - name: Test with pytest
       run: |
-        pip install pytest pytest-benchmark
+        pip install pytest
         pytest tests
