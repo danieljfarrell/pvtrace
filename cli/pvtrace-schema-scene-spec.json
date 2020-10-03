@@ -1,0 +1,326 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "id": "pvtrace-schema-scene-spec.json",
+    "type": "object",
+    "title": "pvtrace scene specification",
+    "description": "Defines a scene for ray-tracing software pvtrace.",
+    "properties": {
+        "version": {
+            "type": "string",
+            "description": "Version of the scene file; pvtrace will reject versions it does not understand."
+        },
+        "nodes": {
+            "id": "#/properties/nodes",
+            "type": "object",
+            "description": "Scene graph of nodes",
+            "uniqueItems": true,
+            "patternProperties": {
+                "^[a-zA-Z0-9._-]+$": {
+                    "$ref": "#/definitions/node"
+                }
+            },
+            "properties": {
+                "world": {
+                    "$ref": "#/definitions/node"
+                }
+            },
+            "required": [
+                "world"
+            ],
+            "additionalProperties": false
+        },
+        "components": {
+            "id": "#/properties/components",
+            "type": "object",
+            "description": "Scene graph of nodes",
+            "uniqueItems": true,
+            "properties": {
+                "builtin": {
+                    "type": "boolean"
+                }
+            },
+            "patternProperties": {
+                "^[a-zA-Z0-9._-]+$": {
+                    "$ref": "#/definitions/component"
+                }
+            },
+            "additionalProperties": false
+        },
+        "additionalProperties": false
+    },
+    "definitions": {
+        "node": {
+            "id": "#/definitions/node",
+            "type": "object",
+            "properties": {
+                "parent": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "box": {
+                    "$ref": "#/definitions/box"
+                },
+                "cylinder": {
+                    "$ref": "#/definitions/cylinder"
+                },
+                "sphere": {
+                    "$ref": "#/definitions/sphere"
+                },
+                "mesh": {
+                    "$ref": "#/definitions/mesh"
+                },
+                "location": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "direction": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            },
+            "oneOf": [
+                {
+                    "required": [
+                        "box"
+                    ]
+                },
+                {
+                    "required": [
+                        "cylinder"
+                    ]
+                },
+                {
+                    "required": [
+                        "sphere"
+                    ]
+                },
+                {
+                    "required": [
+                        "mesh"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "box": {
+            "id": "#/definitions/box",
+            "type": "object",
+            "properties": {
+                "size": {
+                    "$ref": "#/definitions/point-like"
+                },
+                "material": {
+                    "$ref": "#/definitions/material"
+                }
+            },
+            "required": [
+                "size",
+                "material"
+            ]
+        },
+        "cylinder": {
+            "id": "#/definitions/cylinder",
+            "type": "object",
+            "properties": {
+                "length": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "radius": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "material": {
+                    "$ref": "#/definitions/material"
+                }
+            },
+            "required": [
+                "length",
+                "radius",
+                "material"
+            ]
+        },
+        "sphere": {
+            "id": "#/definitions/sphere",
+            "type": "object",
+            "properties": {
+                "radius": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "material": {
+                    "$ref": "#/definitions/material"
+                }
+            },
+            "required": [
+                "radius",
+                "material"
+            ]
+        },
+        "mesh": {
+            "id": "#/definitions/mesh",
+            "type": "object",
+            "properties": {
+                "file": {
+                    "type": "string"
+                },
+                "material": {
+                    "$ref": "#/definitions/material"
+                }
+            },
+            "required": [
+                "file",
+                "material"
+            ]
+        },
+        "point-like": {
+            "id": "#/definitions/point-like",
+            "type": "array",
+            "items": {
+                "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+        },
+        "material": {
+            "id": "#/definitions/material",
+            "type": "object",
+            "properties": {
+                "refractive-index": {
+                    "type": "number",
+                    "minimum": 1
+                },
+                "components": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "refractive-index"
+            ]
+        },
+        "component": {
+            "id": "#/definitions/component",
+            "type": "object",
+            "uniqueItems": true,
+            "properties": {
+                "luminophore": {
+                    "$ref": "#/definitions/luminophore"
+                },
+                "scatterer": {
+                    "$ref": "#/definitions/scatterer"
+                },
+                "absorber": {
+                    "$ref": "#/definitions/absorber"
+                },
+                "builtin": {
+                    "type": "boolean"
+                }
+            },
+            "oneOf": [
+                {
+                    "required": [
+                        "luminophore"
+                    ]
+                },
+                {
+                    "required": [
+                        "scatterer"
+                    ]
+                },
+                {
+                    "required": [
+                        "absorber"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "luminophore": {
+            "type": "object",
+            "properties": {
+                "absorption": {
+                    "type": "object",
+                    "properties": {
+                        "coefficient": {
+                            "type": "number",
+                            "minimum": 0
+                        },
+                        "hist": {
+                            "type": "boolean"
+                        },
+                        "spectrum": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "emission": {
+                    "type": "object",
+                    "properties": {
+                        "quantum-yield": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        },
+                        "spectrum": {
+                            "type": "string"
+                        },
+                        "hist": {
+                            "type": "boolean"
+                        }
+                    }
+                }
+            }
+        },
+        "scatterer": {
+            "type": "object",
+            "properties": {
+                "coefficient": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "hist": {
+                    "type": "boolean"
+                },
+                "spectrum": {
+                    "type": "string"
+                },
+                "quantum-yield": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                },
+                "phase-function": {
+                    "type": "string"
+                }
+            }
+        },
+        "absorber": {
+            "type": "object",
+            "properties": {
+                "coefficient": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "hist": {
+                    "type": "boolean"
+                },
+                "spectrum": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

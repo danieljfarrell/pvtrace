@@ -1,0 +1,57 @@
+version: "1.0"
+
+nodes:
+  world:
+    box:
+      size: [1, 2.0, 3.0]
+      material:
+        refractive-index: 1.0
+
+  ball:
+    parent: world
+    location: [10, 10, 10]
+    direction: [1, 0, 0]
+    sphere:
+      radius: 10.0
+      material:
+        refractive-index: 1.5
+        components:
+          - lumogen-red
+          - my-background-absorber
+          - muscatterer
+
+components:
+  lumogen-red:
+    builtin: true
+    luminophore:
+      absorption:
+        coefficient: 100
+        hist: true
+      emission:
+        quantum-yield: 0.9
+        phase-function: "isotropic"
+
+  my-QDs:
+    luminophore:
+      absorption:
+        coefficient: 100
+        hist: true
+        spectrum: "qd-absorption-spec.csv"
+      emission:
+        quantum-yield: 0.9
+        phase-function: "isotropic"
+        spectrum: "qd-emission-spec.csv"
+
+  myscatterer:
+    scatterer:
+      coefficient: 2
+      hist: false
+      spectrum: "myscatterer.csv"
+      quantum-yield: 0.9
+      phase-function: "isotropic"
+
+  my-background-absorber:
+    absorber:
+      coefficient: 0.1
+      hist: false
+      spectrum: "myscatterer.csv"
