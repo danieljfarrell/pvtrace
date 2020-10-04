@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 def do_simulation(scene, num_rays, seed):
     """Worker function for multiple processing."""
     # Re-seed for this thread/process
-    if seed:
+    if seed is not None:
         np.random.seed(seed)
 
     results = []
