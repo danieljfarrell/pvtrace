@@ -1,5 +1,6 @@
 import pytest
 import sys
+import functools
 import os
 import numpy as np
 from anytree import RenderTree
@@ -8,8 +9,14 @@ from pvtrace.scene.node import Node
 from pvtrace.geometry.sphere import Sphere
 from pvtrace.geometry.box import Box
 from pvtrace.light.light import Light
+import functools
+from pvtrace.material.utils import cone
 from pvtrace.light.ray import Ray
+
 from pvtrace.material.material import Material
+
+# Throw small amount of rays in comparison to number of CPUs
+RAYS = np.max([16, os.cpu_count()])
 
 
 def make_test_scene():
@@ -32,7 +39,11 @@ def make_test_scene():
     )
 
     # Add light source node which fires into the box's top surface
-    light = Node(name="Light (555nm)", light=Light(), parent=world)
+    light = Node(
+        name="Light (555nm)",
+        light=Light(direction=functools.partial(cone, np.pi / 16)),
+        parent=world,
+    )
     light.rotate(np.radians(60), (1.0, 0.0, 0.0))
 
     scene = Scene(world)
@@ -118,18 +129,18 @@ class TestScene:
 
     def test_simulate_workers_set_to_one(self):
         scene = make_test_scene()
-        results = scene.simulate(os.cpu_count() // 2, workers=1)
-        assert len(results) == os.cpu_count() // 2, "Missing simulation results"
+        results = scene.simulate(RAYS, workers=1)
+        assert len(results) == RAYS, "Missing simulation results"
 
     def test_simulate_workers_set_to_none(self):
         scene = make_test_scene()
-        results = scene.simulate(os.cpu_count(), workers=None)
-        assert len(results) == os.cpu_count(), "Missing simulation results"
+        results = scene.simulate(RAYS, workers=None)
+        assert len(results) == RAYS, "Missing simulation results"
 
     def test_simulate_with_constant_seed_1_cpu(self):
         scene = make_test_scene()
-        r1 = scene.simulate(os.cpu_count(), workers=1, seed=1)
-        r2 = scene.simulate(os.cpu_count(), workers=1, seed=1)
+        r1 = scene.simulate(RAYS, workers=1, seed=1)
+        r2 = scene.simulate(RAYS, workers=1, seed=1)
         assert r1 == r2, "Simulation should be identical"
 
     def test_simulate_with_constant_seed_multiple_cpus(self):
@@ -138,7 +149,7 @@ class TestScene:
         # seed on multiple processes will return a ValueError.
         did_raise = False
         try:
-            scene.simulate(os.cpu_count(), workers=os.cpu_count(), seed=1)
+            scene.simulate(RAYS, workers=os.cpu_count(), seed=1)
         except ValueError:
             did_raise = True
 
@@ -148,20 +159,20 @@ class TestScene:
 
     def test_simulate_with_different_seed_1_cpu(self):
         scene = make_test_scene()
-        r1 = scene.simulate(os.cpu_count(), workers=1, seed=1)
-        r2 = scene.simulate(os.cpu_count(), workers=1, seed=2)
+        r1 = scene.simulate(RAYS, workers=1, seed=1)
+        r2 = scene.simulate(RAYS, workers=1, seed=2)
         assert r1 != r2, "Simulation should not be identical"
 
     def test_simulate_with_auto_seed_multiple_cpu(self):
         scene = make_test_scene()
-        r1 = scene.simulate(os.cpu_count(), workers=os.cpu_count())
-        r2 = scene.simulate(os.cpu_count(), workers=os.cpu_count())
+        r1 = scene.simulate(RAYS, workers=os.cpu_count())
+        r2 = scene.simulate(RAYS, workers=os.cpu_count())
         assert r1 != r2, "Simulation should not be identical"
 
     def test_simulate_with_auto_seed_auto_cpu(self):
         scene = make_test_scene()
-        r1 = scene.simulate(os.cpu_count())
-        r2 = scene.simulate(os.cpu_count())
+        r1 = scene.simulate(RAYS)
+        r2 = scene.simulate(RAYS)
         assert r1 != r2, "Simulation should not be identical"
 
     def test_simulate_with_auto_seed_auto_cpu_low_count(self):
