@@ -1,8 +1,8 @@
 from __future__ import annotations
 import multiprocessing
-from concurrent.futures import ProcessPoolExecutor, as_completed
 import traceback
-import animation
+import sys
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Optional, Sequence, Tuple
 from anytree import NodeMixin, Walker, PostOrderIter, LevelOrderIter
 from pvtrace.light.ray import Ray
@@ -23,12 +23,14 @@ logger = logging.getLogger(__name__)
 
 def do_simulation(scene, num_rays, seed):
     """Worker function for multiple processing."""
-    np.random.seed(seed)
+    # Re-seed for this thread/process
+    if seed:
+        np.random.seed(seed)
+
     results = []
     for ray in scene.emit(num_rays):
-        steps = photon_tracer.follow(scene, ray)
-        path, events = zip(*steps)
-        results.append((path, events))
+        ray_history = photon_tracer.follow(scene, ray)
+        results.append(ray_history)
     return results
 
 
@@ -48,7 +50,7 @@ class Scene(object):
             for node in PostOrderIter(root):
                 node.bounding_box = None
 
-            # More efficiency to calcualte from leaves to root because because
+            # More efficiency to calculate from leaves to root because because
             # the parent's bounding box calculation requires the size of the
             # child's bounding box.
             leaves = self.root.leaves
@@ -138,11 +140,37 @@ class Scene(object):
         #     all_intersections = tuple(i)
         return all_intersections
 
-    @animation.wait("elipses", text="Simulating")
     def simulate(
         self, num_rays: int, workers: Optional[int] = None, seed: Optional[int] = None
     ):
-        """Concurrently emit rays from light sources and return results."""
+        """Concurrently emit rays from light sources and return results.
+
+        Parameters
+        ----------
+        num_rays: int
+            The total number of rays to throw
+        workers: int or None
+            The number of sub-processes to use for raytracing. None will set to maximum value.
+        seed: int or None
+            Only to be used for debugging to get reproducible ray sequence.
+
+        Returns
+        -------
+        result:
+            List of ray histories
+
+        Discussion
+        ----------
+        This method automatically re-seeds the random number generator in each process
+        to ensure the same rays are not generated.
+
+        For debugging purposes generating the same ray sequence is useful. This can be
+        done by setting the value of `seed`::
+
+            scene.simulate(100, workers=1, seed=0)
+
+        You must also set workers to one during debugging.
+        """
         if workers is None:
             workers = multiprocessing.cpu_count()
 
@@ -150,14 +178,24 @@ class Scene(object):
             return do_simulation(self, num_rays, seed)
 
         num_rays_per_worker = num_rays // workers
-        args = (self, num_rays_per_worker, seed)
+        if num_rays_per_worker == 0:
+            return do_simulation(self, num_rays, seed)
+
+        if seed is None:
+            seeds = np.random.randint(0, 2 ** 32 - 1, workers)
+        else:
+            raise ValueError(
+                "Seed must be None to ensure different quasi-random sequences in each process"
+            )
+
         sim_result = []
         with ProcessPoolExecutor(max_workers=workers) as executor:
-            futures = [executor.submit(do_simulation, *args) for _ in range(workers)]
+            futures = [
+                executor.submit(do_simulation, self, num_rays_per_worker, seeds[idx])
+                for idx in range(workers)
+            ]
             for future in as_completed(futures):
-                try:
-                    data = future.result()
-                    sim_result.extend(data)
-                except Exception:
-                    traceback.print_exc()
+                data = future.result()
+                sim_result.extend(data)
+
         return sim_result
