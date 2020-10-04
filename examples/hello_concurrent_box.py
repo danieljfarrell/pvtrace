@@ -1,4 +1,5 @@
 import time
+import os
 import numpy as np
 from pvtrace import *
 import logging
@@ -32,21 +33,10 @@ light.rotate(np.radians(60), (1.0, 0.0, 0.0))
 # Make the scene object
 scene = Scene(world)
 
-# Simulate using 1 CPU. For low numbers of rays this can be faster
-# than using multiple processing due to overhead in creating
-# subprocesses
-num_rays = 100
+# Concurrent simulation of 1000 rays using all cores
+num_rays = 1000
 start_t = time.time()
-results = scene.simulate(num_rays, workers=1)
+num_workers = os.cpu_count()
+results = scene.simulate(num_rays, workers=num_workers)
 print(f"Took {time.time() - start_t:.2f}s to trace {num_rays} rays.")
-print(f"Got {len(results)} ray histories")
-
-# You can also control the iteration using function `photon_tracer.follow`,
-# the methods are equivalent.
-start_t = time.time()
-results = []
-for ray in scene.emit(100):
-    path_history = photon_tracer.follow(scene, ray)
-    results.append(path_history)
-print(f"Took {time.time() - start_t:.2f}s to trace 100 rays.")
 print(f"Got {len(results)} ray histories")
