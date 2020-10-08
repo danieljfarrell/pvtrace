@@ -75,6 +75,9 @@
                 "mesh": {
                     "$ref": "#/definitions/mesh"
                 },
+                "light": {
+                    "$ref": "#/definitions/light"
+                },
                 "location": {
                     "type": "array",
                     "items": {
@@ -107,6 +110,11 @@
                 {
                     "required": [
                         "mesh"
+                    ]
+                },
+                {
+                    "required": [
+                        "light"
                     ]
                 }
             ],
@@ -183,14 +191,186 @@
                 "material"
             ]
         },
+        "light": {
+            "id": "#/definitions/light",
+            "type": "object",
+            "properties": {
+                "position": {
+                    "$ref": "#/definitions/point-like"
+                },
+                "direction": {
+                    "$ref": "#/definitions/point-like"
+                },
+                "wavelength": {
+                    "type": "number"
+                },
+                "mask": {
+                    "$ref": "#/definitions/mask"
+                }
+            }
+        },
+        "mask": {
+            "id": "#/definitions/mask",
+            "type": "object",
+            "properties": {
+                "position": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/point-like"
+                        },
+                        {
+                            "$ref": "#/definitions/position-mask"
+                        }
+                    ]
+                },
+                "direction": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/point-like"
+                        },
+                        {
+                            "$ref": "#/definitions/direction-mask"
+                        }
+                    ]
+                },
+                "wavelength": {
+                    "oneOf": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "$ref": "#/definitions/wavelength-mask"
+                        }
+                    ]
+                }
+            }
+        },
+        "position-mask": {
+            "id": "#/definitions/position-mask",
+            "type": "object",
+            "properties": {
+                "rect": {
+                    "type": "array",
+                    "items": {
+                        "type": "number",
+                        "minItems": 2,
+                        "maxItems": 2
+                    }
+                },
+                "cube": {
+                    "type": "array",
+                    "items": {
+                        "type": "number",
+                        "minItems": 3,
+                        "maxItems": 3
+                    }
+                },
+                "circle": {
+                    "type": "number"
+                }
+            },
+            "oneOf": [
+                {
+                    "required": [
+                        "rect"
+                    ]
+                },
+                {
+                    "required": [
+                        "cube"
+                    ]
+                },
+                {
+                    "required": [
+                        "circle"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "direction-mask": {
+            "id": "#/definitions/direction-mask",
+            "type": "object",
+            "properties": {
+                "isotropic": {
+                    "type": "null"
+                },
+                "lambertian": {
+                    "type": "null"
+                },
+                "cone": {
+                    "type": "object",
+                    "properties": {
+                        "half-angle": {
+                            "oneOf": [
+                                {
+                                    "type": "number"
+                                },
+                                {
+                                    "type": "string"
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "half-angle"
+                    ],
+                    "additionalProperties": false
+                },
+                "additionalProperties": false
+            },
+            "oneOf": [
+                {
+                    "required": [
+                        "isotropic"
+                    ]
+                },
+                {
+                    "required": [
+                        "lambertian"
+                    ]
+                },
+                {
+                    "required": [
+                        "cone"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "wavelength-mask": {
+            "id": "#/definitions/wavelength-mask",
+            "type": "object",
+            "properties": {
+                "nanometers": {
+                    "type": "number"
+                },
+                "spectrum": {
+                    "type": "string"
+                }
+            },
+            "oneOf": [
+                {
+                    "required": [
+                        "nanometers"
+                    ]
+                },
+                {
+                    "required": [
+                        "spectrum"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
         "point-like": {
             "id": "#/definitions/point-like",
             "type": "array",
             "items": {
-                "type": "number"
-            },
-            "minItems": 3,
-            "maxItems": 3
+                "type": "number",
+                "minItems": 3,
+                "maxItems": 3
+            }
         },
         "material": {
             "id": "#/definitions/material",
@@ -226,7 +406,8 @@
                     "$ref": "#/definitions/absorber"
                 },
                 "builtin": {
-                    "type": "boolean"
+                    "description": "Name of build in component",
+                    "type": "string"
                 }
             },
             "oneOf": [
@@ -305,7 +486,25 @@
                 "phase-function": {
                     "type": "string"
                 }
-            }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "coefficient"
+                    ]
+                },
+                {
+                    "required": [
+                        "spectrum"
+                    ]
+                },
+                {
+                    "required": [
+                        "coefficient",
+                        "spectrum"
+                    ]
+                }
+            ]
         },
         "absorber": {
             "type": "object",
@@ -320,7 +519,25 @@
                 "spectrum": {
                     "type": "string"
                 }
-            }
+            },
+            "anyOf": [
+                {
+                    "required": [
+                        "coefficient"
+                    ]
+                },
+                {
+                    "required": [
+                        "spectrum"
+                    ]
+                },
+                {
+                    "required": [
+                        "coefficient",
+                        "spectrum"
+                    ]
+                }
+            ]
         }
     }
 }

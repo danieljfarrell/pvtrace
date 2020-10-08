@@ -3,7 +3,7 @@ version: "1.0"
 nodes:
   world:
     box:
-      size: [1, 2.0, 3.0]
+      size: [100, 100, 100]
       material:
         refractive-index: 1.0
 
@@ -16,37 +16,83 @@ nodes:
       material:
         refractive-index: 1.5
         components:
-          - lumogen-red
           - my-background-absorber
-          - muscatterer
+          - myscatterer
+
+  light1:
+    parent: world
+    location: [0, 0, 20]
+    direction: [0, 0, -1]
+    light:
+      wavelength: 555
+
+  light2:
+    parent: world
+    light:
+      mask:
+        position:
+          rect: [5, 5]
+
+  light3:
+    parent: world
+    light:
+      mask:
+        position:
+          cube: [5, 5, 5]
+
+  light4:
+    parent: world
+    light:
+      mask:
+        position:
+          circle: 1.0
+
+  light5:
+    parent: world
+    light:
+      mask:
+        direction:
+          isotropic:
+
+  light6:
+    parent: world
+    light:
+      mask:
+        direction:
+          lambertian:
+
+  light7:
+    parent: world
+    light:
+      mask:
+        direction:
+          cone:
+            half-angle: pi/2
+
+  light8:
+    parent: world
+    light:
+      mask:
+        wavelength:
+          spectrum: "light.csv"
 
 components:
-  lumogen-red:
-    builtin: true
-    luminophore:
-      absorption:
-        coefficient: 100
-        hist: true
-      emission:
-        quantum-yield: 0.9
-        phase-function: "isotropic"
-
   my-QDs:
     luminophore:
       absorption:
         coefficient: 100
         hist: true
-        spectrum: "qd-absorption-spec.csv"
+        spectrum: "test.txt"
       emission:
         quantum-yield: 0.9
         phase-function: "isotropic"
-        spectrum: "qd-emission-spec.csv"
+        spectrum: "test.txt"
 
   myscatterer:
     scatterer:
       coefficient: 2
       hist: false
-      spectrum: "myscatterer.csv"
+      spectrum: "test.txt"
       quantum-yield: 0.9
       phase-function: "isotropic"
 
@@ -54,4 +100,4 @@ components:
     absorber:
       coefficient: 0.1
       hist: false
-      spectrum: "myscatterer.csv"
+      spectrum: "test.txt"
