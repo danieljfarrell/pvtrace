@@ -23,7 +23,7 @@ jobs:
         
     steps:
       - uses: actions/checkout@v2   
-      - name: Install dependencies
+      - name: Running install and test
         shell: bash -l {0}
         run: |
           bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
@@ -36,17 +36,10 @@ jobs:
           pyenv virtualenv ${{ matrix.python-version }} pvtrace-env-${{ matrix.python-version }}
           pyenv local pvtrace-env-${{ matrix.python-version }}
           python -m pip install --upgrade pip
-
-      - name: Install pvtrace
-        shell: bash -l {0}
-        run: |
           pip install -e .
-      - name: Test with pytest
-        shell: bash -l {0}
-        run: |
           pip install pytest
           pytest tests
-          
+
   conda-build:
     name: Conda ${{ matrix.python-version }} - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
