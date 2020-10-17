@@ -19,11 +19,11 @@ jobs:
       fail-fast: true
       matrix:
         os: ["macos-latest"]
-        python-version: ["3.7.8"]
+        python-version: ["3.7.5"]
         
     steps:
       - uses: actions/checkout@v2   
-      - uses: "gabrielfalcao/pyenv-action@v5" 
+      - uses: "gabrielfalcao/pyenv-action@v6" 
         with:
           versions: ${{ matrix.python-version }}
       - name: Install dependencies
