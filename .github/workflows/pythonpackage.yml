@@ -31,8 +31,9 @@ jobs:
         run: |
           bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
           brew install spatialindex
-          python3 -m pip install --upgrade pip
           pyenv local ${{ matrix.python-version }} && python3 -mvenv .venv${{ matrix.python-version }}
+          python3 -m pip install --upgrade pip
+
       - name: Install pvtrace
         shell: bash -l {0}
         run: |
