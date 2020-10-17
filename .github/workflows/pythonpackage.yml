@@ -23,20 +23,26 @@ jobs:
         
     steps:
       - uses: actions/checkout@v2   
-      - name: Install brew and pyenv
+      - name: Install brew and dependencies
         shell: bash -l {0}
         run: |
           bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
           brew install spatialindex
+      - name: Install pyenv
+        shell: bash -l {0}
+        run: |
           brew install pyenv
-          brew install pyenv-virtualenv
           echo 'eval "$(pyenv init -)"' >> ~/.bash_profile
+      - name: Install pyenv-virtualenv
+        shell: bash -l {0}
+        run: |
+          brew install pyenv-virtualenv
           echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.bash_profile
       - name: Create virtualenv
         shell: bash -l {0}
         run: |    
           pyenv virtualenv ${{ matrix.python-version }} pvtrace-env-${{ matrix.python-version }}
-          pyenv local pvtrace-env-${{ matrix.python-version }}
+          pyenv activate pvtrace-env-${{ matrix.python-version }}
       - name: Install pvtrace
         shell: bash -l {0}
         run: |
