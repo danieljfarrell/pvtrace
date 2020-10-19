@@ -298,6 +298,20 @@
                 "lambertian": {
                     "type": "null"
                 },
+                "henyey-greenstein": {
+                    "type": "object",
+                    "properties": {
+                        "g": {
+                            "type": "number",
+                            "minimum": -1.0,
+                            "maximum": 1.0
+                        }
+                    },
+                    "required": [
+                        "g"
+                    ],
+                    "additionalProperties": false
+                },
                 "cone": {
                     "type": "object",
                     "properties": {

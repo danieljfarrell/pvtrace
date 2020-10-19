@@ -9,6 +9,7 @@ import numpy
 import pandas
 import os
 import trimesh
+import numpy as np
 import pvtrace
 from typing import Tuple, List, Dict, Optional
 from pvtrace import (
@@ -22,7 +23,13 @@ from pvtrace import (
     Absorber,
     Scatterer,
     Luminophore,
+    Light,
 )
+
+from pvtrace.material.utils import isotropic as isotropic_phase_function
+from pvtrace.material.utils import lambertian as lambertian_phase_function
+from pvtrace.material.utils import cone as cone_phase_function
+from pvtrace.material.utils import henyey_greenstein as henyey_greenstein_phase_function
 
 
 SCHEMA = os.path.join(
@@ -110,8 +117,51 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         material = parse_material(spec["material"], component_map)
         return Mesh(trimesh=mesh, material=material)
 
-    def parse_light(spec):
+    def parse_position_mask(spec):
         raise NotImplementedError()
+
+    def parse_direction_mask(spec):
+        if "isotopic" in spec:
+            return isotropic_phase_function
+
+        if "lambertian" in spec:
+            return lambertian_phase_function
+
+        if "cone" in spec:
+            half_angle = spec["half-angle"]  # degrees
+            return cone_phase_function(np.radians(float(half_angle)))
+
+        if "henyey-greenstein" in spec:
+            g = spec["g"]
+            return henyey_greenstein_phase_function(g)
+
+        raise ValueError("Missing attribute")
+
+    def parse_wavelength_mask(spec):
+        if "nanometers" in spec:
+            return float(spec["nanometers"])
+
+        if "spectrum" in spec:
+            return load_spectrum(spec["spectrum"])
+
+        raise ValueError("Missing attribute")
+
+    def parse_light(spec, name: str):
+        position = spec.get("position", None)
+        if not isinstance(position, (list, tuple)):
+            position = parse_position_mask(position)
+
+        direction = spec.get("direction", None)
+        if not isinstance(direction, (list, tuple)):
+            direction = parse_direction_mask(direction)
+
+        wavelength = spec.get("wavelength", None)
+        if not isinstance(wavelength, (int, float)):
+            wavelength = parse_wavelength_mask(wavelength)
+
+        return Light(
+            position=position, direction=direction, wavelength=wavelength, name=name
+        )
 
     def load_spectrum(filename: str) -> Optional[numpy.ndarray]:
         spectrum: Optional[numpy.ndarray] = None
@@ -273,7 +323,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             return parse_luminophore(spec["luminophore"], name, builtin)
         raise ValueError("Unknown component type")
 
-    def parse_node(spec, component_map=None):
+    def parse_node(spec, name, component_map=None):
 
         geometry_types = ("box", "cylinder", "sphere", "mesh")
         geometry_mapper = {
@@ -287,11 +337,11 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
                 geometry = geometry_mapper[geometry_type](
                     spec[geometry_type], component_map=component_map
                 )
-                return Node(geometry=geometry)
+                return Node(geometry=geometry, name=name)
 
         if "light" in spec:
-            light = parse_light(spec["light"])
-            return Node(light=light)
+            light = parse_light(spec["light"], name=f"{name}/light")
+            return Node(light=light, name=name)
 
         raise ValueError()
 
@@ -307,7 +357,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
     nodes = {}
     for k, v in node_specs.items():
         print(f"node: {k}")
-        nodes[k] = parse_node(v, component_map=component_map)
+        nodes[k] = parse_node(v, k, component_map=component_map)
 
     return Scene(nodes["world"])
 
