@@ -30,6 +30,7 @@ from pvtrace.material.utils import isotropic as isotropic_phase_function
 from pvtrace.material.utils import lambertian as lambertian_phase_function
 from pvtrace.material.utils import cone as cone_phase_function
 from pvtrace.material.utils import henyey_greenstein as henyey_greenstein_phase_function
+from pvtrace.light.light import rectangular_mask, cube_mask, circular_mask
 
 
 SCHEMA = os.path.join(
@@ -118,17 +119,26 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         return Mesh(trimesh=mesh, material=material)
 
     def parse_position_mask(spec):
-        raise NotImplementedError()
+        if "rect" in spec:
+            return rectangular_mask(*spec["rect"])
+
+        if "cube" in spec:
+            return cube_mask(*spec["cube"])
+
+        if "circle" in spec:
+            return circular_mask(spec["circle"])
+
+        raise ValueError("Missing attribute")
 
     def parse_direction_mask(spec):
-        if "isotopic" in spec:
+        if "isotropic" in spec:
             return isotropic_phase_function
 
         if "lambertian" in spec:
             return lambertian_phase_function
 
         if "cone" in spec:
-            half_angle = spec["half-angle"]  # degrees
+            half_angle = spec["cone"]["half-angle"]  # degrees
             return cone_phase_function(np.radians(float(half_angle)))
 
         if "henyey-greenstein" in spec:
@@ -147,17 +157,22 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         raise ValueError("Missing attribute")
 
     def parse_light(spec, name: str):
-        position = spec.get("position", None)
-        if not isinstance(position, (list, tuple)):
-            position = parse_position_mask(position)
 
-        direction = spec.get("direction", None)
-        if not isinstance(direction, (list, tuple)):
-            direction = parse_direction_mask(direction)
-
+        # Prepare default wavelength. This can be override by mask section.
         wavelength = spec.get("wavelength", None)
-        if not isinstance(wavelength, (int, float)):
-            wavelength = parse_wavelength_mask(wavelength)
+        position = None
+        direction = None
+
+        mask = spec.get("mask", None)
+        if mask:
+            if mask.get("wavelength", None):
+                wavelength = parse_wavelength_mask(mask["wavelength"])
+
+            if mask.get("position", None):
+                position = parse_position_mask(mask["position"])
+
+            if mask.get("direction", None):
+                direction = parse_direction_mask(mask["direction"])
 
         return Light(
             position=position, direction=direction, wavelength=wavelength, name=name

@@ -87,14 +87,14 @@ nodes:
       mask:
         direction:
           cone:
-            half-angle: pi/2
+            half-angle: 45
 
   light8:
     parent: world
     light:
       mask:
         wavelength:
-          spectrum: "light.csv"
+          spectrum: "test.txt"
 
 components:
   my-QDs:

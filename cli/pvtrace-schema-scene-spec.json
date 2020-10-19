@@ -195,12 +195,6 @@
             "id": "#/definitions/light",
             "type": "object",
             "properties": {
-                "position": {
-                    "$ref": "#/definitions/point-like"
-                },
-                "direction": {
-                    "$ref": "#/definitions/point-like"
-                },
                 "wavelength": {
                     "type": "number"
                 },
