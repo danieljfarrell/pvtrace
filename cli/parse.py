@@ -8,9 +8,21 @@ import json
 import numpy
 import pandas
 import os
+import trimesh
 import pvtrace
 from typing import Tuple, List, Dict, Optional
-from pvtrace import Scene, Box, Sphere, Material, Node, Absorber, Scatterer, Luminophore
+from pvtrace import (
+    Scene,
+    Box,
+    Mesh,
+    Cylinder,
+    Sphere,
+    Material,
+    Node,
+    Absorber,
+    Scatterer,
+    Luminophore,
+)
 
 
 SCHEMA = os.path.join(
@@ -82,7 +94,10 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         return Box(size=size, material=material)
 
     def parse_cylinder(spec, component_map):
-        raise NotImplementedError()
+        length = spec["length"]
+        radius = spec["radius"]
+        material = parse_material(spec["material"], component_map)
+        return Cylinder(length=length, radius=radius, material=material)
 
     def parse_sphere(spec, component_map):
         radius = spec["radius"]
@@ -90,7 +105,10 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         return Sphere(radius=radius, material=material)
 
     def parse_mesh(spec, component_map):
-        raise NotImplementedError()
+        filename = spec["file"]
+        mesh = trimesh.exchange.load.load(filename)
+        material = parse_material(spec["material"], component_map)
+        return Mesh(trimesh=mesh, material=material)
 
     def parse_light(spec):
         raise NotImplementedError()
@@ -258,7 +276,12 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
     def parse_node(spec, component_map=None):
 
         geometry_types = ("box", "cylinder", "sphere", "mesh")
-        geometry_mapper = {"box": parse_box, "sphere": parse_sphere}
+        geometry_mapper = {
+            "box": parse_box,
+            "sphere": parse_sphere,
+            "cylinder": parse_cylinder,
+            "mesh": parse_mesh,
+        }
         for geometry_type in geometry_types:
             if geometry_type in spec:
                 geometry = geometry_mapper[geometry_type](

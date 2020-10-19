@@ -19,6 +19,26 @@ nodes:
           - my-background-absorber
           - myscatterer
 
+  rod:
+    parent: world
+    location: [0, 0, 5]
+    direction: [1, 0, 0]
+    cylinder:
+      radius: 1.0
+      length: 10.0
+      material:
+        refractive-index: 2.0
+        components:
+          - my-background-absorber
+          - myscatterer
+
+  xyz-cube:
+    parent: world
+    mesh:
+      file: "cli/20mm-xyz-cube.stl"
+      material:
+        refractive-index: 1.5
+
   light1:
     parent: world
     location: [0, 0, 20]
