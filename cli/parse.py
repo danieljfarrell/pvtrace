@@ -24,6 +24,7 @@ from pvtrace import (
     Scatterer,
     Luminophore,
     Light,
+    MeshcatRenderer,
 )
 
 from pvtrace.material.utils import isotropic as isotropic_phase_function
@@ -368,17 +369,57 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             builtin = component_specs[k].get("builtin", None)
             component_map[k] = parse_component(component_specs[k], k, builtin)
 
+    coordinate_systems = dict()
     node_specs = spec["nodes"]
     nodes = {}
     for k, v in node_specs.items():
+
+        # YAML to node
         print(f"node: {k}")
         nodes[k] = parse_node(v, k, component_map=component_map)
+
+        # Capture additional information which can apply later
+        # once all nodes are instantiated.
+        coordinate_systems[k] = {
+            "parent": v.get("parent", None),
+            "direction": v.get("direction", None),
+            "location": v.get("location", None),
+        }
+
+    # Assign parent nodes and apply node transformations
+    for k in nodes:
+        node = nodes[k]
+        coordsys = coordinate_systems[k]
+        if node.name == "world":
+            node.parent = None
+        elif coordsys.get("parent", None) is None:
+            node.parent = nodes["world"]
+        else:
+            node.parent = nodes[coordsys["parent"]]
+
+        location = coordsys.get("location", None)
+        if location:
+            node.location = location
+
+        direction = coordsys.get("direction", None)
+        if direction:
+            node.look_at(direction)
 
     return Scene(nodes["world"])
 
 
 if __name__ == "__main__":
+    import time
+    import sys
+    import IPython
+
     scene_spec = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "pvtrace-scene-spec.yml"
     )
-    parse(scene_spec)
+    scene = parse(scene_spec)
+    renderer = MeshcatRenderer(
+        zmq_url="tcp://127.0.0.1:6000", open_browser=True, wireframe=True
+    )
+    renderer.render(scene)
+
+    IPython.embed()
