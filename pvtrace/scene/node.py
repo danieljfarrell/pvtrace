@@ -6,13 +6,14 @@ from pvtrace.common.errors import AppError
 from pvtrace.geometry.intersection import Intersection
 from pvtrace.geometry.transformable import Transformable
 from pvtrace.geometry.utils import distance_between
+from pvtrace.geometry.transformations import rotation_from_matrix, rotation_matrix
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class Node(NodeMixin, Transformable):
-    """ A node in a scene graph. Each node represents a new coordinate system
+    """A node in a scene graph. Each node represents a new coordinate system
     with position and orientation relative to it's parent node.
     """
 
@@ -29,24 +30,51 @@ class Node(NodeMixin, Transformable):
         return "Node({})".format(self.name)
 
     def look_at(self, vector: tuple) -> None:
-        """ Align the node so that the Z axis is pointing along the vector.
+        """Make the node point in the direction of the vector.
+
+        Discussion
+        ----------
+        The "face" of the node is defined to be direction [0, 0, 1]. This method
+        with always point the face of the node along the direction vector
+        specified. Note that the if the node is displaced from the origin this
+        will be respected and the node will be rotate around it's centre.
+
+        References
+        ----------
+        [1] https://math.stackexchange.com/q/476311
         """
-        raise NotImplementedError()
+        a = np.array([0, 0, 1])  # +z direction
+        b = np.array(vector)  # direction we want to face
+        c = np.dot(a, b)
+        if np.isclose(c, -1.0):
+            # Anti-parallel rotation can be done without computation
+            self._pose = rotation_matrix(np.pi, [0, 1, 0], point=self._location)
+            return
+
+        v = np.cross(a, b)
+        C = 1 / (1 + c)
+        v1, v2, v3 = v[0], v[1], v[2]
+        vx = np.array([[0, -v3, v2], [v3, 0, -v1], [-v2, v1, 0]])
+        r = np.identity(3) + vx + vx @ vx * C
+        R = np.identity(4)
+        R[:3, :3] = r
+        angle, direc, point = rotation_from_matrix(R)
+        self._pose = rotation_matrix(angle, direc, point=self._location)
 
     # Convert between coordinate systems
 
     def transformation_to(self, node: Node) -> np.ndarray:
-        """ Transformation matrix from this node to another node.
-        
-            Parameters
-            ----------
-            node : Node
-                The other node.
-        
-            Returns
-            -------
-            numpy.ndarray
-                Homogeneous transformation matrix.
+        """Transformation matrix from this node to another node.
+
+        Parameters
+        ----------
+        node : Node
+            The other node.
+
+        Returns
+        -------
+        numpy.ndarray
+            Homogeneous transformation matrix.
         """
         if self == node:
             return np.identity(4)
@@ -60,10 +88,10 @@ class Node(NodeMixin, Transformable):
         return transform
 
     def point_to_node(self, point: tuple, node: Node) -> tuple:
-        """ Convert local point into the the other node coordinate system.
-        
+        """Convert local point into the the other node coordinate system.
+
             The `node` must be somewhere in the hierarchy tree.
-        
+
         Parameters
         ----------
         point : tuple of float
@@ -79,10 +107,10 @@ class Node(NodeMixin, Transformable):
         return new_pt
 
     def vector_to_node(self, vector: tuple, node: Node) -> tuple:
-        """ Convert local vector into the the other node coordinate system.
-        
+        """Convert local vector into the the other node coordinate system.
+
             The `node` must be somewhere in the hierarchy tree.
-        
+
         Parameters
         ----------
         point : tuple of float
@@ -100,19 +128,19 @@ class Node(NodeMixin, Transformable):
         return path
 
     def intersections(self, ray_origin, ray_direction) -> Sequence[Intersection]:
-        """ Returns intersections with node's geometry and child subtree.
-        
-            Parameters
-            ----------
-            ray_origin : tuple of float
-                The ray position `(x, y, z)`.
-            ray_direction : tuple of float
-                The ray position `(a, b, c)`.
-        
-            Returns
-            -------
-            all_intersections : tuple of Intersection
-                All intersection with this scene and a list of Intersection objects.
+        """Returns intersections with node's geometry and child subtree.
+
+        Parameters
+        ----------
+        ray_origin : tuple of float
+            The ray position `(x, y, z)`.
+        ray_direction : tuple of float
+            The ray position `(a, b, c)`.
+
+        Returns
+        -------
+        all_intersections : tuple of Intersection
+            All intersection with this scene and a list of Intersection objects.
         """
         all_intersections = []
         if self.geometry is not None:
@@ -139,26 +167,26 @@ class Node(NodeMixin, Transformable):
         return all_intersections
 
     def emit(self, num_rays=None) -> Iterator[Ray]:
-        """ Generator of rays using the node's light object.
+        """Generator of rays using the node's light object.
 
-            Parameters
-            ----------
-            num_rays : int of None
-                The maximum number of rays this light source will generate. If set to
-                None then the light will generate until manually terminated.
-        
-            to_world: Bool
-                Represent the ray in the world's coordinate frame.
-            
-            Returns
-            -------
-            ray : Ray
-                A ray emitted from the light source.
+        Parameters
+        ----------
+        num_rays : int of None
+            The maximum number of rays this light source will generate. If set to
+            None then the light will generate until manually terminated.
 
-            Raises
-            ------
-            AppError
-                If the node does not have an attached light object.
+        to_world: Bool
+            Represent the ray in the world's coordinate frame.
+
+        Returns
+        -------
+        ray : Ray
+            A ray emitted from the light source.
+
+        Raises
+        ------
+        AppError
+            If the node does not have an attached light object.
         """
         if self.light is None:
             raise AppError("Not a lighting node.")
