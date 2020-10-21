@@ -1,0 +1,23 @@
+version: "1.0"
+
+nodes:
+  world:
+    sphere:
+      radius: 10.0
+      material:
+        refractive-index: 1.0
+
+  ball-lens:
+    location: [0, 0, 2]
+    sphere:
+      radius: 1.0
+      material:
+        refractive-index: 1.5
+
+  green-laser:
+    location: [0, 0, 0]
+    light:
+      mask:
+        direction:
+          cone:
+            half-angle: 22.5

@@ -5,27 +5,27 @@ import numpy as np
 from pvtrace import *
 
 world = Node(
-    name="world (air)",
+    name="world",
     geometry=Sphere(
         radius=10.0,
         material=Material(refractive_index=1.0),
-    )
+    ),
 )
 
-sphere = Node(
-    name="sphere (glass)",
+ball_lens = Node(
+    name="ball-lens",
     geometry=Sphere(
         radius=1.0,
         material=Material(refractive_index=1.5),
     ),
-    parent=world
+    parent=world,
 )
 sphere.location = (0, 0, 2)
 
-light = Node(
-    name="Light (555nm)",
-    light=Light(direction=functools.partial(cone, np.pi/8)),
-    parent=world
+green_laser = Node(
+    name="green-laser",
+    light=Light(direction=functools.partial(cone, np.pi / 8)),
+    parent=world,
 )
 
 renderer = MeshcatRenderer(wireframe=True, open_browser=True)
@@ -41,6 +41,6 @@ for ray in scene.emit(100):
 print("Ctrl-C to close")
 while True:
     try:
-        time.sleep(.3)
+        time.sleep(0.3)
     except KeyboardInterrupt:
         sys.exit()
