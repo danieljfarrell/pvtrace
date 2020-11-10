@@ -84,6 +84,20 @@ def test_equality_by_tracing():
     assert result_A == result_B_run1
 
 
+def test_full_example_by_tracing():
+    scene = parse(FULL_EXAMPLE_YML)
+    assert len(do_simulation(scene, 3, 42)) == 3
+
+
+def test_full_example_by_rendering(meshcat_zmq_url1):
+    scene = parse(FULL_EXAMPLE_YML)
+    history = do_simulation(scene, 300, 42)
+    r = MeshcatRenderer(zmq_url=meshcat_zmq_url1, open_browser=True, wireframe=True)
+    r.render(scene)
+    [r.add_history(x) for x in history]
+    time.sleep(2.0)
+
+
 @pytest.mark.skip(reason="Superseeded by non-rendering version")
 def test_equality_by_renderer(meshcat_zmq_url1, meshcat_zmq_url2):
     scene_A = parse(HELLO_WORLD_YML)

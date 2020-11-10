@@ -1,6 +1,8 @@
 """
 Parses the pvtrace-scene.yml file and generates Python objects.
 """
+import functools
+from pvtrace.material.distribution import Distribution
 from pvtrace.material.component import Luminophore, Scatterer
 import jsonschema
 import yaml
@@ -11,7 +13,7 @@ import os
 import trimesh
 import numpy as np
 import pvtrace
-from typing import Tuple, List, Dict, Optional
+from typing import Callable, Tuple, List, Dict, Optional
 from pvtrace import (
     Scene,
     Box,
@@ -121,17 +123,27 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
     def parse_position_mask(spec):
         if "rect" in spec:
-            return rectangular_mask(*spec["rect"])
+            return functools.partial(rectangular_mask, *spec["rect"])
 
         if "cube" in spec:
-            return cube_mask(*spec["cube"])
+            return functools.partial(cube_mask, *spec["cube"])
 
         if "circle" in spec:
-            return circular_mask(spec["circle"])
+            return functools.partial(circular_mask, spec["circle"])
 
         raise ValueError("Missing attribute")
 
-    def parse_direction_mask(spec):
+    def parse_cone_phase_function(spec) -> Callable:
+        half_angle = float(spec["half-angle"])  # degrees
+        rads = float(np.radians(half_angle))
+        func = functools.partial(cone_phase_function, rads)
+        return func
+
+    def parse_henyey_greenstein_phase_function(spec) -> Callable:
+        g = float(spec["g"])
+        return functools.partial(henyey_greenstein_phase_function, g)
+
+    def parse_direction_mask(spec) -> Callable:
         if "isotropic" in spec:
             return isotropic_phase_function
 
@@ -139,28 +151,44 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             return lambertian_phase_function
 
         if "cone" in spec:
-            half_angle = spec["cone"]["half-angle"]  # degrees
-            return cone_phase_function(np.radians(float(half_angle)))
+            return parse_cone_phase_function(spec["cone"])
 
         if "henyey-greenstein" in spec:
-            g = spec["g"]
-            return henyey_greenstein_phase_function(g)
+            return parse_henyey_greenstein_phase_function(spec["henyey-greenstein"])
 
         raise ValueError("Missing attribute")
 
-    def parse_wavelength_mask(spec):
+    def parse_wavelength_mask(spec) -> Callable:
         if "nanometers" in spec:
-            return float(spec["nanometers"])
+            nm = float(spec["nanometers"])
+
+            def nanometers():
+                return nm
+
+            return nanometers
 
         if "spectrum" in spec:
-            return load_spectrum(spec["spectrum"])
+            spectrum = load_spectrum(spec["spectrum"])
+            dist = Distribution(spectrum[:, 0], spectrum[:, 1])
+
+            def sample():
+                return dist.sample(np.random.uniform(0, 1))
+
+            return sample
 
         raise ValueError("Missing attribute")
 
     def parse_light(spec, name: str):
 
         # Prepare default wavelength. This can be override by mask section.
-        wavelength = spec.get("wavelength", None)
+        wavelength_nm = wavelength = spec.get("wavelength", None)
+        if wavelength_nm:
+
+            def wavelength_func():
+                return wavelength_nm
+
+            wavelength = wavelength_func
+
         position = None
         direction = None
 
@@ -184,6 +212,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         # Get absolute path to the spectrum CSV
         if not os.path.isabs(filename):
             filename = os.path.abspath(os.path.join(working_directory, filename))
+            print(f"Reading {filename}")
 
         df = pandas.read_csv(
             filename,
@@ -216,6 +245,14 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
         raise ValueError("Unexpected absorber format.")
 
+    def parse_phase_function(spec):
+        if "isotropic" in spec:
+            return isotropic_phase_function
+        elif "lambertian":
+            return lambertian_phase_function
+        # FIXME: we should allow other phase functions
+        raise NotImplementedError("Must be isotropic or lambertian")
+
     def parse_scatterer(spec, name):
         coefficient = None
         if "coefficient" in spec:
@@ -227,7 +264,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
         phase_function = None
         if "phase-function" in spec:
-            phase_function = spec["phase-function"]
+            phase_function = parse_phase_function(spec["phase-function"])
 
         quantum_yield = 1.0
         if "quantum-yield" in spec:
@@ -409,17 +446,25 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
 
 if __name__ == "__main__":
+
     import time
     import sys
     import IPython
 
-    scene_spec = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "pvtrace-scene-spec.yml"
-    )
-    scene = parse(scene_spec)
+    def load_test_scene():
+        scene_spec = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "pvtrace-scene-spec.yml"
+        )
+        return parse(scene_spec)
+
+    def load_hello_world_scene():
+        scene_spec = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "hello_world.yml"
+        )
+        return parse(scene_spec)
+
     renderer = MeshcatRenderer(
         zmq_url="tcp://127.0.0.1:6000", open_browser=True, wireframe=True
     )
-    renderer.render(scene)
-
+    renderer.render(load_hello_world_scene())
     IPython.embed()
