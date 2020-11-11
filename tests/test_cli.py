@@ -74,19 +74,24 @@ def test_equality_by_tracing():
     scene_A = parse(HELLO_WORLD_YML)
     scene_B = make_hello_world_scene()
 
+    num = len(scene_A.light_nodes)
+
     # Check seed is respected
-    result_B_run1 = do_simulation(scene_B, 3, 42)
-    result_B_run2 = do_simulation(scene_B, 3, 42)
+    result_B_run1 = do_simulation(scene_B, num, 42)
+    result_B_run2 = do_simulation(scene_B, num, 42)
     assert result_B_run1 == result_B_run2
 
-    result_A = do_simulation(scene_A, 3, 42)
+    # Make sure each light node generates a ray
+    result_A = do_simulation(scene_A, num, 42)
 
     assert result_A == result_B_run1
 
 
 def test_full_example_by_tracing():
     scene = parse(FULL_EXAMPLE_YML)
-    assert len(do_simulation(scene, 3, 42)) == 3
+    # Make sure each light node generates a ray
+    num = len(scene.light_nodes)
+    assert len(do_simulation(scene, num, 42)) == num
 
 
 def test_full_example_by_rendering(meshcat_zmq_url1):
@@ -108,11 +113,13 @@ def test_equality_by_renderer(meshcat_zmq_url1, meshcat_zmq_url2):
     rB = MeshcatRenderer(zmq_url=meshcat_zmq_url2, open_browser=True, wireframe=True)
     rB.render(scene_B)
 
-    resultB = do_simulation(scene_B, 3, 42)
+    num = len(scene_A.light_nodes)
+
+    resultB = do_simulation(scene_B, num, 42)
     for history in resultB:
         rB.add_history(history)
 
-    resultA = do_simulation(scene_A, 3, 42)
+    resultA = do_simulation(scene_A, num, 42)
     print(resultA)
     for history in resultA:
         rA.add_history(history)

@@ -342,6 +342,11 @@
                     "required": [
                         "cone"
                     ]
+                },
+                {
+                    "required": [
+                        "henyey-greenstein"
+                    ]
                 }
             ],
             "additionalProperties": false
@@ -492,7 +497,7 @@
                     "maximum": 1
                 },
                 "phase-function": {
-                    "type": "string"
+                    "$ref": "#/definitions/direction-mask"
                 }
             },
             "anyOf": [

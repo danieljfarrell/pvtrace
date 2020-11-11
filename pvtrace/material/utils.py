@@ -1,6 +1,6 @@
 import numpy as np
 import numpy
-from pvtrace.geometry.utils import flip
+from pvtrace.geometry.utils import flip, close_to_zero
 
 # Fresnel
 

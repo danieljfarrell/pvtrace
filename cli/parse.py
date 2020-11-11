@@ -246,12 +246,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         raise ValueError("Unexpected absorber format.")
 
     def parse_phase_function(spec):
-        if "isotropic" in spec:
-            return isotropic_phase_function
-        elif "lambertian":
-            return lambertian_phase_function
-        # FIXME: we should allow other phase functions
-        raise NotImplementedError("Must be isotropic or lambertian")
+        return parse_direction_mask(spec)
 
     def parse_scatterer(spec, name):
         coefficient = None

@@ -17,7 +17,10 @@ nodes:
         refractive-index: 1.5
         components:
           - my-background-absorber
-          - myscatterer
+          - myscatterer1
+          - myscatterer2
+          - myscatterer3
+          - myscatterer4
 
   rod:
     parent: world
@@ -30,7 +33,10 @@ nodes:
         refractive-index: 2.0
         components:
           - my-background-absorber
-          - myscatterer
+          - myscatterer1
+          - myscatterer2
+          - myscatterer3
+          - myscatterer4
 
   xyz-cube:
     parent: world
@@ -108,13 +114,43 @@ components:
         phase-function: "isotropic"
         spectrum: "mock-spectrum.csv"
 
-  myscatterer:
+  myscatterer1:
     scatterer:
-      coefficient: 2
+      coefficient: 1
       hist: false
       spectrum: "mock-spectrum.csv"
       quantum-yield: 0.9
-      phase-function: "isotropic"
+      phase-function:
+        isotropic:
+
+  myscatterer2:
+    scatterer:
+      coefficient: 1
+      hist: false
+      spectrum: "mock-spectrum.csv"
+      quantum-yield: 0.9
+      phase-function:
+        lambertian:
+
+  myscatterer3:
+    scatterer:
+      coefficient: 1
+      hist: false
+      spectrum: "mock-spectrum.csv"
+      quantum-yield: 0.9
+      phase-function:
+        cone:
+          half-angle: 45
+
+  myscatterer4:
+    scatterer:
+      coefficient: 1
+      hist: false
+      spectrum: "mock-spectrum.csv"
+      quantum-yield: 0.9
+      phase-function:
+        henyey-greenstein:
+          g: 0.1
 
   my-background-absorber:
     absorber:
