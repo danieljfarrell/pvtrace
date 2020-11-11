@@ -359,7 +359,7 @@
                     "type": "number"
                 },
                 "spectrum": {
-                    "type": "string"
+                    "$ref": "#/definitions/spectrum"
                 }
             },
             "oneOf": [
@@ -456,7 +456,7 @@
                             "type": "boolean"
                         },
                         "spectrum": {
-                            "type": "string"
+                            "$ref": "#/definitions/spectrum"
                         }
                     }
                 },
@@ -469,7 +469,7 @@
                             "maximum": 1
                         },
                         "spectrum": {
-                            "type": "string"
+                            "$ref": "#/definitions/spectrum"
                         },
                         "hist": {
                             "type": "boolean"
@@ -489,7 +489,7 @@
                     "type": "boolean"
                 },
                 "spectrum": {
-                    "type": "string"
+                    "$ref": "#/definitions/spectrum"
                 },
                 "quantum-yield": {
                     "type": "number",
@@ -530,7 +530,7 @@
                     "type": "boolean"
                 },
                 "spectrum": {
-                    "type": "string"
+                    "$ref": "#/definitions/spectrum"
                 }
             },
             "anyOf": [
@@ -548,6 +548,30 @@
                     "required": [
                         "coefficient",
                         "spectrum"
+                    ]
+                }
+            ]
+        },
+        "spectrum": {
+            "id": "#/definitions/spectrum",
+            "type": "object",
+            "properties": {
+                "file": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "oneOf": [
+                {
+                    "required": [
+                        "file"
+                    ]
+                },
+                {
+                    "required": [
+                        "name"
                     ]
                 }
             ]

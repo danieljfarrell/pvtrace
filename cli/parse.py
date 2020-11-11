@@ -78,6 +78,12 @@ def parse(filename: str) -> Scene:
 def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
     """Work in progress YAML version 1.0 YAML file parse."""
 
+    def parse_spectrum(spec):
+        if "file" in spec:
+            return load_spectrum(spec["file"])
+        elif "name" in spec:
+            return load_named_spectrum(spec["name"])
+
     def parse_material(spec, component_map) -> Material:
         """Returns pvtrace Material object and a dictionary which maps
         component keys to a material.
@@ -168,7 +174,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             return nanometers
 
         if "spectrum" in spec:
-            spectrum = load_spectrum(spec["spectrum"])
+            spectrum = parse_spectrum(spec["spectrum"])
             dist = Distribution(spectrum[:, 0], spectrum[:, 1])
 
             def sample():
@@ -207,8 +213,12 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             position=position, direction=direction, wavelength=wavelength, name=name
         )
 
+    def load_named_spectrum(name: str) -> Optional[numpy.ndarray]:
+        raise NotImplementedError()
+
     def load_spectrum(filename: str) -> Optional[numpy.ndarray]:
         spectrum: Optional[numpy.ndarray] = None
+
         # Get absolute path to the spectrum CSV
         if not os.path.isabs(filename):
             filename = os.path.abspath(os.path.join(working_directory, filename))
@@ -233,7 +243,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         if "hist" in spec:
             hist = spec["hist"]
 
-        spectrum = load_spectrum(spec["spectrum"])
+        spectrum = parse_spectrum(spec["spectrum"])
 
         if coefficient and (spectrum is not None):
             spectrum[:, 1] = spectrum[:, 1] / numpy.max(spectrum[:, 1]) * coefficient
@@ -265,7 +275,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         if "quantum-yield" in spec:
             quantum_yield = spec["quantum-yield"]
 
-        spectrum = load_spectrum(spec["spectrum"])
+        spectrum = parse_spectrum(spec["spectrum"])
 
         if coefficient and (spectrum is not None):
             spectrum[:, 1] = spectrum[:, 1] / numpy.max(spectrum[:, 1]) * coefficient
@@ -316,12 +326,12 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         if builtin:
             absorption_spectrum = get_builtin_absorption_spectrum(builtin)
         else:
-            absorption_spectrum = load_spectrum(spec["absorption"]["spectrum"])
+            absorption_spectrum = parse_spectrum(spec["absorption"]["spectrum"])
 
         if builtin:
             emission_spectrum = get_builtin_emission_spectrum(builtin)
         else:
-            emission_spectrum = load_spectrum(spec["emission"]["spectrum"])
+            emission_spectrum = parse_spectrum(spec["emission"]["spectrum"])
 
         if emission_spectrum is None:
             raise ValueError("Luminophore must have an emission spectrum")

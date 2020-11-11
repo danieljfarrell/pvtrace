@@ -100,7 +100,8 @@ nodes:
     light:
       mask:
         wavelength:
-          spectrum: "mock-spectrum.csv"
+          spectrum:
+            file: ./subfolder/mock-spectrum.csv
 
 components:
   my-QDs:
@@ -108,17 +109,20 @@ components:
       absorption:
         coefficient: 100
         hist: true
-        spectrum: "mock-spectrum.csv"
+        spectrum:
+          file: ./subfolder/mock-spectrum.csv
       emission:
         quantum-yield: 0.9
         phase-function: "isotropic"
-        spectrum: "mock-spectrum.csv"
+        spectrum:
+          file: ./subfolder/mock-spectrum.csv
 
   myscatterer1:
     scatterer:
       coefficient: 1
       hist: false
-      spectrum: "mock-spectrum.csv"
+      spectrum:
+        file: ./subfolder/mock-spectrum.csv
       quantum-yield: 0.9
       phase-function:
         isotropic:
@@ -127,7 +131,8 @@ components:
     scatterer:
       coefficient: 1
       hist: false
-      spectrum: "mock-spectrum.csv"
+      spectrum:
+        file: ./subfolder/mock-spectrum.csv
       quantum-yield: 0.9
       phase-function:
         lambertian:
@@ -136,7 +141,8 @@ components:
     scatterer:
       coefficient: 1
       hist: false
-      spectrum: "mock-spectrum.csv"
+      spectrum:
+        file: ./subfolder/mock-spectrum.csv
       quantum-yield: 0.9
       phase-function:
         cone:
@@ -146,7 +152,8 @@ components:
     scatterer:
       coefficient: 1
       hist: false
-      spectrum: "mock-spectrum.csv"
+      spectrum:
+        file: ./subfolder/mock-spectrum.csv
       quantum-yield: 0.9
       phase-function:
         henyey-greenstein:
@@ -156,4 +163,12 @@ components:
     absorber:
       coefficient: 0.1
       hist: false
-      spectrum: "mock-spectrum.csv"
+      spectrum:
+        file: ./subfolder/mock-spectrum.csv
+
+  my-lumogen-absorber:
+    absorber:
+      coefficient: 0.1
+      hist: false
+      spectrum:
+        name: lumogen-f-red-305
