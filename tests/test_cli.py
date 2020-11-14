@@ -1,6 +1,6 @@
 from pvtrace import scene
 from pvtrace.scene.renderer import MeshcatRenderer
-from cli.parse import parse
+from pvtrace.cli.parse import parse
 from pvtrace import Scene, Node, Sphere, Material, Light, cone
 from pvtrace.scene.scene import do_simulation
 from meshcat.servers.zmqserver import start_zmq_server_as_subprocess
