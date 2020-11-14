@@ -2,6 +2,7 @@
 Parses the pvtrace-scene.yml file and generates Python objects.
 """
 import functools
+
 from pvtrace.material.distribution import Distribution
 from pvtrace.material.component import Luminophore, Scatterer
 import jsonschema
@@ -34,11 +35,15 @@ from pvtrace.material.utils import lambertian as lambertian_phase_function
 from pvtrace.material.utils import cone as cone_phase_function
 from pvtrace.material.utils import henyey_greenstein as henyey_greenstein_phase_function
 from pvtrace.light.light import rectangular_mask, cube_mask, circular_mask
+from pvtrace.data import lumogen_f_red_305, fluro_red  # these are modules
 
 
 SCHEMA = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "pvtrace-schema-scene-spec.json"
 )
+
+
+SPECTRUM_MODULES = {"lumogen-f-red-305": lumogen_f_red_305, "fluro-red": fluro_red}
 
 
 def get_builtin_absorption_spectrum(name):
@@ -78,11 +83,12 @@ def parse(filename: str) -> Scene:
 def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
     """Work in progress YAML version 1.0 YAML file parse."""
 
-    def parse_spectrum(spec):
+    def parse_spectrum(spec, named_type=None):
+        # A spectrum can be of two types: file or name
         if "file" in spec:
             return load_spectrum(spec["file"])
         elif "name" in spec:
-            return load_named_spectrum(spec["name"])
+            return load_named_spectrum(spec, named_type)
 
     def parse_material(spec, component_map) -> Material:
         """Returns pvtrace Material object and a dictionary which maps
@@ -122,7 +128,11 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         return Sphere(radius=radius, material=material)
 
     def parse_mesh(spec, component_map):
-        filename = spec["file"]
+        if os.path.isabs(spec["file"]):
+            filename = spec["file"]
+        else:
+            filename = os.path.join(working_directory, spec["file"])
+
         mesh = trimesh.exchange.load.load(filename)
         material = parse_material(spec["material"], component_map)
         return Mesh(trimesh=mesh, material=material)
@@ -174,7 +184,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             return nanometers
 
         if "spectrum" in spec:
-            spectrum = parse_spectrum(spec["spectrum"])
+            spectrum = parse_spectrum(spec["spectrum"], named_type="absorption")
             dist = Distribution(spectrum[:, 0], spectrum[:, 1])
 
             def sample():
@@ -213,8 +223,17 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             position=position, direction=direction, wavelength=wavelength, name=name
         )
 
-    def load_named_spectrum(name: str) -> Optional[numpy.ndarray]:
-        raise NotImplementedError()
+    def load_named_spectrum(spec, named_type) -> Optional[numpy.ndarray]:
+        x = np.linspace(
+            spec["range"]["min"], spec["range"]["max"], spec["range"]["spacing"]
+        )
+        module = SPECTRUM_MODULES[spec["name"]]
+        if named_type == "absorption":
+            return np.column_stack((x, module.absorption(x)))
+        elif named_type == "emission":
+            return np.column_stack((x, module.emission(x)))
+
+        raise ValueError("Requires named type")
 
     def load_spectrum(filename: str) -> Optional[numpy.ndarray]:
         spectrum: Optional[numpy.ndarray] = None
@@ -243,7 +262,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         if "hist" in spec:
             hist = spec["hist"]
 
-        spectrum = parse_spectrum(spec["spectrum"])
+        spectrum = parse_spectrum(spec["spectrum"], named_type="absorption")
 
         if coefficient and (spectrum is not None):
             spectrum[:, 1] = spectrum[:, 1] / numpy.max(spectrum[:, 1]) * coefficient
@@ -275,7 +294,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         if "quantum-yield" in spec:
             quantum_yield = spec["quantum-yield"]
 
-        spectrum = parse_spectrum(spec["spectrum"])
+        spectrum = parse_spectrum(spec["spectrum"], named_type="absorption")
 
         if coefficient and (spectrum is not None):
             spectrum[:, 1] = spectrum[:, 1] / numpy.max(spectrum[:, 1]) * coefficient
@@ -326,12 +345,16 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         if builtin:
             absorption_spectrum = get_builtin_absorption_spectrum(builtin)
         else:
-            absorption_spectrum = parse_spectrum(spec["absorption"]["spectrum"])
+            absorption_spectrum = parse_spectrum(
+                spec["absorption"]["spectrum"], named_type="absorption"
+            )
 
         if builtin:
             emission_spectrum = get_builtin_emission_spectrum(builtin)
         else:
-            emission_spectrum = parse_spectrum(spec["emission"]["spectrum"])
+            emission_spectrum = parse_spectrum(
+                spec["emission"]["spectrum"], named_type="emission"
+            )
 
         if emission_spectrum is None:
             raise ValueError("Luminophore must have an emission spectrum")

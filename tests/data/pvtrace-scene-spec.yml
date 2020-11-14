@@ -41,7 +41,7 @@ nodes:
   xyz-cube:
     parent: world
     mesh:
-      file: "cli/20mm-xyz-cube.stl"
+      file: ./20mm-xyz-cube.stl
       material:
         refractive-index: 1.5
 
@@ -117,6 +117,27 @@ components:
         spectrum:
           file: ./subfolder/mock-spectrum.csv
 
+  my-lumogen-absorber:
+    luminophore:
+      absorption:
+        coefficient: 100
+        hist: true
+        spectrum:
+          name: lumogen-f-red-305
+          range:
+            min: 400
+            max: 800
+            spacing: 2
+      emission:
+        quantum-yield: 0.9
+        phase-function: "isotropic"
+        spectrum:
+          name: lumogen-f-red-305
+          range:
+            min: 400
+            max: 800
+            spacing: 2
+
   myscatterer1:
     scatterer:
       coefficient: 1
@@ -165,10 +186,3 @@ components:
       hist: false
       spectrum:
         file: ./subfolder/mock-spectrum.csv
-
-  my-lumogen-absorber:
-    absorber:
-      coefficient: 0.1
-      hist: false
-      spectrum:
-        name: lumogen-f-red-305

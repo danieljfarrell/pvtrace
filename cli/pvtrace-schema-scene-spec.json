@@ -561,6 +561,26 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "range": {
+                    "type": "object",
+                    "properties": {
+                        "min": {
+                            "type": "number"
+                        },
+                        "max": {
+                            "type": "number"
+                        },
+                        "spacing": {
+                            "type": "number"
+                        }
+                    },
+                    "required": [
+                        "min",
+                        "max",
+                        "spacing"
+                    ],
+                    "additionalProperties": false
                 }
             },
             "oneOf": [
@@ -571,7 +591,8 @@
                 },
                 {
                     "required": [
-                        "name"
+                        "name",
+                        "range"
                     ]
                 }
             ]
