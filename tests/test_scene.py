@@ -119,7 +119,6 @@ class TestScene:
             position=(-2.0, 0.0, 0.0),
             direction=(1.0, 0.0, 0.0),
             wavelength=None,
-            is_alive=True,
         )
         scene_intersections = scene.intersections(
             initial_ray.position, initial_ray.direction
