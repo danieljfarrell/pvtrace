@@ -1,7 +1,6 @@
 """
 Parses the pvtrace-scene.yml file and generates Python objects.
 """
-import functools
 
 from pvtrace.material.distribution import Distribution
 from pvtrace.material.component import Luminophore, Scatterer
@@ -32,9 +31,19 @@ from pvtrace import (
 
 from pvtrace.material.utils import isotropic as isotropic_phase_function
 from pvtrace.material.utils import lambertian as lambertian_phase_function
-from pvtrace.material.utils import cone as cone_phase_function
-from pvtrace.material.utils import henyey_greenstein as henyey_greenstein_phase_function
-from pvtrace.light.light import rectangular_mask, cube_mask, circular_mask
+from pvtrace.material.utils import (
+    Cone as ConePhaseFunction,
+)
+from pvtrace.material.utils import (
+    HenyeyGreenstein as HenyeyGreensteinPhaseFunction,
+)
+from pvtrace.light.light import (
+    CubeMask,
+    RectangularMask,
+    CircularMask,
+    ConstantWavelengthMask,
+    SpectrumWavelengthMask
+)
 from pvtrace.data import lumogen_f_red_305, fluro_red  # these are modules
 
 
@@ -139,25 +148,25 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
     def parse_position_mask(spec):
         if "rect" in spec:
-            return functools.partial(rectangular_mask, *spec["rect"])
+            return RectangularMask(*spec["rect"])
 
         if "cube" in spec:
-            return functools.partial(cube_mask, *spec["cube"])
+            return CubeMask(*spec["cube"])
 
         if "circle" in spec:
-            return functools.partial(circular_mask, spec["circle"])
+            return CircularMask(spec["circle"])
 
         raise ValueError("Missing attribute")
 
     def parse_cone_phase_function(spec) -> Callable:
         half_angle = float(spec["half-angle"])  # degrees
         rads = float(np.radians(half_angle))
-        func = functools.partial(cone_phase_function, rads)
+        func = ConePhaseFunction(rads)
         return func
 
     def parse_henyey_greenstein_phase_function(spec) -> Callable:
         g = float(spec["g"])
-        return functools.partial(henyey_greenstein_phase_function, g)
+        return HenyeyGreensteinPhaseFunction(g)
 
     def parse_direction_mask(spec) -> Callable:
         if "isotropic" in spec:
@@ -177,20 +186,12 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
     def parse_wavelength_mask(spec) -> Callable:
         if "nanometers" in spec:
             nm = float(spec["nanometers"])
-
-            def nanometers():
-                return nm
-
-            return nanometers
+            return ConstantWavelengthMask(nm)
 
         if "spectrum" in spec:
             spectrum = parse_spectrum(spec["spectrum"], named_type="absorption")
             dist = Distribution(spectrum[:, 0], spectrum[:, 1])
-
-            def sample():
-                return dist.sample(np.random.uniform(0, 1))
-
-            return sample
+            return SpectrumWavelengthMask(dist)
 
         raise ValueError("Missing attribute")
 
@@ -199,11 +200,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         # Prepare default wavelength. This can be override by mask section.
         wavelength_nm = wavelength = spec.get("wavelength", None)
         if wavelength_nm:
-
-            def wavelength_func():
-                return wavelength_nm
-
-            wavelength = wavelength_func
+            wavelength = ConstantWavelengthMask(wavelength_nm)
 
         position = None
         direction = None
