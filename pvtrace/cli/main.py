@@ -1,7 +1,8 @@
 import typer
 from typing import Optional
 import time
-from parse import parse
+import os
+from pvtrace.cli.parse import parse
 
 
 app = typer.Typer()
@@ -13,12 +14,20 @@ def simulate(
     rays: Optional[int] = typer.Option(100),
     workers: Optional[int] = typer.Option(None),
 ):
-    print("Reading {scene}")
+    print("WARNING: pvtrace-cli is still in development.")
+    print(f"Reading {os.path.relpath(scene)}")
     scene = parse(scene)
-    print(f"Running simulation with {rays} rays and {workers} workers")
+    workers_info = workers
+    if workers_info is None:
+        workers_info = "max"
+    print(f"Running simulation with {rays} rays and {workers_info} workers")
     result = scene.simulate(rays, workers)
-    print(result)
+    print("OK")
+
+
+def main():
+    app()
 
 
 if __name__ == "__main__":
-    app()
+    main()
