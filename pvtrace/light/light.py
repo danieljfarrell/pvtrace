@@ -255,7 +255,6 @@ class Light(object):
                     wavelength=self.wavelength(),
                     position=self.position(),
                     direction=self.direction(),
-                    is_alive=True,
                     source=self.name,
                 )
             except Exception:
