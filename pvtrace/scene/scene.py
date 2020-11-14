@@ -1,11 +1,9 @@
 from __future__ import annotations
 import multiprocessing
-import traceback
-import sys
+import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Optional, Sequence, Tuple
-from anytree import NodeMixin, Walker, PostOrderIter, LevelOrderIter
-from pvtrace.light.ray import Ray
+from anytree import PostOrderIter, LevelOrderIter
 from pvtrace.scene.node import Node
 from pvtrace.light.light import Light
 from pvtrace.material.component import Component
@@ -44,7 +42,7 @@ def do_simulation_add_to_queue(scene, num_rays, seed, queue):
     for idx, ray in enumerate(scene.emit(num_rays)):
         for info in photon_tracer.step_forward(scene, ray):
             ray, event, metadata = info
-            queue.put(pid, idx, ray, event, metadata)
+            queue.put((pid, idx, ray, event, metadata))
 
 
 class Scene(object):
@@ -154,7 +152,11 @@ class Scene(object):
         return all_intersections
 
     def simulate(
-        self, num_rays: int, workers: Optional[int] = None, seed: Optional[int] = None
+        self,
+        num_rays: int,
+        workers: Optional[int] = None,
+        seed: Optional[int] = None,
+        queue: Optional[multiprocessing.Queue] = None,
     ):
         """Concurrently emit rays from light sources and return results.
 
@@ -162,10 +164,13 @@ class Scene(object):
         ----------
         num_rays: int
             The total number of rays to throw
-        workers: int or None
+        workers: (Optional) int
             The number of sub-processes to use for raytracing. None will set to maximum value.
-        seed: int or None
+        seed: (Optional) int
             Only to be used for debugging to get reproducible ray sequence.
+        queue: (Optional) multiprocessing.Queue
+            If queue is specified results are delivered to the queue _instead_ of returning
+            results at the end of the simulation. This helps with reducing memory usage.
 
         Returns
         -------
@@ -188,14 +193,18 @@ class Scene(object):
             workers = multiprocessing.cpu_count()
 
         if workers == 1:
+            if queue:
+                return do_simulation_add_to_queue(self, num_rays, seed, queue)
             return do_simulation(self, num_rays, seed)
 
         num_rays_per_worker = num_rays // workers
         if num_rays_per_worker == 0:
+            if queue:
+                return do_simulation_add_to_queue(self, num_rays, seed, queue)
             return do_simulation(self, num_rays, seed)
 
         if seed is None:
-            seeds = np.random.randint(0, 2 ** 32 - 1, workers)
+            seeds = np.random.randint(0, (2 ** 31) - 1, workers)
         else:
             raise ValueError(
                 "Seed must be None to ensure different quasi-random sequences in each process"
@@ -203,12 +212,27 @@ class Scene(object):
 
         sim_result = []
         with ProcessPoolExecutor(max_workers=workers) as executor:
-            futures = [
-                executor.submit(do_simulation, self, num_rays_per_worker, seeds[idx])
-                for idx in range(workers)
-            ]
+            futures = []
+            for idx in range(workers):
+                if queue:
+                    fut = executor.submit(
+                        do_simulation_add_to_queue,
+                        self,
+                        num_rays_per_worker,
+                        seeds[idx],
+                        queue,
+                    )
+                    futures.append(fut)
+                else:
+                    fut = executor.submit(
+                        do_simulation, self, num_rays_per_worker, seeds[idx]
+                    )
+                    futures.append(fut)
+
             for future in as_completed(futures):
                 data = future.result()
-                sim_result.extend(data)
+                if not queue:
+                    sim_result.extend(data)
 
-        return sim_result
+        if not queue:
+            return sim_result
