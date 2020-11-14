@@ -21,6 +21,7 @@ setup(
     download_url="https://github.com/danieljfarrell/pvtrace/archive/{}.tar.gz".format(
         __version__
     ),
+    entry_points={"console_scripts": ["pvtrace-cli=pvtrace.cli.main:main"]},
     python_requires=">=3.7.2,<3.8",
     packages=find_packages(),
     keywords=["optics", "raytracing", "photovoltaics", "energy"],
