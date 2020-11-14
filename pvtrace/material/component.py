@@ -2,9 +2,11 @@
 volume include: absorption, scattering and luminescence (absorption and reemission).
 """
 from dataclasses import replace
+from typing import Union, Optional, Callable
 import numpy as np
 from pvtrace.material.distribution import Distribution
 from pvtrace.material.utils import isotropic, gaussian
+from pvtrace.light.ray import Ray
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,12 +19,15 @@ class Component(object):
     """ Base class for all things that can be added to a host material.
     """
 
-    def __init__(self, name="Component"):
+    def __init__(self, name: str = "Component"):
         super(Component, self).__init__()
         self.name = name
 
     def is_radiative(self, ray):
         return False
+
+    def nonradiative_absorb(self, ray):
+        return ray
 
 
 class Scatterer(Component):
@@ -46,12 +51,14 @@ class Scatterer(Component):
 
     def __init__(
         self,
-        coefficient,
-        x=None,
-        quantum_yield=1.0,
-        phase_function=None,
-        hist=False,
-        name="Scatterer",
+        coefficient: Union[float, list, tuple, np.ndarray],
+        x: Union[None, list, tuple, np.ndarray] = None,
+        quantum_yield: Optional[float] = 1.0,
+        tau_rad: Optional[float] = None,
+        tau_nr: Optional[float] = None,
+        phase_function: Optional[Callable] = None,
+        hist: bool = False,
+        name: str = "Scatterer",
     ):
         """ 
         Parameters
@@ -65,6 +72,10 @@ class Scatterer(Component):
         quantum_yield: float (optional)
             Default value is 1.0. To include non-radiative scattering use values
             between less than 1.0.
+        tau_rad: float (optional)
+            The single exponential time constant for radiative recombination in seconds.
+        tau_nr: float (optional)
+            The single exponential time constant for non-radiative recombination in seconds.
         phase_function callable (optional)
             Determines the direction of scattering. If None is supplied scattering
             is isotropic.
@@ -74,6 +85,21 @@ class Scatterer(Component):
             interpolated.
         name: str
             A user-defined identifier string
+        
+        Notes
+        -----
+        By default, scattering event are radiative; they do not remove rays from the
+        simulation.
+        
+        Non-radiative scattering is possible by setting the `quantum_yield`
+        parameter to a value less than 1.
+
+        Alternativley, set `tau_rad` and the `tau_nr` values and the quantum yield 
+        will be calculated as,
+
+            (1/rau_rad) / (1/tau_rad + 1/tau_nr) = tau_nr / (tau_nr + tau_rad)
+        
+        This also enabled time-resolved mode which keeps track of duration of all events.
         """
         super(Scatterer, self).__init__(name=name)
 
@@ -92,7 +118,22 @@ class Scatterer(Component):
                 raise ValueError("Requires `x`.")
             self._abs_dist = Distribution.from_functions(x, coefficient, hist=hist)
 
-        self.quantum_yield = quantum_yield
+        # Force specification of either `quantum_yield` or both `tau_rad` and `tau_nr`
+        qy = np.nan
+        if tau_rad is not None and tau_nr is not None:
+            qy = tau_nr / (tau_nr + tau_rad)
+        elif quantum_yield is not None:
+            qy = quantum_yield
+
+        # Final check we could calculate a sensible quantum yield
+        if not np.isfinite(qy):
+            raise ValueError(
+                "Specify either `quantum yield` or both `tau_rad` and `tau_nr`"
+            )
+
+        self.quantum_yield = qy
+        self.tau_rad = tau_rad
+        self.tau_nr = tau_nr
         self.phase_function = (
             phase_function if phase_function is not None else isotropic
         )
@@ -108,7 +149,19 @@ class Scatterer(Component):
         """
         return np.random.uniform() < self.quantum_yield
 
-    def emit(self, ray: "Ray", **kwargs) -> "Ray":
+    def nonradiative_absorb(self, ray: Ray) -> Ray:
+        """ Returns a ray which has been non-radiatively absorbed.
+
+            If `nonradiaitive_lifetime` has been specified the ray's internal
+            clock is updated with a time sampled from a single exponential
+            distribution. Otherwise the input ray is returned.
+        """
+        if self.tau_nr:
+            delay = -np.log(1 - np.random.uniform()) * self.tau_nr
+            return replace(ray, duration=ray.duration + delay)
+        return ray
+
+    def emit(self, ray: Ray, **kwargs) -> Ray:
         """ Change ray direction or wavelength based on physics of the interaction.
         """
         direction = self.phase_function()
@@ -121,21 +174,21 @@ class Absorber(Scatterer):
     
         Examples
         --------
-        Create `Absorber` with isotropic and constant probability of scattering::
+        Create `Absorber` with isotropic and constant scattering coefficient::
 
             Absorber(1.0)
 
-        With spectrally varying scattering probability using a numpy array::
+        With spectrally varying scattering coefficient using a numpy array::
 
             arr = numpy.column_stack((x, y))
             Absorber(arr)
 
-        With spectrally varying scattering probability using `x` lists::
+        With spectrally varying scattering coefficient using `x` lists::
 
             Absorber(y, x=x)
     """
 
-    def __init__(self, coefficient, x=None, name="Absorber", hist=False):
+    def __init__(self, coefficient, x=None, tau_nr=None, name="Absorber", hist=False):
         """ coefficient: float, list, tuple or numpy.ndarray
                 Specifies the absorption coefficient per unit length. Constant values
                 can be supplied or a spectrum per nanometer per unit length. 
@@ -149,10 +202,8 @@ class Absorber(Scatterer):
             x: list, tuple of numpy.ndarray (optional)
                 Wavelength values in nanometers. Required when specifying a the
                 `coefficient` with an list or tuple.
-            quantum_yield: float (optional)
-                Ignored.
-            phase_function callable (optional)
-                Ignored.
+            tau_nr: float (optional)
+                The single exponential time constant for non-radiative recombination in seconds.
             hist: Bool
                 Specifies how the coefficient spectrum is sampled. If `True` the values
                 are treated as a histogram. If `False` the values are linearly 
@@ -165,6 +216,8 @@ class Absorber(Scatterer):
             coefficient,
             x=x,
             quantum_yield=0.0,
+            tau_nr=tau_nr,
+            tau_rad=0.0,
             phase_function=None,
             hist=hist,
             name=name,
@@ -187,7 +240,7 @@ class Luminophore(Scatterer):
             absorption_spectrum = np.column_stack((x_abs, y_abs))
             emission_spectrum = np.column_stack((x_ems, y_ems))
             Luminophore(
-                absorption_spectrum=absorption_spectrum,
+                coefficient=absorption_spectrum,
                 emission=emission_spectrum,
                 quantum_yield=1.0
             )
@@ -197,7 +250,7 @@ class Luminophore(Scatterer):
             absorption_histogram = np.column_stack((x_abs, y_abs))
             emission_histogram = np.column_stack((x_ems, y_ems))
             Luminophore(
-                absorption_spectrum=absorption_histogram,
+                coefficient=absorption_histogram,
                 emission=emission_histogram,
                 quantum_yield=1.0,
                 hist=True
@@ -214,6 +267,8 @@ class Luminophore(Scatterer):
         x=None,
         hist=False,
         quantum_yield=1.0,
+        tau_rad=None,
+        tau_nr=None,
         phase_function=None,
         name="Luminophore",
     ):
@@ -243,6 +298,10 @@ class Luminophore(Scatterer):
                 `coefficient` with an list or tuple.
             quantum_yield: float (optional)
                 The probability of re-emitting a ray.
+            tau_rad: float (optional)
+                The single exponential time constant for radiative recombination in seconds.
+            tau_nr: float (optional)
+                The single exponential time constant for non-radiative recombination in seconds.
             phase_function callable (optional)
                 Specifies the direction of emitted rays.
             hist: Bool
@@ -256,6 +315,8 @@ class Luminophore(Scatterer):
             coefficient,
             x=x,
             quantum_yield=quantum_yield,
+            tau_rad=tau_rad,
+            tau_nr=tau_nr,
             phase_function=phase_function,
             hist=hist,
             name=name,
@@ -276,7 +337,7 @@ class Luminophore(Scatterer):
         else:
             raise ValueError("Luminophore `emission` arg has wrong type.")
 
-    def emit(self, ray: "Ray", method="kT", T=300.0, **kwargs) -> "Ray":
+    def emit(self, ray: Ray, method="kT", T=300.0, **kwargs) -> Ray:
         """ Change ray direction or wavelength based on physics of the interaction.
             
             Parameters
@@ -322,5 +383,17 @@ class Luminophore(Scatterer):
         p2 = 1.0
         gamma = np.random.uniform(p1, p2)
         wavelength = dist.sample(gamma)
-        ray = replace(ray, direction=direction, wavelength=wavelength, source=self.name)
+
+        # Delay emission using the radiative lifetime
+        emission_delay = 0.0
+        if self.tau_rad:
+            emission_delay = -np.log(1 - np.random.uniform()) * self.tau_rad
+
+        ray = replace(
+            ray,
+            direction=direction,
+            wavelength=wavelength,
+            source=self.name,
+            duration=ray.duration + emission_delay,
+        )
         return ray

@@ -163,14 +163,16 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
             break
 
         hit, (container, adjacent), point, full_distance = info
+        refractive_index = container.geometry.material.refractive_index
         if hit is scene.root:
-            history.append((ray.propagate(full_distance), Event.EXIT))
+            history.append((ray.propagate(full_distance, refractive_index), Event.EXIT))
             break
 
         material = container.geometry.material
         absorbed, at_distance = material.is_absorbed(ray, full_distance)
         if absorbed:
-            ray = ray.propagate(at_distance)
+            ray = ray.propagate(at_distance, refractive_index)
+            history.append((ray, Event.ABSORB))
             component = material.component(ray.wavelength)
             if component.is_radiative(ray):
                 ray = component.emit(
@@ -184,25 +186,22 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
                 history.append((ray, event))
                 continue
             else:
-                history.append((ray, Event.ABSORB))
+                ray = component.nonradiative_absorb(ray)
+                history.append((ray, Event.NONRADIATIVE))
                 break
         else:
-            ray = ray.propagate(full_distance)
+            ray = ray.propagate(full_distance, refractive_index)
             surface = hit.geometry.material.surface
             ray = ray.representation(scene.root, hit)
             if surface.is_reflected(ray, hit.geometry, container, adjacent):
                 ray = surface.reflect(ray, hit.geometry, container, adjacent)
                 ray = ray.representation(hit, scene.root)
                 history.append((ray, Event.REFLECT))
-                # print("REFLECT", ray)
                 continue
             else:
                 ref_ray = surface.transmit(ray, hit.geometry, container, adjacent)
-                # if points_equal(ref_ray.direction, ray.direction):
-                #    raise ValueError("Ray did not refract.")
                 ray = ref_ray
                 ray = ray.representation(hit, scene.root)
                 history.append((ray, Event.TRANSMIT))
-                # print("TRANSMIT", ray)
                 continue
     return history

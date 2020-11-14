@@ -9,7 +9,8 @@ class Event(Enum):
     REFLECT = 1
     TRANSMIT = 2
     ABSORB = 3
-    SCATTER = 4
-    EMIT = 5
-    EXIT = 6
-    KILL = 7
+    NONRADIATIVE = 4
+    SCATTER = 5
+    EMIT = 6
+    EXIT = 7
+    KILL = 8
