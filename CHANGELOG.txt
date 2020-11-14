@@ -1,6 +1,0 @@
-# Changelog
-
-## [Unreleased]
-
-### Added
-- Concurrent raytracing using ProcessPoolExecutor.
