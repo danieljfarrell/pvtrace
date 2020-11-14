@@ -34,6 +34,19 @@ def do_simulation(scene, num_rays, seed):
     return results
 
 
+def do_simulation_add_to_queue(scene, num_rays, seed, queue):
+    """Worker function for multiple processing puts results into queue."""
+    # Re-seed for this thread/process
+    if seed is not None:
+        np.random.seed(seed)
+
+    pid = os.getpid()
+    for idx, ray in enumerate(scene.emit(num_rays)):
+        for info in photon_tracer.step_forward(scene, ray):
+            ray, event, metadata = info
+            queue.put(pid, idx, ray, event, metadata)
+
+
 class Scene(object):
     """A scene graph of nodes."""
 

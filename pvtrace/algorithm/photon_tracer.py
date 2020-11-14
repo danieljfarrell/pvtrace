@@ -151,7 +151,7 @@ def step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="k
             rays, events = zip(*history)
     """
     count = 0
-    yield (ray, Event.GENERATE)
+    yield (ray, Event.GENERATE, None)
     while True:
         count += 1
         if count > maxsteps or ray.travelled > maxpathlength:
@@ -277,6 +277,15 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
             history = photon_tracer.follow(ray, scene)
             rays, events = zip(*history)
     """
-    return list(
-        step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT")
+    history = list(
+        step_forward(
+            scene,
+            ray,
+            maxsteps=maxsteps,
+            maxpathlength=maxpathlength,
+            emit_method=emit_method,
+        )
     )
+    # Remove metadata for backward compatability
+    ray, events, _ = zip(*history)
+    return list(zip(ray, events))
