@@ -8,21 +8,40 @@ import logging
 logger = logging.getLogger(__name__)
 
 """
-Modules Functions
+Modules Callables
 -----------------
 
 default_wavelength: callable
     Returns a null distribution with all rays having a wavelength of 555 nanometers.
+
+DefaultWavelength: object
+    An object which when called behaves like default_wavelength
+
 default_position: callable
     Returns a null distribution with zero variation in position.
-default_divergence: callable
+
+DefaultPosition: object
+    An object which when called behaves like default_position
+
+default_direction: callable
     Returns a null distribution with zero variation in divergence.
+
+DefaultDirection: object
+    An object which when called behaves like default_direction
+
 rectangular_mask: callable
     A function which uniformly positions rays over a square in the xy-plane. 
     Requires functools.partial to be used with the constructor (see examples).
+
+RetangularMask: object
+    An object which when called behaves like rectangular_mask
+
 circular_mask: callable
     A function which uniformly positions rays over a circle in the xy-plane. 
     Requires functools.partial to be used with the constructor (see examples).
+
+CircularMask: object
+    An object which when called behaves like circular_mask
 """
 
 
@@ -56,6 +75,85 @@ def cube_mask(X, Y, Z):
         np.random.uniform(-Y, Y),
         np.random.uniform(-Z, Z),
     )
+
+
+class DefaultWavelength(object):
+    """Helper object to generate 555nm wavelength rays."""
+
+    def __call__(self):
+        return default_wavelength()
+
+
+class DefaultPosition(object):
+    """Helper object to generate rays from origin of coordinate system."""
+
+    def __call__(self):
+        return default_position()
+
+
+class DefaultDirection(object):
+    """Helper object to generate rays travelling along +z direction"""
+
+    def __call__(self):
+        return default_direction()
+
+
+class ConstantWavelengthMask(object):
+    """Helper object which generates a constant wavelength"""
+
+    def __init__(self, nanometers):
+        self.nanometers = float(nanometers)
+
+    def __call__(self):
+        return self.nanometers
+
+
+class SpectrumWavelengthMask(object):
+    """Helper object which generates wavelengths according to spectral
+    distribution.
+    """
+
+    def __init__(self, distribution):
+        self.distribution = distribution
+
+    def __call__(self):
+        return self.distribution.sample(np.random.uniform(0, 1))
+
+
+class RectangularMask(object):
+    """Helper object which generates rays uniformally on an xy-plane."""
+
+    def __init__(self, x, y):
+        self.x = float(x)
+        self.y = float(y)
+
+    def __call__(self):
+        x = self.x
+        y = self.y
+        return rectangular_mask(x, y)
+
+
+class CircularMask(object):
+    """Helper object which generates rays uniformally inside a circle."""
+
+    def __init__(self, radius):
+        self.radius = radius
+
+    def __call__(self):
+        return circular_mask(self.radius)
+
+
+class CubeMask(object):
+    """Helper object which generates rays uniformally inside a cube."""
+
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def __call__(self):
+        dims = self.x, self.y, self.z
+        return cube_mask(*dims)
 
 
 class Light(object):
@@ -161,8 +259,5 @@ class Light(object):
                     source=self.name,
                 )
             except Exception:
-                import pdb
-
-                pdb.set_trace()
                 raise
             yield ray

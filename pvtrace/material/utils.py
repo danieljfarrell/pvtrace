@@ -127,6 +127,16 @@ def henyey_greenstein(g=0.0) -> numpy.ndarray:
     return coords
 
 
+class HenyeyGreenstein(object):
+    """Helper object which generates rays uniformally on an xy-plane."""
+
+    def __init__(self, g: float):
+        self.g = float(g)
+
+    def __call__(self):
+        return henyey_greenstein(self.g)
+
+
 # Light source /surface scattering
 
 
@@ -151,6 +161,16 @@ def cone(theta_max: float) -> numpy.ndarray:
     phi = 2 * np.pi * p2
     coords = spherical_to_cart(theta, phi)
     return coords
+
+
+class Cone(object):
+    """Helper object which generates rays uniformally on an xy-plane."""
+
+    def __init__(self, theta_max: float):
+        self.theta_max = float(theta_max)
+
+    def __call__(self):
+        return cone(self.theta_max)
 
 
 def lambertian() -> numpy.ndarray:
