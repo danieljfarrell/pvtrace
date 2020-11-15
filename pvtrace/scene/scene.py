@@ -198,11 +198,16 @@ class Scene(object):
             return do_simulation(self, num_rays, seed)
 
         num_rays_per_worker = num_rays // workers
+        remainder = num_rays_per_worker % workers
         if num_rays_per_worker == 0:
             if queue:
-                return do_simulation_add_to_queue(self, num_rays, seed, queue)
+                return do_simulation_add_to_queue(
+                    self, num_rays + remainder, seed, queue
+                )
             return do_simulation(self, num_rays, seed)
 
+        rays = [num_rays_per_worker] * workers
+        rays[0] += remainder
         if seed is None:
             seeds = np.random.randint(0, (2 ** 31) - 1, workers)
         else:
@@ -218,7 +223,7 @@ class Scene(object):
                     fut = executor.submit(
                         do_simulation_add_to_queue,
                         self,
-                        num_rays_per_worker,
+                        rays[idx],
                         seeds[idx],
                         queue,
                     )

@@ -9,12 +9,16 @@ from pathlib import Path
 from typing import Optional
 from queue import Empty
 from pvtrace.cli.parse import parse
+from pvtrace.light.event import Event
+from pvtrace.scene.renderer import MeshcatRenderer
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SCHEMA = BASE_DIR / "data" / "schema.sql"
 if not SCHEMA.exists():
     raise FileNotFoundError("Cannot find database schema")
 SCHEMA = str(SCHEMA)
+
+RENDERER = dict()
 
 app = typer.Typer()
 
@@ -92,23 +96,27 @@ def write_to_database(dbfilepath, queue, stop, progress, evertything):
                 global_completed += 1
                 progress.update(1)
 
-            # Write all rays to database, not just the initial and final
+            # Assign unique ID for this process and throw
+            if (pid, throw_idx) not in global_ids:
+                global_ids[(pid, throw_idx)] = len(global_ids)
+
             if evertything:
-                if (pid, throw_idx) not in global_ids:
-                    global_ids[(pid, throw_idx)] = len(global_ids)
+                # Write all rays to database, not just the initial and final
                 cur = connection.cursor()
                 ray, event, metadata = info[2:]
                 ray_db_id = write_ray(cur, ray, global_ids[(pid, throw_idx)])
                 write_event(cur, event, metadata, ray_db_id)
                 connection.commit()
+            else:
+                raise NotImplementedError("Database must store all events")
 
         except Empty:
             pass
 
 
-@app.command()
+@app.command(short_help="Run raytrace simulations")
 def simulate(
-    scene: str,
+    scene: Optional[str] = typer.Option(...),
     rays: Optional[int] = typer.Option(100),
     workers: Optional[int] = typer.Option(None),
 ):
@@ -148,6 +156,38 @@ def simulate(
             monitor_thread.join()
 
     print("OK")
+
+
+@app.command(short_help="View scene file in browser")
+def show(
+    scene: Path = typer.Option(
+        ...,
+        "--scene",
+        "-s",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        writable=False,
+        readable=True,
+        resolve_path=True,
+    ),
+    zmq: str = typer.Option(..., "--zmq", "-z"),
+    wireframe: Optional[bool] = typer.Option(True),
+):
+    scene_obj = parse(scene)
+    if "renderer" not in RENDERER:
+        renderer = MeshcatRenderer(zmq_url=zmq, open_browser=False, wireframe=wireframe)
+        RENDERER.update(
+            {
+                "web_url": zmq,
+                "renderer": renderer,
+            }
+        )
+        RENDERER["scene"] = scene_obj
+    renderer = RENDERER["renderer"]
+    renderer.remove(RENDERER["scene"])
+    renderer.render(RENDERER["scene"])
+    renderer.vis.open()
 
 
 def main():
