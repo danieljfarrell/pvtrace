@@ -68,24 +68,35 @@ def write_event(cur, event, metadata, ray_db_id):
     cur.execute("INSERT INTO event VALUES (?, ?, ?, ?, ?, ?, ?)", values)
 
 
-def write_to_database(dbfilepath, queue, stop, progress, evertything):
+def write_to_database(
+    dbfilepath, queue, stop, progress, evertything, scene_obj, zmq, wireframe, skip
+):
 
     print(f"Opening connection {dbfilepath}")
     connection = sqlite3.connect(dbfilepath)
 
+    renderer = None
+    if zmq:
+        renderer = MeshcatRenderer(zmq_url=zmq, open_browser=False, wireframe=wireframe)
+        renderer.remove(scene_obj)
+        renderer.render(scene_obj)
+        renderer.vis.open()
+
     global_completed = 0
     counts = dict()
     global_ids = dict()
-
+    history = dict()
     while True:
 
-        if stop.is_set():
+        if stop.is_set() and queue.empty():
             connection.close()
+            if renderer:
+                del renderer
             return
 
         try:
-            info = queue.get(True, 1.0)
-            pid, throw_idx = info[:2]
+            info = queue.get(True, 0.1)
+            pid, throw_idx, ray = info[:3]
 
             # Keep track of counts from this process
             if pid not in counts:
@@ -99,11 +110,25 @@ def write_to_database(dbfilepath, queue, stop, progress, evertything):
             # Assign unique ID for this process and throw
             if (pid, throw_idx) not in global_ids:
                 global_ids[(pid, throw_idx)] = len(global_ids)
+                if pid in history:
+                    if len(history[pid]) > 0:
+                        if renderer:
+                            renderer.add_ray_path(history[pid])
+
+                # Render every 10 rays
+                if (len(global_ids) % skip) == 0 or throw_idx == 0:
+                    history[pid] = []
+                else:
+                    if pid in history:
+                        history.pop(pid)
+
+            if pid in history:
+                history[pid].append(ray)
 
             if evertything:
                 # Write all rays to database, not just the initial and final
                 cur = connection.cursor()
-                ray, event, metadata = info[2:]
+                event, metadata = info[3:]
                 ray_db_id = write_ray(cur, ray, global_ids[(pid, throw_idx)])
                 write_event(cur, event, metadata, ray_db_id)
                 connection.commit()
@@ -129,16 +154,18 @@ def simulate(
     ),
     rays: Optional[int] = typer.Option(100, "--rays", "-r"),
     workers: Optional[int] = typer.Option(None, "--workers", "-w"),
+    zmq: str = typer.Option(None, "--zmq", "-z"),
+    wireframe: Optional[bool] = typer.Option(True),
+    skip: Optional[int] = typer.Option(10),
 ):
 
     print("WARNING: pvtrace-cli is still in development.")
     print(f"Reading {os.path.relpath(scene)}")
-    scene_yml_path = scene
-    scene = parse(scene_yml_path)
+    scene_obj = parse(scene)
 
     # Database file is in the same folder and has the same name as the yml file
     # but with the .sqlite3 extension
-    dbfilepath = os.path.abspath(os.path.splitext(scene_yml_path)[0]) + ".sqlite3"
+    dbfilepath = os.path.abspath(os.path.splitext(scene)[0]) + ".sqlite3"
     if os.path.exists(dbfilepath):
         delete = typer.confirm("Delete existing database file?", abort=True)
         if delete:
@@ -152,15 +179,25 @@ def simulate(
     with typer.progressbar(length=rays) as progress:
         monitor_thread = threading.Thread(
             target=write_to_database,
-            args=(dbfilepath, queue, stop, progress, True),
+            args=(
+                dbfilepath,
+                queue,
+                stop,
+                progress,
+                True,
+                scene_obj,
+                zmq,
+                wireframe,
+                skip,
+            ),
         )
         monitor_thread.start()
 
         try:
-            scene.simulate(rays, workers=workers, queue=queue)
+            scene_obj.simulate(rays, workers=workers, queue=queue)
         finally:
             # Might need to wait for the queue to be empty!
-            while queue.qsize() > 0:
+            while not queue.empty():
                 time.sleep(0.2)
             stop.set()
             monitor_thread.join()
