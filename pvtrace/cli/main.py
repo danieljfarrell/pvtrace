@@ -116,9 +116,19 @@ def write_to_database(dbfilepath, queue, stop, progress, evertything):
 
 @app.command(short_help="Run raytrace simulations")
 def simulate(
-    scene: Optional[str] = typer.Option(...),
-    rays: Optional[int] = typer.Option(100),
-    workers: Optional[int] = typer.Option(None),
+    scene: Optional[Path] = typer.Option(
+        ...,
+        "--scene",
+        "-s",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        writable=False,
+        readable=True,
+        resolve_path=True,
+    ),
+    rays: Optional[int] = typer.Option(100, "--rays", "-r"),
+    workers: Optional[int] = typer.Option(None, "--workers", "-w"),
 ):
 
     print("WARNING: pvtrace-cli is still in development.")
@@ -175,18 +185,9 @@ def show(
     wireframe: Optional[bool] = typer.Option(True),
 ):
     scene_obj = parse(scene)
-    if "renderer" not in RENDERER:
-        renderer = MeshcatRenderer(zmq_url=zmq, open_browser=False, wireframe=wireframe)
-        RENDERER.update(
-            {
-                "web_url": zmq,
-                "renderer": renderer,
-            }
-        )
-        RENDERER["scene"] = scene_obj
-    renderer = RENDERER["renderer"]
-    renderer.remove(RENDERER["scene"])
-    renderer.render(RENDERER["scene"])
+    renderer = MeshcatRenderer(zmq_url=zmq, open_browser=False, wireframe=wireframe)
+    renderer.remove(scene_obj)
+    renderer.render(scene_obj)
     renderer.vis.open()
 
 
