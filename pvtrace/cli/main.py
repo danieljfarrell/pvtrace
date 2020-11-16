@@ -68,8 +68,17 @@ def write_event(cur, event, metadata, ray_db_id):
     cur.execute("INSERT INTO event VALUES (?, ?, ?, ?, ?, ?, ?)", values)
 
 
-def write_to_database(
-    dbfilepath, queue, stop, progress, evertything, scene_obj, zmq, wireframe, skip
+def monitor_queue(
+    dbfilepath,
+    queue,
+    stop,
+    progress,
+    evertything,
+    scene_obj,
+    zmq,
+    wireframe,
+    skip,
+    max_histories,
 ):
 
     print(f"Opening connection {dbfilepath}")
@@ -78,7 +87,10 @@ def write_to_database(
     renderer = None
     if zmq:
         renderer = MeshcatRenderer(
-            zmq_url=zmq, open_browser=False, wireframe=wireframe, max_histories=10
+            zmq_url=zmq,
+            open_browser=False,
+            wireframe=wireframe,
+            max_histories=max_histories,
         )
         renderer.remove(scene_obj)
         renderer.render(scene_obj)
@@ -153,12 +165,18 @@ def simulate(
         writable=False,
         readable=True,
         resolve_path=True,
+        help="Scene yml file",
     ),
-    rays: Optional[int] = typer.Option(100, "--rays", "-r"),
-    workers: Optional[int] = typer.Option(None, "--workers", "-w"),
-    zmq: str = typer.Option(None, "--zmq", "-z"),
-    wireframe: Optional[bool] = typer.Option(True),
-    skip: Optional[int] = typer.Option(10, min=1),
+    rays: Optional[int] = typer.Option(100, "--rays", "-r", help="Number of rays"),
+    workers: Optional[int] = typer.Option(
+        None, "--workers", "-w", help="Number of worker processes"
+    ),
+    zmq: str = typer.Option(None, "--zmq", help="ZMQ URL of meshcat-server"),
+    wireframe: Optional[bool] = typer.Option(True, help="Render using wireframe"),
+    render_every: Optional[int] = typer.Option(10, min=1, help="Render every n-th ray"),
+    render_max: Optional[int] = typer.Option(
+        1, min=1, help="Maximum number of rays to keep"
+    ),
 ):
 
     print("WARNING: pvtrace-cli is still in development.")
@@ -180,7 +198,7 @@ def simulate(
     stop = threading.Event()
     with typer.progressbar(length=rays) as progress:
         monitor_thread = threading.Thread(
-            target=write_to_database,
+            target=monitor_queue,
             args=(
                 dbfilepath,
                 queue,
@@ -190,7 +208,8 @@ def simulate(
                 scene_obj,
                 zmq,
                 wireframe,
-                skip,
+                render_every,
+                render_max,
             ),
         )
         monitor_thread.start()
@@ -219,8 +238,9 @@ def show(
         writable=False,
         readable=True,
         resolve_path=True,
+        help="Scene yml file",
     ),
-    zmq: str = typer.Option(..., "--zmq", "-z"),
+    zmq: str = typer.Option(..., "--zmq", help="ZMQ URL of meshcat-server"),
     wireframe: Optional[bool] = typer.Option(True),
 ):
     scene_obj = parse(scene)

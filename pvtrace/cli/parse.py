@@ -42,7 +42,7 @@ from pvtrace.light.light import (
     RectangularMask,
     CircularMask,
     ConstantWavelengthMask,
-    SpectrumWavelengthMask
+    SpectrumWavelengthMask,
 )
 from pvtrace.data import lumogen_f_red_305, fluro_red  # these are modules
 
@@ -251,6 +251,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
     def parse_absorber(spec, name):
 
+        name = f"component/{name}"
         coefficient = None
         if "coefficient" in spec:
             coefficient = spec["coefficient"]
@@ -275,6 +276,9 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         return parse_direction_mask(spec)
 
     def parse_scatterer(spec, name):
+
+        name = f"component/{name}"
+
         coefficient = None
         if "coefficient" in spec:
             coefficient = spec["coefficient"]
@@ -322,6 +326,8 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         raise ValueError("Unexpected scatterer format.")
 
     def parse_luminophore(spec, name, builtin):
+
+        name = f"component/{name}"
 
         coefficient = None
         if "coefficient" in spec["absorption"]:
@@ -415,10 +421,12 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
                 geometry = geometry_mapper[geometry_type](
                     spec[geometry_type], component_map=component_map
                 )
+                if name != "world":
+                    name = f"node/geometry/{name}"
                 return Node(geometry=geometry, name=name)
 
         if "light" in spec:
-            light = parse_light(spec["light"], name=f"{name}/light")
+            light = parse_light(spec["light"], name=f"light/{name}")
             return Node(light=light, name=name)
 
         raise ValueError()

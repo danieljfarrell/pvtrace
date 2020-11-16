@@ -15,7 +15,7 @@ CREATE TABLE ray (
 
 CREATE TABLE event (
     ray_id INTEGER NOT NULL,    -- the ray causing this event
-    kind TEXT,               -- pvtrace Event enum value i.e. GENERATE, EMIT etc.
+    kind TEXT,                  -- pvtrace Event enum value i.e. GENERATE, EMIT etc.
     component TEXT,             -- name of the component at this event
     hit TEXT,                   -- name of the hit node
     container TEXT,             -- name of the container node
