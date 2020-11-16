@@ -77,7 +77,9 @@ def write_to_database(
 
     renderer = None
     if zmq:
-        renderer = MeshcatRenderer(zmq_url=zmq, open_browser=False, wireframe=wireframe)
+        renderer = MeshcatRenderer(
+            zmq_url=zmq, open_browser=False, wireframe=wireframe, max_histories=10
+        )
         renderer.remove(scene_obj)
         renderer.render(scene_obj)
         renderer.vis.open()
@@ -96,7 +98,7 @@ def write_to_database(
 
         try:
             info = queue.get(True, 0.1)
-            pid, throw_idx, ray = info[:3]
+            pid, throw_idx, ray, event = info[:4]
 
             # Keep track of counts from this process
             if pid not in counts:
@@ -111,9 +113,9 @@ def write_to_database(
             if (pid, throw_idx) not in global_ids:
                 global_ids[(pid, throw_idx)] = len(global_ids)
                 if pid in history:
-                    if len(history[pid]) > 0:
+                    if len(history[pid]) > 1:
                         if renderer:
-                            renderer.add_ray_path(history[pid])
+                            renderer.add_history(history[pid])
 
                 # Render every 10 rays
                 if (len(global_ids) % skip) == 0 or throw_idx == 0:
@@ -123,12 +125,12 @@ def write_to_database(
                         history.pop(pid)
 
             if pid in history:
-                history[pid].append(ray)
+                history[pid].append((ray, event))
 
             if evertything:
                 # Write all rays to database, not just the initial and final
                 cur = connection.cursor()
-                event, metadata = info[3:]
+                metadata = info[4]
                 ray_db_id = write_ray(cur, ray, global_ids[(pid, throw_idx)])
                 write_event(cur, event, metadata, ray_db_id)
                 connection.commit()
@@ -156,7 +158,7 @@ def simulate(
     workers: Optional[int] = typer.Option(None, "--workers", "-w"),
     zmq: str = typer.Option(None, "--zmq", "-z"),
     wireframe: Optional[bool] = typer.Option(True),
-    skip: Optional[int] = typer.Option(10),
+    skip: Optional[int] = typer.Option(10, min=1),
 ):
 
     print("WARNING: pvtrace-cli is still in development.")
