@@ -9,7 +9,7 @@ world = Node(
     geometry=Sphere(
         radius=10.0,
         material=Material(refractive_index=1.0),
-    )
+    ),
 )
 
 sphere = Node(
@@ -18,17 +18,20 @@ sphere = Node(
         radius=1.0,
         material=Material(refractive_index=1.5),
     ),
-    parent=world
+    parent=world,
 )
 sphere.location = (0, 0, 2)
 
 light = Node(
     name="Light (555nm)",
-    light=Light(direction=functools.partial(cone, np.pi/8)),
-    parent=world
+    light=Light(direction=functools.partial(cone, np.pi / 8)),
+    parent=world,
 )
 
-renderer = MeshcatRenderer(wireframe=True, open_browser=True)
+# Change zmq_url here to be the address of your meshcat-server!
+renderer = MeshcatRenderer(
+    zmq_url="tcp://127.0.0.1:6000", wireframe=True, open_browser=True
+)
 scene = Scene(world)
 renderer.render(scene)
 for ray in scene.emit(100):
@@ -41,6 +44,6 @@ for ray in scene.emit(100):
 print("Ctrl-C to close")
 while True:
     try:
-        time.sleep(.3)
+        time.sleep(0.3)
     except KeyboardInterrupt:
         sys.exit()
