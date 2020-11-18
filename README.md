@@ -32,12 +32,14 @@ pvtrace has been validate against three other luminescent concentrator codes. Fo
 
 ## MacOS using pyenv
 
-On MacOS *pvtrace* can be installed easily using [pyenv](https://github.com/pyenv/pyenv) and `pip`.
+On MacOS *pvtrace* can be installed easily using [pyenv](https://github.com/pyenv/pyenv), the `pip` command and [homebrew](https://brew.sh). First install [homebrew](https://brew.sh), then install `spatialindex` for the RTree dependency,
 
-Create a clean virtual environment for pvtrace
+    brew install spatialindex
 
-    pyenv install 3.7.9
-    pyenv virtualenv 3.7.9 pvtrace-env
+Next, create a clean virtual environment for pvtrace
+
+    pyenv install 3.7.8
+    pyenv virtualenv 3.7.8 pvtrace-env
     pyenv activate pvtrace-env
     pip install pvtrace
 
@@ -45,7 +47,7 @@ Create a clean virtual environment for pvtrace
 
 On Linux and Windows you must use conda to create the python environment. Optionally you can also use this method on MacOS too if you prefer conda over pyenv.
 
-    conda create --name pvtrace-env python=3.7.9
+    conda create --name pvtrace-env python=3.7.8
     conda activate pvtrace-env
     conda install Rtree
     pip install pvtrace
@@ -57,7 +59,35 @@ Download the [hello_world.py](https://raw.githubusercontent.com/danieljfarrell/p
     # Download example script
     curl https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/examples/hello_world.py > hello_world.py
 
-With your pvtrace python environment active run the script,
+Now active your python environment! 
+
+If you installed using **pyenv** do the following,
+
+    pyenv local pvtrace-env
+
+If you are using **conda** to this,
+
+    conda activate pvtrace-env
+
+Now start the meshcat server with the command,
+
+    meshcat-server
+
+This will print information like,
+
+    zmq_url=tcp://127.0.0.1:6000
+    web_url=http://127.0.0.1:7000/static/
+
+Open a new terminal window and again activate your pvtrace-env.
+
+Open `hello_world.py` and make sure the line below has `zmq_url` of your meshcat-server,
+
+    # Change zmq_url here to be the address of your meshcat-server!
+    renderer = MeshcatRenderer(
+        zmq_url="tcp://127.0.0.1:6000", wireframe=True, open_browser=True
+    )   
+
+You can now run pvtrace scripts! Run this following command,
 
     python hello_world.py
 
@@ -200,8 +230,6 @@ Currently *pvtrace* supports only one ray-tracing engine: a photon path tracer. 
 # Documentation
 
 Interactive Jupyter notebooks are in [examples directory](https://github.com/danieljfarrell/pvtrace/tree/master/examples), download and take a look, although they can be viewed online.
-
-API documentation and some background at [https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
 
 # Contributing
 

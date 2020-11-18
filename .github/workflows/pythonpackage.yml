@@ -11,7 +11,6 @@ on:
       - "*"
 
 jobs:
-
   conda-build:
     name: Conda ${{ matrix.python-version }} - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -23,7 +22,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: goanpeca/setup-miniconda@v1.1.2
+      - uses: conda-incubator/setup-miniconda@v2
         with:
           channels: conda-forge
           auto-update-conda: true
