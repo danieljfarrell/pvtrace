@@ -55,14 +55,6 @@ SCHEMA = os.path.join(
 SPECTRUM_MODULES = {"lumogen-f-red-305": lumogen_f_red_305, "fluro-red": fluro_red}
 
 
-def get_builtin_absorption_spectrum(name):
-    raise NotImplementedError()
-
-
-def get_builtin_emission_spectrum(name):
-    raise NotImplementedError()
-
-
 def load_schema():
     print(SCHEMA)
     with open(SCHEMA, "r") as fp:
@@ -251,7 +243,6 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
     def parse_absorber(spec, name):
 
-        name = f"component/{name}"
         coefficient = None
         if "coefficient" in spec:
             coefficient = spec["coefficient"]
@@ -276,8 +267,6 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         return parse_direction_mask(spec)
 
     def parse_scatterer(spec, name):
-
-        name = f"component/{name}"
 
         coefficient = None
         if "coefficient" in spec:
@@ -325,9 +314,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
         raise ValueError("Unexpected scatterer format.")
 
-    def parse_luminophore(spec, name, builtin):
-
-        name = f"component/{name}"
+    def parse_luminophore(spec, name):
 
         coefficient = None
         if "coefficient" in spec["absorption"]:
@@ -337,27 +324,22 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         if "hist" in spec:
             hist = spec["absorption"]["hist"]
 
-        phase_function = None
-        if "phase-function" in spec:
-            phase_function = spec["emission"]["phase-function"]
-
+        phase_function = isotropic_phase_function
         quantum_yield = 1.0
-        if "quantum-yield" in spec:
-            quantum_yield = spec["emission"]["quantum-yield"]
+        if "emission" in spec:
+            if "phase-function" in spec["emission"]:
+                phase_function = parse_phase_function(spec["emission"]["phase-function"])
 
-        if builtin:
-            absorption_spectrum = get_builtin_absorption_spectrum(builtin)
-        else:
-            absorption_spectrum = parse_spectrum(
-                spec["absorption"]["spectrum"], named_type="absorption"
-            )
+            if "quantum-yield" in spec["emission"]:
+                quantum_yield = spec["emission"]["quantum-yield"]
 
-        if builtin:
-            emission_spectrum = get_builtin_emission_spectrum(builtin)
-        else:
-            emission_spectrum = parse_spectrum(
-                spec["emission"]["spectrum"], named_type="emission"
-            )
+        absorption_spectrum = parse_spectrum(
+            spec["absorption"]["spectrum"], named_type="absorption"
+        )
+
+        emission_spectrum = parse_spectrum(
+            spec["emission"]["spectrum"], named_type="emission"
+        )
 
         if emission_spectrum is None:
             raise ValueError("Luminophore must have an emission spectrum")
@@ -397,14 +379,14 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
         raise ValueError("Unexpected luminophore format.")
 
-    def parse_component(spec, name, builtin):
-
+    def parse_component(spec, name):
+        print(spec)
         if "absorber" in spec:
             return parse_absorber(spec["absorber"], name)
         elif "scatterer" in spec:
             return parse_scatterer(spec["scatterer"], name)
         elif "luminophore" in spec:
-            return parse_luminophore(spec["luminophore"], name, builtin)
+            return parse_luminophore(spec["luminophore"], name)
         raise ValueError("Unknown component type")
 
     def parse_node(spec, name, component_map=None):
@@ -421,12 +403,10 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
                 geometry = geometry_mapper[geometry_type](
                     spec[geometry_type], component_map=component_map
                 )
-                if name != "world":
-                    name = f"node/geometry/{name}"
                 return Node(geometry=geometry, name=name)
 
         if "light" in spec:
-            light = parse_light(spec["light"], name=f"light/{name}")
+            light = parse_light(spec["light"], name=name)
             return Node(light=light, name=name)
 
         raise ValueError()
@@ -436,8 +416,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
     if "components" in spec:
         for k, v in component_specs.items():
             print(f"component: {k}")
-            builtin = component_specs[k].get("builtin", None)
-            component_map[k] = parse_component(component_specs[k], k, builtin)
+            component_map[k] = parse_component(component_specs[k], k)
 
     coordinate_systems = dict()
     node_specs = spec["nodes"]

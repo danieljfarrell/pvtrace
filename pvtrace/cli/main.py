@@ -44,8 +44,9 @@ def write_ray(cur, ray, global_throw_id):
         ray.wavelength,
         ray.source,
         ray.travelled,
+        ray.duration,
     )
-    cur.execute("INSERT INTO ray VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", values)
+    cur.execute("INSERT INTO ray VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", values)
     return cur.lastrowid
 
 

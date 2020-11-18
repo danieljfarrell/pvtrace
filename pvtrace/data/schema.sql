@@ -9,7 +9,8 @@ CREATE TABLE ray (
     k DOUBLE,               -- direction in z
     wavelength DOUBLE,      -- wavelength in nanometers
     source TEXT,            -- source which emitted the ray
-    travelled DOUBLE        -- total distance travelled
+    travelled DOUBLE,       -- total distance travelled
+    duration DOUBLE         -- total time since start of simulation
 );
 
 
