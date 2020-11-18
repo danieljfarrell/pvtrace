@@ -231,8 +231,6 @@ Currently *pvtrace* supports only one ray-tracing engine: a photon path tracer. 
 
 Interactive Jupyter notebooks are in [examples directory](https://github.com/danieljfarrell/pvtrace/tree/master/examples), download and take a look, although they can be viewed online.
 
-API documentation and some background at [https://pvtrace.readthedocs.io](https://pvtrace.readthedocs.io/)
-
 # Contributing
 
 Please use the github [issue](https://github.com/danieljfarrell/pvtrace/issues) tracker for bug fixes, suggestions, or support questions.
