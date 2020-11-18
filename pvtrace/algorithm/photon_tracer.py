@@ -10,7 +10,7 @@ from pvtrace.scene.scene import Scene
 from pvtrace.scene.node import Node
 from pvtrace.light.ray import Ray
 from pvtrace.light.event import Event
-from pvtrace.material.component import Scatterer, Luminophore
+from pvtrace.material.component import Scatterer, Luminophore, Reactor
 from pvtrace.geometry.utils import (
     distance_between,
     close_to_zero,
@@ -202,7 +202,10 @@ def step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="k
                 continue
             else:
                 ray = component.nonradiative_absorb(ray)
-                yield (ray, Event.NONRADIATIVE, {"component": component.name})
+                if isinstance(component, Reactor):
+                    yield (ray, Event.REACT, {"component": component.name})
+                else:
+                    yield (ray, Event.NONRADIATIVE, {"component": component.name})
                 break
         else:
             ray = ray.propagate(full_distance, refractive_index)

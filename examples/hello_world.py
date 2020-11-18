@@ -20,7 +20,7 @@ ball_lens = Node(
     ),
     parent=world,
 )
-sphere.location = (0, 0, 2)
+ball_lens.location = (0, 0, 2)
 
 green_laser = Node(
     name="green-laser",
@@ -28,7 +28,10 @@ green_laser = Node(
     parent=world,
 )
 
-renderer = MeshcatRenderer(wireframe=True, open_browser=True)
+# Change zmq_url here to be the address of your meshcat-server!
+renderer = MeshcatRenderer(
+    zmq_url="tcp://127.0.0.1:6000", wireframe=True, open_browser=True
+)
 scene = Scene(world)
 renderer.render(scene)
 for ray in scene.emit(100):

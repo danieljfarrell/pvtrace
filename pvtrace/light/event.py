@@ -2,8 +2,7 @@ from enum import Enum
 
 
 class Event(Enum):
-    """ Events that happen to light rays as they progress through the simulation.
-    """
+    """Events that happen to light rays as they progress through the simulation."""
 
     GENERATE = 0
     REFLECT = 1
@@ -13,4 +12,5 @@ class Event(Enum):
     SCATTER = 5
     EMIT = 6
     EXIT = 7
-    KILL = 8
+    REACT = 8
+    KILL = 9

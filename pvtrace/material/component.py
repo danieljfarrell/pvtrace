@@ -229,6 +229,47 @@ class Absorber(Scatterer):
         return False
 
 
+class Reactor(Absorber):
+    """Describes a reaction mixture: photon absorbed cause photochemical transformation.
+
+        Examples
+        --------
+        Create `Reactor` with isotropic and constant probability of scattering::
+
+            Reactor(1.0)
+    """
+
+    def __init__(self, coefficient, x=None, name="Reactor", hist=False):
+        """ coefficient: float, list, tuple or numpy.ndarray
+                Specifies the absorption coefficient per unit length. Constant values
+                can be supplied or a spectrum per nanometer per unit length.
+
+                If using a list of tuple you should also specify the wavelengths using
+                the `x` keyword.
+
+                If using a numpy array use `column_stack` to supply a single array with
+                a wavelength and coefficient values::
+
+            x: list, tuple of numpy.ndarray (optional)
+                Wavelength values in nanometers. Required when specifying a the
+                `coefficient` with an list or tuple.
+            name: str
+                A user-defined identifier string
+            hist: Bool
+                Specifies how the coefficient spectrum is sampled. If `True` the values
+                are treated as a histogram. If `False` the values are linearly
+                interpolated.
+
+        """
+
+        super(Reactor, self).__init__(
+            coefficient,
+            x=x,
+            hist=hist,
+            name=name,
+        )
+
+
 class Luminophore(Scatterer):
     """ Describes molecule, nanocrystal or material which absorbs and emits light.
 

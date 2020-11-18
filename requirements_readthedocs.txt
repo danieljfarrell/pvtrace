@@ -1,5 +1,0 @@
-anytree
-meshcat>=0.0.16
-numpy
-sphinx
-sphinx-rtd-theme
