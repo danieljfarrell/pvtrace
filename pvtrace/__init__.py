@@ -35,7 +35,7 @@ from .light.event import Event
 
 
 # material
-from .material.component import Scatterer, Absorber, Luminophore
+from .material.component import Scatterer, Absorber, Luminophore, Reactor
 from .material.distribution import Distribution
 from .material.material import Material
 from .material.surface import (

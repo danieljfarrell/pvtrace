@@ -13,3 +13,4 @@ class Event(Enum):
     EMIT = 5
     EXIT = 6
     KILL = 7
+    REACT = 8

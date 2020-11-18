@@ -51,6 +51,30 @@ def make_embedded_lossy_scene(n1=1.5):
     scene = Scene(world)
     return scene, world, box
 
+def make_embedded_lossy_scene_w_reactor(n1=1.5):
+    world = Node(
+        name="world (air)",
+        geometry=Sphere(
+            radius=10.0,
+            material=Material(refractive_index=1.0)
+        )
+    )
+    box = Node(
+        name="box (reactor)",
+        geometry=Box(
+            (1.0, 1.0, 1.0),
+            material=Material(
+                refractive_index=n1,
+                components=[
+                    Reactor(coefficient=10.0)
+                ]
+            ),
+        ),
+        parent=world
+    )
+    scene = Scene(world)
+    return scene, world, box
+
 def make_embedded_lumophore_scene(n1=1.5):
     world = Node(
         name="world (air)",
@@ -203,6 +227,34 @@ def test_follow_lossy_embedded_scene_1():
     ]
     for expected_point, point, expected_event, event in zip(
         expected_positions, positions, expected_events, events):
+        assert expected_event == event
+        assert np.allclose(expected_point, point, atol=EPS_ZERO)
+
+
+def test_follow_lossy_embedded_scene_w_reactor():
+    ray = Ray(
+        position=(0.0, 0.0, -1.0),
+        direction=(0.0, 0.0, 1.0),
+        wavelength=555.0,
+        is_alive=True
+    )
+    scene, world, box = make_embedded_lossy_scene_w_reactor()
+    np.random.seed(0)
+    path = photon_tracer.follow(scene, ray)
+    path, events = zip(*path)
+    positions = [x.position for x in path]
+    expected_positions = [
+        (0.00, 0.00, -1.00),  # Starting
+        (0.00, 0.00, -0.50),  # Hit box
+        (0.00, 0.00, -0.3744069237034118),  # Absorbed and reacted
+    ]
+    expected_events = [
+        Event.GENERATE,
+        Event.TRANSMIT,
+        Event.REACT,
+    ]
+    for expected_point, point, expected_event, event in zip(
+            expected_positions, positions, expected_events, events):
         assert expected_event == event
         assert np.allclose(expected_point, point, atol=EPS_ZERO)
 

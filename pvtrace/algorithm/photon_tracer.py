@@ -10,7 +10,7 @@ from pvtrace.scene.scene import Scene
 from pvtrace.scene.node import Node
 from pvtrace.light.ray import Ray
 from pvtrace.light.event import Event
-from pvtrace.material.component import Scatterer, Luminophore
+from pvtrace.material.component import Scatterer, Luminophore, Reactor
 from pvtrace.geometry.utils import (
     distance_between,
     close_to_zero,
@@ -184,7 +184,10 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
                 history.append((ray, event))
                 continue
             else:
-                history.append((ray, Event.ABSORB))
+                if isinstance(component, Reactor):
+                    history.append((ray, Event.REACT))
+                else:
+                    history.append((ray, Event.ABSORB))
                 break
         else:
             ray = ray.propagate(full_distance)
