@@ -244,11 +244,33 @@ def show(
     zmq: str = typer.Option(..., "--zmq", help="ZMQ URL of meshcat-server"),
     wireframe: Optional[bool] = typer.Option(True),
 ):
-    scene_obj = parse(scene)
+    scene_obj = parse(str(scene.absolute()))
     renderer = MeshcatRenderer(zmq_url=zmq, open_browser=False, wireframe=wireframe)
     renderer.remove(scene_obj)
     renderer.render(scene_obj)
     renderer.vis.open()
+
+
+# @app.command(short_help="Ray statistics from database")
+# def count(
+#     database: Path = typer.Option(
+#         ...,
+#         "--db",
+#         exists=True,
+#         file_okay=True,
+#         dir_okay=False,
+#         writable=False,
+#         readable=True,
+#         resolve_path=True,
+#         help="Database file",
+#     ),
+#     light: str = typer.Option(None, "--light", "-l", help="Filter by light source"),
+#     component: str = typer.Option(
+#         None, "--component", "-c", help="Filter by component"
+#     ),
+#     node: str = typer.Option(None, "--node", "-n", help="Filter by node"),
+# ):
+#     pass
 
 
 def main():
