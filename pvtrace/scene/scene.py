@@ -1,7 +1,6 @@
 from __future__ import annotations
 import multiprocessing
 import os
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Optional, Sequence, Tuple
 from anytree import PostOrderIter, LevelOrderIter
 from pvtrace.scene.node import Node
@@ -44,9 +43,7 @@ def do_simulation_add_to_queue(scene, num_rays, seed, queue):
         count = count + 1
         for info in photon_tracer.step_forward(scene, ray):
             ray, event, metadata = info
-            print(f"[{pid} {str(count).zfill(3)} {queue.qsize()}] PUT")
             queue.put((pid, idx, ray, event, metadata))
-            print(f"[{pid} {str(count).zfill(3)} {queue.qsize()}] DONE")
     return pid
 
 
@@ -211,7 +208,9 @@ class Scene(object):
                 )
             return do_simulation(self, num_rays, seed)
 
-        print(f"Simulating with {workers} workers with {num_rays_per_worker} ray per worker (with remainder {remainder})")
+        print(
+            f"Simulating with {workers} workers with {num_rays_per_worker} ray per worker (with remainder {remainder})"
+        )
         rays = [num_rays_per_worker] * workers
         rays[0] += remainder
         if seed is None:
@@ -221,30 +220,24 @@ class Scene(object):
                 "Seed must be None to ensure different quasi-random sequences in each process"
             )
 
-        sim_result = []
-        with ProcessPoolExecutor(max_workers=workers) as executor:
-            futures = []
-            for idx in range(workers):
-                if queue:
-                    fut = executor.submit(
-                        do_simulation_add_to_queue,
-                        self,
-                        rays[idx],
-                        seeds[idx],
-                        queue,
-                    )
-                    futures.append(fut)
-                else:
-                    fut = executor.submit(
-                        do_simulation, self, num_rays_per_worker, seeds[idx]
-                    )
-                    futures.append(fut)
+        pool = multiprocessing.Pool(processes=workers)
 
-            for future in as_completed(futures):
-                data = future.result()
-                print(f"Process {data} completed!")
-                if not queue:
-                    sim_result.extend(data)
+        # Results are send to queue
+        if queue:
+            results_proxy = [
+                pool.apply_async(
+                    do_simulation_add_to_queue, (self, rays[idx], seeds[idx], queue)
+                )
+                for idx in range(workers)
+            ]
+            [result.get() for result in results_proxy]
+            return
 
-        if not queue:
-            return sim_result
+        # Results are processed directly and returned
+        results_proxy = [
+            pool.apply_async(do_simulation, (self, num_rays_per_worker, seeds[idx]))
+            for idx in range(workers)
+        ]
+        results = []
+        results.extend([result.get() for result in results_proxy])
+        return results

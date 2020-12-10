@@ -101,10 +101,8 @@ def monitor_queue(
     counts = dict()
     global_ids = dict()
     history = dict()
-    last_item = None
     while True:
 
-        # print(f"Stop: {stop.is_set()}, Empty: {queue.empty()}")
         if stop.is_set() and queue.empty():
             connection.close()
             if renderer:
@@ -112,11 +110,7 @@ def monitor_queue(
             return
 
         try:
-            print(f"[qsize {queue.qsize()}]GET")
             info = queue.get(True, 0.1)
-            print("GOT")
-
-            last_item = time.time()
             pid, throw_idx, ray, event = info[:4]
 
             # Keep track of counts from this process
@@ -157,13 +151,6 @@ def monitor_queue(
                 raise NotImplementedError("Database must store all events")
 
         except Empty:
-            # This works around a race condition I don't understand!
-            if last_item:
-                if (time.time() - last_item) > 5.0:  # exit if no data for more than 5s
-                    stop.set()
-                    print("FORCING SIMULATION MONITOR EXIT")
-                    break
-            print("EMPTY")
             pass
 
 
@@ -213,7 +200,7 @@ def simulate(
 
     # Prepare for multiprocessing
     manager = multiprocessing.Manager()
-    queue = manager.Queue(maxsize=5000)
+    queue = manager.Queue(maxsize=10000)
     stop = threading.Event()
     with typer.progressbar(length=rays) as progress:
         monitor_thread = threading.Thread(
@@ -234,19 +221,13 @@ def simulate(
         monitor_thread.start()
 
         try:
-            print("Entering scene simulate")
             scene_obj.simulate(rays, workers=workers, queue=queue)
-            print("Exiting scene simulate")
         finally:
-            print("Waiting for monitor to finish processing rays")
-            # Might need to wait for the queue to be empty!
+            # Wait for the queue to be empty before killing the monitor thread
             while not queue.empty():
                 time.sleep(0.2)
-            print("Will set stop on monitor thread")
             stop.set()
-            print("Will join monitor thread.")
             monitor_thread.join()
-            print("Monitor thread closed")
     print("OK")
 
 

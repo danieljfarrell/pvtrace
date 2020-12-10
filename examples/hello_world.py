@@ -4,35 +4,39 @@ import functools
 import numpy as np
 from pvtrace import *
 
-world = Node(
-    name="world",
-    geometry=Sphere(
-        radius=10.0,
-        material=Material(refractive_index=1.0),
-    ),
-)
 
-ball_lens = Node(
-    name="ball-lens",
-    geometry=Sphere(
-        radius=1.0,
-        material=Material(refractive_index=1.5),
-    ),
-    parent=world,
-)
-ball_lens.location = (0, 0, 2)
+def make_hello_world_scene():
 
-green_laser = Node(
-    name="green-laser",
-    light=Light(direction=functools.partial(cone, np.pi / 8)),
-    parent=world,
-)
+    world = Node(
+        name="world",
+        geometry=Sphere(
+            radius=10.0,
+            material=Material(refractive_index=1.0),
+        ),
+    )
+    ball_lens = Node(
+        name="ball-lens",
+        geometry=Sphere(
+            radius=1.0,
+            material=Material(refractive_index=1.5),
+        ),
+        parent=world,
+    )
+    ball_lens.location = (0, 0, 2)
+
+    green_laser = Node(
+        name="green-laser",
+        light=Light(direction=functools.partial(cone, np.pi / 8), name="green-laser"),
+        parent=world,
+    )
+    return Scene(world)
+
 
 # Change zmq_url here to be the address of your meshcat-server!
 renderer = MeshcatRenderer(
     zmq_url="tcp://127.0.0.1:6000", wireframe=True, open_browser=True
 )
-scene = Scene(world)
+scene = make_hello_world_scene()
 renderer.render(scene)
 for ray in scene.emit(100):
     steps = photon_tracer.follow(scene, ray)

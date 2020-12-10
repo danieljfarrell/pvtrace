@@ -54,9 +54,7 @@ def make_hello_world_scene():
     ball_lens.location = (0, 0, 2)
     green_laser = Node(
         name="green-laser",
-        light=Light(
-            direction=functools.partial(cone, np.pi / 8), name="green-laser/light"
-        ),
+        light=Light(direction=functools.partial(cone, np.pi / 8), name="green-laser"),
         parent=world,
     )
     return Scene(world)
