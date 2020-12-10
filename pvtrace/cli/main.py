@@ -101,8 +101,10 @@ def monitor_queue(
     counts = dict()
     global_ids = dict()
     history = dict()
+    last_item = None
     while True:
 
+        # print(f"Stop: {stop.is_set()}, Empty: {queue.empty()}")
         if stop.is_set() and queue.empty():
             connection.close()
             if renderer:
@@ -110,7 +112,11 @@ def monitor_queue(
             return
 
         try:
+            print(f"[qsize {queue.qsize()}]GET")
             info = queue.get(True, 0.1)
+            print("GOT")
+
+            last_item = time.time()
             pid, throw_idx, ray, event = info[:4]
 
             # Keep track of counts from this process
@@ -151,15 +157,20 @@ def monitor_queue(
                 raise NotImplementedError("Database must store all events")
 
         except Empty:
+            # This works around a race condition I don't understand!
+            if last_item:
+                if (time.time() - last_item) > 5.0:  # exit if no data for more than 5s
+                    stop.set()
+                    print("FORCING SIMULATION MONITOR EXIT")
+                    break
+            print("EMPTY")
             pass
 
 
 @app.command(short_help="Run raytrace simulations")
 def simulate(
-    scene: Optional[Path] = typer.Option(
+    scene: Optional[Path] = typer.Argument(
         ...,
-        "--scene",
-        "-s",
         exists=True,
         file_okay=True,
         dir_okay=False,
@@ -171,6 +182,12 @@ def simulate(
     rays: Optional[int] = typer.Option(100, "--rays", "-r", help="Number of rays"),
     workers: Optional[int] = typer.Option(
         None, "--workers", "-w", help="Number of worker processes"
+    ),
+    delete: Optional[bool] = typer.Option(
+        False,
+        "--delete-database",
+        "-d",
+        help="Delete old database file before starting",
     ),
     zmq: str = typer.Option(None, "--zmq", help="ZMQ URL of meshcat-server"),
     wireframe: Optional[bool] = typer.Option(True, help="Render using wireframe"),
@@ -188,7 +205,8 @@ def simulate(
     # but with the .sqlite3 extension
     dbfilepath = os.path.abspath(os.path.splitext(scene)[0]) + ".sqlite3"
     if os.path.exists(dbfilepath):
-        delete = typer.confirm("Delete existing database file?", abort=True)
+        if not delete:
+            delete = typer.confirm("Delete existing database file?", abort=True)
         if delete:
             os.remove(dbfilepath)
     prepare_database(dbfilepath)
@@ -216,23 +234,27 @@ def simulate(
         monitor_thread.start()
 
         try:
+            print("Entering scene simulate")
             scene_obj.simulate(rays, workers=workers, queue=queue)
+            print("Exiting scene simulate")
         finally:
+            print("Waiting for monitor to finish processing rays")
             # Might need to wait for the queue to be empty!
             while not queue.empty():
                 time.sleep(0.2)
+            print("Will set stop on monitor thread")
             stop.set()
+            print("Will join monitor thread.")
             monitor_thread.join()
-
+            print("Monitor thread closed")
     print("OK")
 
 
 @app.command(short_help="View scene file in browser")
 def show(
-    scene: Path = typer.Option(
+    zmq: str = typer.Argument(..., help="ZMQ URL of meshcat-server"),
+    scene: Path = typer.Argument(
         ...,
-        "--scene",
-        "-s",
         exists=True,
         file_okay=True,
         dir_okay=False,
@@ -241,7 +263,6 @@ def show(
         resolve_path=True,
         help="Scene yml file",
     ),
-    zmq: str = typer.Option(..., "--zmq", help="ZMQ URL of meshcat-server"),
     wireframe: Optional[bool] = typer.Option(True),
 ):
     scene_obj = parse(str(scene.absolute()))

@@ -25,8 +25,8 @@ SELECT COUNT('throw_id') FROM (
     SELECT DISTINCT throw_id FROM ray
     INNER JOIN event ON ray.rowid = event.ray_id
 	WHERE
-		kind = 'NONRADIATIVE' AND 
-		source IN ('?')
+	kind = 'NONRADIATIVE' AND 
+	source IN ('?')
 )
 """
 

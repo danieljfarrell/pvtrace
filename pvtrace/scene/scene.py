@@ -38,11 +38,16 @@ def do_simulation_add_to_queue(scene, num_rays, seed, queue):
     if seed is not None:
         np.random.seed(seed)
 
+    count = 0
     pid = os.getpid()
     for idx, ray in enumerate(scene.emit(num_rays)):
+        count = count + 1
         for info in photon_tracer.step_forward(scene, ray):
             ray, event, metadata = info
+            print(f"[{pid} {str(count).zfill(3)} {queue.qsize()}] PUT")
             queue.put((pid, idx, ray, event, metadata))
+            print(f"[{pid} {str(count).zfill(3)} {queue.qsize()}] DONE")
+    return pid
 
 
 class Scene(object):
@@ -206,6 +211,7 @@ class Scene(object):
                 )
             return do_simulation(self, num_rays, seed)
 
+        print(f"Simulating with {workers} workers with {num_rays_per_worker} ray per worker (with remainder {remainder})")
         rays = [num_rays_per_worker] * workers
         rays[0] += remainder
         if seed is None:
@@ -236,6 +242,7 @@ class Scene(object):
 
             for future in as_completed(futures):
                 data = future.result()
+                print(f"Process {data} completed!")
                 if not queue:
                     sim_result.extend(data)
 
