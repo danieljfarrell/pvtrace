@@ -11,8 +11,7 @@ from queue import Empty
 from pvtrace.cli.parse import parse
 from pvtrace.light.event import Event
 from pvtrace.scene.renderer import MeshcatRenderer
-from pvtrace.cli import count
-
+from pvtrace.cli import count, spectrum
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SCHEMA = BASE_DIR / "data" / "schema.sql"
@@ -25,6 +24,7 @@ RENDERER = dict()
 
 app = typer.Typer()
 app.add_typer(count.app, name="count")
+app.add_typer(spectrum.app, name="spectrum")
 
 
 def prepare_database(dbfilepath):

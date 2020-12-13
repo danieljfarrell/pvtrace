@@ -8,7 +8,7 @@ from pvtrace.cli.db import (
     sql_count_nonradiative_loss_in_node,
 )
 
-app = typer.Typer(help="Count ray events in database")
+app = typer.Typer(help="Database ray counts")
 
 
 @app.command(short_help="Number of rays reflected from node")
