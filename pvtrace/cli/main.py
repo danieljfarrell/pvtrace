@@ -11,6 +11,8 @@ from queue import Empty
 from pvtrace.cli.parse import parse
 from pvtrace.light.event import Event
 from pvtrace.scene.renderer import MeshcatRenderer
+from pvtrace.cli import count
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SCHEMA = BASE_DIR / "data" / "schema.sql"
@@ -20,7 +22,9 @@ SCHEMA = str(SCHEMA)
 
 RENDERER = dict()
 
+
 app = typer.Typer()
+app.add_typer(count.app, name="count")
 
 
 def prepare_database(dbfilepath):
@@ -251,28 +255,6 @@ def show(
     renderer.remove(scene_obj)
     renderer.render(scene_obj)
     renderer.vis.open()
-
-
-# @app.command(short_help="Ray statistics from database")
-# def count(
-#     database: Path = typer.Option(
-#         ...,
-#         "--db",
-#         exists=True,
-#         file_okay=True,
-#         dir_okay=False,
-#         writable=False,
-#         readable=True,
-#         resolve_path=True,
-#         help="Database file",
-#     ),
-#     light: str = typer.Option(None, "--light", "-l", help="Filter by light source"),
-#     component: str = typer.Option(
-#         None, "--component", "-c", help="Filter by component"
-#     ),
-#     node: str = typer.Option(None, "--node", "-n", help="Filter by node"),
-# ):
-#     pass
 
 
 def main():

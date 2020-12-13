@@ -181,7 +181,11 @@ def step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="k
         if absorbed:
             ray = ray.propagate(at_distance, refractive_index)
             component = material.component(ray.wavelength)
-            yield (ray, Event.ABSORB, {"component": component.name})
+            yield (
+                ray,
+                Event.ABSORB,
+                {"component": component.name, "container": container.name},
+            )
 
             if component.is_radiative(ray):
                 ray = component.emit(
@@ -197,15 +201,27 @@ def step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="k
                 yield (
                     ray,
                     event,
-                    {"component": component.name, "emit_method": emit_method},
+                    {
+                        "component": component.name,
+                        "emit_method": emit_method,
+                        "container": container.name,
+                    },
                 )
                 continue
             else:
                 ray = component.nonradiative_absorb(ray)
                 if isinstance(component, Reactor):
-                    yield (ray, Event.REACT, {"component": component.name})
+                    yield (
+                        ray,
+                        Event.REACT,
+                        {"component": component.name, "container": container.name},
+                    )
                 else:
-                    yield (ray, Event.NONRADIATIVE, {"component": component.name})
+                    yield (
+                        ray,
+                        Event.NONRADIATIVE,
+                        {"component": component.name, "container": container.name},
+                    )
                 break
         else:
             ray = ray.propagate(full_distance, refractive_index)
