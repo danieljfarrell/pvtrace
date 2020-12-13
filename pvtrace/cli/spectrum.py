@@ -36,14 +36,14 @@ def handle_output(samples, output, vertical=None):
 
     if output == OutputChoice.csv:
         buffer = io.StringIO()
-        pandas.DataFrame(numpy.array(sample), columns=["nanometers"]).to_csv(buffer)
+        pandas.DataFrame(numpy.array(samples), columns=["nanometers"]).to_csv(buffer)
         print(buffer.getvalue())
 
     if output == OutputChoice.json:
         buffer = io.StringIO()
-        pandas.DataFrame(numpy.array(sample).flatten(), columns=["nanometers"]).to_json(
-            buffer
-        )
+        pandas.DataFrame(
+            numpy.array(samples).flatten(), columns=["nanometers"]
+        ).to_json(buffer)
         print(buffer.getvalue())
 
 
