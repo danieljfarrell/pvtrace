@@ -5,6 +5,7 @@ from typing import Optional, Sequence, Tuple
 from anytree import PostOrderIter, LevelOrderIter
 from pvtrace.scene.node import Node
 from pvtrace.light.light import Light
+from pvtrace.light.event import Event
 from pvtrace.material.component import Component
 from pvtrace.geometry.utils import (
     distance_between,
@@ -31,7 +32,34 @@ def do_simulation(scene, num_rays, seed):
     return results
 
 
-def do_simulation_add_to_queue(scene, num_rays, seed, queue):
+def is_end_ray(event, metadata):
+    """Classify ray event in a little more detail to determine if
+    this is "end ray" or not. An end ray is a ray entering, exiting
+    a node or being absorbed.
+    """
+    ignored = {Event.EMIT, Event.SCATTER, Event.ABSORB}
+    if event in ignored:
+        return False
+
+    if event in (
+        Event.GENERATE,
+        Event.NONRADIATIVE,
+        Event.REACT,
+        Event.KILL,
+        Event.EXIT,
+    ):
+        return True
+    elif event in (Event.REFLECT, Event.TRANSMIT):
+        if metadata["hit"] == metadata["adjacent"] and event == Event.REFLECT:
+            return True  # reflected from node
+        elif metadata["hit"] == metadata["adjacent"] and event == Event.TRANSMIT:
+            return True  # transmitted into node
+        elif metadata["hit"] == metadata["container"] and event == Event.TRANSMIT:
+            return True  # escaped node
+    return False
+
+
+def do_simulation_add_to_queue(scene, num_rays, seed, queue, end_rays):
     """Worker function for multiple processing puts results into queue."""
     # Re-seed for this thread/process
     if seed is not None:
@@ -39,11 +67,25 @@ def do_simulation_add_to_queue(scene, num_rays, seed, queue):
 
     count = 0
     pid = os.getpid()
+
+    # What is an "end ray"?
+    # Only record major ray events should as entering/reflecting from nodes
+    # or being absorbed by reactor or non-radiatively. This option speeds
+    # up raytracing and allows full ray statistics on surfaces to be known.
+    # However, the full ray history is lost. Re-absorption events, and
+    # internal proagation details inside nodes are lost. The only details
+    # that remain from internal propagation is the total path length travelled
+    # and the duration it took.
+
     for idx, ray in enumerate(scene.emit(num_rays)):
         count = count + 1
         for info in photon_tracer.step_forward(scene, ray):
             ray, event, metadata = info
-            queue.put((pid, idx, ray, event, metadata))
+            if end_rays:
+                if is_end_ray(event, metadata):
+                    queue.put((pid, idx, ray, event, metadata))
+            else:
+                queue.put((pid, idx, ray, event, metadata))
     return pid
 
 
@@ -159,6 +201,7 @@ class Scene(object):
         workers: Optional[int] = None,
         seed: Optional[int] = None,
         queue: Optional[multiprocessing.Queue] = None,
+        end_rays: Optional[bool] = False,
     ):
         """Concurrently emit rays from light sources and return results.
 
@@ -173,6 +216,8 @@ class Scene(object):
         queue: (Optional) multiprocessing.Queue
             If queue is specified results are delivered to the queue _instead_ of returning
             results at the end of the simulation. This helps with reducing memory usage.
+        end_rays: (Optional) bool
+            Default if False being that all events are sent to the queue.
 
         Returns
         -------
@@ -196,7 +241,7 @@ class Scene(object):
 
         if workers == 1:
             if queue:
-                return do_simulation_add_to_queue(self, num_rays, seed, queue)
+                return do_simulation_add_to_queue(self, num_rays, seed, queue, end_rays)
             return do_simulation(self, num_rays, seed)
 
         num_rays_per_worker = num_rays // workers
@@ -204,7 +249,7 @@ class Scene(object):
         if num_rays_per_worker == 0:
             if queue:
                 return do_simulation_add_to_queue(
-                    self, num_rays + remainder, seed, queue
+                    self, num_rays + remainder, seed, queue, end_rays
                 )
             return do_simulation(self, num_rays, seed)
 
@@ -226,7 +271,8 @@ class Scene(object):
         if queue:
             results_proxy = [
                 pool.apply_async(
-                    do_simulation_add_to_queue, (self, rays[idx], seeds[idx], queue)
+                    do_simulation_add_to_queue,
+                    (self, rays[idx], seeds[idx], queue, end_rays),
                 )
                 for idx in range(workers)
             ]

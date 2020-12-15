@@ -174,11 +174,14 @@ def simulate(
     workers: Optional[int] = typer.Option(
         None, "--workers", "-w", help="Number of worker processes"
     ),
-    delete: Optional[bool] = typer.Option(
+    end_rays: Optional[bool] = typer.Option(
+        False, "--end-rays", help="Only store end rays in database"
+    ),
+    seed: Optional[int] = typer.Option(None, "--seed", help="Debugging set RNG seed"),
+    overwite: Optional[bool] = typer.Option(
         False,
-        "--delete-database",
-        "-d",
-        help="Delete old database file before starting",
+        "--overwrite",
+        help="Overwrite old database file",
     ),
     zmq: str = typer.Option(None, "--zmq", help="ZMQ URL of meshcat-server"),
     wireframe: Optional[bool] = typer.Option(True, help="Render using wireframe"),
@@ -196,9 +199,9 @@ def simulate(
     # but with the .sqlite3 extension
     dbfilepath = os.path.abspath(os.path.splitext(scene)[0]) + ".sqlite3"
     if os.path.exists(dbfilepath):
-        if not delete:
-            delete = typer.confirm("Delete existing database file?", abort=True)
-        if delete:
+        if not overwite:
+            overwite = typer.confirm("Overwrite existing database file?", abort=True)
+        if overwite:
             os.remove(dbfilepath)
     prepare_database(dbfilepath)
 
@@ -225,7 +228,9 @@ def simulate(
         monitor_thread.start()
 
         try:
-            scene_obj.simulate(rays, workers=workers, queue=queue)
+            scene_obj.simulate(
+                rays, workers=workers, seed=seed, queue=queue, end_rays=end_rays
+            )
         finally:
             # Wait for the queue to be empty before killing the monitor thread
             while not queue.empty():
