@@ -213,8 +213,10 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         )
 
     def load_named_spectrum(spec, named_type) -> Optional[numpy.ndarray]:
-        x = np.linspace(
-            spec["range"]["min"], spec["range"]["max"], spec["range"]["spacing"]
+        x = np.arange(
+            spec["range"]["min"],
+            spec["range"]["max"] + spec["range"]["spacing"],
+            spec["range"]["spacing"],
         )
         module = SPECTRUM_MODULES[spec["name"]]
         if named_type == "absorption":
@@ -328,7 +330,9 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         quantum_yield = 1.0
         if "emission" in spec:
             if "phase-function" in spec["emission"]:
-                phase_function = parse_phase_function(spec["emission"]["phase-function"])
+                phase_function = parse_phase_function(
+                    spec["emission"]["phase-function"]
+                )
 
             if "quantum-yield" in spec["emission"]:
                 quantum_yield = spec["emission"]["quantum-yield"]
