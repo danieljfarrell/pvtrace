@@ -154,15 +154,24 @@ def step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="k
     yield (ray, Event.GENERATE, None)
     while True:
         count += 1
-        if count > maxsteps or ray.travelled > maxpathlength:
-            yield (ray, Event.KILL, {"maxsteps": count, "maxpathlength": ray.travelled})
-            break
-
         info = next_hit(scene, ray)
         if info is None:
             break
 
         hit, (container, adjacent), point, full_distance = info
+
+        if count > maxsteps or ray.travelled > maxpathlength:
+            yield (
+                ray,
+                Event.KILL,
+                {
+                    "maxsteps": count,
+                    "maxpathlength": ray.travelled,
+                    "container": container.name,
+                },
+            )
+            break
+
         refractive_index = container.geometry.material.refractive_index
         if hit is scene.root:
             yield (
