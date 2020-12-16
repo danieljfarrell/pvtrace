@@ -245,7 +245,7 @@ class Scene(object):
             return do_simulation(self, num_rays, seed)
 
         num_rays_per_worker = num_rays // workers
-        remainder = num_rays_per_worker % workers
+        remainder = num_rays_per_worker * workers % num_rays
         if num_rays_per_worker == 0:
             if queue:
                 return do_simulation_add_to_queue(

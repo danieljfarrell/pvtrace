@@ -8,6 +8,7 @@ from pvtrace.cli.db import (
     sql_count_escaping_from_node,
     sql_count_nonradiative_loss_in_node,
     sql_count_reacted_in_node,
+    sql_count_killed_in_node
 )
 
 app = typer.Typer(help="Database ray counts")
@@ -92,7 +93,7 @@ def escaping(
 
 
 @app.command(short_help="Number of rays non-radiatively lost in node")
-def nonradiative(
+def lost(
     node: str = typer.Argument(..., help="Node name"),
     database: Path = typer.Argument(
         ...,
@@ -130,14 +131,34 @@ def reacted(
         resolve_path=True,
         help="Database file",
     ),
-    facet: Optional[str] = typer.Option(
-        None, "--facet", "-f", help="Label of the facet"
-    ),
     source: Optional[str] = typer.Option(
         None, "--source", "-s", help="Label of the rays source"
     ),
 ):
     sql = sql_count_reacted_in_node(node, source)
+    conn = sqlite3.connect(database)
+    cur = conn.cursor()
+    print(cur.execute(sql).fetchone()[0])
+
+
+@app.command(short_help="Number of rays killed in node")
+def killed(
+    node: str = typer.Argument(..., help="Node name"),
+    database: Path = typer.Argument(
+        ...,
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        writable=False,
+        readable=True,
+        resolve_path=True,
+        help="Database file",
+    ),
+    source: Optional[str] = typer.Option(
+        None, "--source", "-s", help="Label of the rays source"
+    ),
+):
+    sql = sql_count_killed_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
     print(cur.execute(sql).fetchone()[0])

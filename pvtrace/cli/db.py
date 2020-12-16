@@ -102,6 +102,22 @@ def sql_count_reacted_in_node(node: str, source: Optional[str] = None):
     return sql
 
 
+def sql_count_killed_in_node(node: str, source: Optional[str] = None):
+
+    inner = [
+        "SELECT DISTINCT throw_id, wavelength FROM ray",
+        "INNER JOIN event ON ray.rowid = event.ray_id",
+        f"WHERE container = '{node}'",
+        "AND kind = 'KILL'",
+    ]
+
+    if source:
+        inner.append(f"AND source = '{source}'")
+
+    sql = "SELECT COUNT('throw_id') FROM ( {} )".format(os.linesep.join(inner))
+    return sql
+
+
 def sql_spectrum_reflected_from_node(
     node: str, facet: Optional[str] = None, source: Optional[str] = None
 ):
@@ -191,6 +207,22 @@ def sql_spectrum_reacted_in_node(node: str, source: Optional[str] = None):
         "INNER JOIN event ON ray.rowid = event.ray_id",
         f"WHERE container = '{node}'",
         "AND kind = 'REACT'",
+    ]
+
+    if source:
+        inner.append(f"AND source = '{source}'")
+
+    sql = "SELECT throw_id, wavelength FROM ( {} )".format(os.linesep.join(inner))
+    return sql
+
+
+def sql_spectrum_killed_in_node(node: str, source: Optional[str] = None):
+
+    inner = [
+        "SELECT DISTINCT throw_id, wavelength FROM ray",
+        "INNER JOIN event ON ray.rowid = event.ray_id",
+        f"WHERE container = '{node}'",
+        "AND kind = 'KILL'",
     ]
 
     if source:
