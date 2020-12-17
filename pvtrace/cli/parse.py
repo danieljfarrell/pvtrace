@@ -408,6 +408,13 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
                     spec[geometry_type], component_map=component_map
                 )
                 return Node(geometry=geometry, name=name)
+                # node = Node(geometry=geometry, name=name)
+                # if "direction" in spec:
+                #     node.look_at(spec["direction"])
+
+                # if "location" in spec:
+                #     node.location = spec["location"]
+                # return node
 
         if "light" in spec:
             light = parse_light(spec["light"], name=name)
@@ -456,6 +463,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
         direction = coordsys.get("direction", None)
         if direction:
+            print(f"Using direction {direction} for node {node}")
             node.look_at(direction)
 
     return Scene(nodes["world"])

@@ -4,7 +4,7 @@ CREATE TABLE ray (
     x DOUBLE,               -- position in x
     y DOUBLE,               -- position in y
     z DOUBLE,               -- position in z
-    i DOUBLE,               --  direction in x
+    i DOUBLE,               -- direction in x
     j DOUBLE,               -- direction in y
     k DOUBLE,               -- direction in z
     wavelength DOUBLE,      -- wavelength in nanometers
@@ -22,5 +22,8 @@ CREATE TABLE event (
     container TEXT,             -- name of the container node
     adjacent TEXT,              -- name of the adjacent node
     facet TEXT,                 -- identifier for the facet
+    ni DOUBLE,                  -- surface normal vector x-component
+    nj DOUBLE,                  -- surface normal vector y-component
+    nk DOUBLE,                  -- surface normal vector z-component
     FOREIGN KEY(ray_id) REFERENCES ray(rowid)
 );

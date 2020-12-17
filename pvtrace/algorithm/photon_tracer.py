@@ -235,7 +235,9 @@ def step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="k
         else:
             ray = ray.propagate(full_distance, refractive_index)
             surface = hit.geometry.material.surface
+            
             ray = ray.representation(scene.root, hit)
+            normal = hit.vector_to_node(hit.geometry.normal(ray.position), scene.root)
             if surface.is_reflected(ray, hit.geometry, container, adjacent):
                 ray = surface.reflect(ray, hit.geometry, container, adjacent)
                 ray = ray.representation(hit, scene.root)
@@ -246,6 +248,7 @@ def step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="k
                         "hit": hit.name,
                         "container": container.name,
                         "adjacent": None if adjacent is None else adjacent.name,
+                        "normal": normal,
                     },
                 )
                 continue
@@ -259,6 +262,7 @@ def step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="k
                         "hit": hit.name,
                         "container": container.name,
                         "adjacent": adjacent.name,
+                        "normal": normal,
                     },
                 )
                 continue

@@ -20,24 +20,24 @@ NORMALS = ((-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1))
 
 
 class Box(Mesh):
-    """ Defines an axis-aligned box with centre (0, 0, 0) and side length.
+    """Defines an axis-aligned box with centre (0, 0, 0) and side length.
 
-        Notes
-        -----
-        This is currently implemented using trimesh, it could be the case that this is
-        a little overkill of such a simple class. Consider re-writing, but add timing
-        tests to test efficiencies of the changes.
-    
-        For TIR rays it would seem possible to have a huge optimisation because the
-        total path length and number of TIR bounces can be calculated in advance.
-        
+    Notes
+    -----
+    This is currently implemented using trimesh, it could be the case that this is
+    a little overkill of such a simple class. Consider re-writing, but add timing
+    tests to test efficiencies of the changes.
+
+    For TIR rays it would seem possible to have a huge optimisation because the
+    total path length and number of TIR bounces can be calculated in advance.
+
     """
 
     def __init__(self, size, material=None):
-        """ Parameters
-            ----------
-            size : tuple of float
-                The side lengths the box like (length, width, height)
+        """Parameters
+        ----------
+        size : tuple of float
+            The side lengths the box like (length, width, height)
         """
         self._size = np.array(size)
         mesh = trimesh.creation.box(size)
@@ -53,7 +53,8 @@ class Box(Mesh):
         )
         if not on_surf:
             raise GeometryError(
-                "Point is not on surface.", {"point": surface_point, "geometry": self}
+                "Point is not on surface. Is the point in the local frame?",
+                {"point": surface_point, "geometry": self},
             )
         if len(surf_indexes) != 1:
             raise GeometryError(

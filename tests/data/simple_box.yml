@@ -3,12 +3,13 @@ version: "1.0"
 nodes:
   world:
     sphere:
-      radius: 10.0
+      radius: 100.0
       material:
         refractive-index: 1.0
 
   my-simple-box:
     location: [0, 0, 2]
+    direction: [0.57735027, 0.57735027, 0.57735027]
     box:
       size: [4, 4, 1]
       material:
@@ -17,7 +18,7 @@ nodes:
           - my-lumogen-dye
 
   green-laser:
-    location: [0, 0, -1]
+    location: [0, 0, -10]
     light:
       mask:
         direction:

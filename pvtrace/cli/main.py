@@ -61,16 +61,25 @@ def write_event(cur, event, metadata, ray_db_id):
     container = None
     adjacent = None
     facet = None
-
+    normal = (None, None, None)
     if metadata:
         component = metadata.get("component", None)
         hit = metadata.get("hit", None)
         container = metadata.get("container", None)
         adjacent = metadata.get("adjacent", None)
         facet = metadata.get("facet", None)
+        normal = metadata.get("normal", (None, None, None))
 
-    values = (ray_db_id, event.name, component, hit, container, adjacent, facet)
-    cur.execute("INSERT INTO event VALUES (?, ?, ?, ?, ?, ?, ?)", values)
+    values = (
+        ray_db_id,
+        event.name,
+        component,
+        hit,
+        container,
+        adjacent,
+        facet,
+    ) + normal
+    cur.execute("INSERT INTO event VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", values)
 
 
 def monitor_queue(
