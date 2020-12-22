@@ -16,7 +16,7 @@ from pvtrace.light.ray import Ray
 from pvtrace.material.material import Material
 
 # Throw small amount of rays in comparison to number of CPUs
-RAYS = np.max([16, os.cpu_count()])
+RAYS = max(16, os.cpu_count())
 
 
 def make_test_scene():

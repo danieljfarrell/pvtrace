@@ -237,7 +237,7 @@ class Scene(object):
         You must also set workers to one during debugging.
         """
         if workers is None:
-            workers = multiprocessing.cpu_count()
+            workers = max(1, multiprocessing.cpu_count() - 1)
 
         if workers == 1:
             if queue:
@@ -245,13 +245,15 @@ class Scene(object):
             return do_simulation(self, num_rays, seed)
 
         num_rays_per_worker = num_rays // workers
-        remainder = num_rays_per_worker * workers % num_rays
         if num_rays_per_worker == 0:
             if queue:
-                return do_simulation_add_to_queue(
-                    self, num_rays + remainder, seed, queue, end_rays
-                )
+                return do_simulation_add_to_queue(self, num_rays, seed, queue, end_rays)
             return do_simulation(self, num_rays, seed)
+
+        if num_rays_per_worker * workers < num_rays:
+            remainder = num_rays % (num_rays_per_worker * workers)
+        else:
+            remainder = (num_rays_per_worker * workers) % num_rays
 
         print(
             f"Simulating with {workers} workers with {num_rays_per_worker} ray per worker (with remainder {remainder})"
@@ -281,9 +283,12 @@ class Scene(object):
 
         # Results are processed directly and returned
         results_proxy = [
-            pool.apply_async(do_simulation, (self, num_rays_per_worker, seeds[idx]))
+            pool.apply_async(do_simulation, (self, rays[idx], seeds[idx]))
             for idx in range(workers)
         ]
         results = []
-        results.extend([result.get() for result in results_proxy])
+        for result in results_proxy:
+            histories = result.get()
+            for history in histories:
+                results.append(history)
         return results
