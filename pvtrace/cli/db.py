@@ -1,11 +1,34 @@
 import os
-from typing import Optional
+from typing import Optional, Tuple
+
+
+def _process_normal(nx, ny, nz, atol):
+    """Utility function to process normal coefficients into SQL lines"""
+
+    lines = []
+    if nx is not None:
+        lines.append(f"AND (ABS({nx} - ni) <= {atol})")
+
+    if ny is not None:
+        lines.append(f"AND (ABS({ny} - nj) <= {atol})")
+
+    if nz is not None:
+        lines.append(f"AND (ABS({nz} - nk) <= {atol})")
+
+    return lines
 
 
 def sql_count_reflected_from_node(
-    node: str, facet: Optional[str] = None, source: Optional[str] = None
+    node: str,
+    nx: Optional[float] = None,
+    ny: Optional[float] = None,
+    nz: Optional[float] = None,
+    facet: Optional[str] = None,
+    source: Optional[str] = None,
+    atol: float = 1e-6,
 ):
     """Returns the number of rays reflected from the node"""
+
     inner = [
         "SELECT DISTINCT throw_id FROM ray",
         "INNER JOIN event ON ray.rowid = event.ray_id",
@@ -13,6 +36,8 @@ def sql_count_reflected_from_node(
         f"AND adjacent = '{node}'",
         "AND kind = 'REFLECT'",
     ]
+
+    inner.extend(_process_normal(nx, ny, nz, atol))
 
     if facet:
         inner.append(f"AND facet = '{facet}'")
@@ -25,9 +50,16 @@ def sql_count_reflected_from_node(
 
 
 def sql_count_entering_into_node(
-    node: str, facet: Optional[str] = None, source: Optional[str] = None
+    node: str,
+    nx: Optional[float] = None,
+    ny: Optional[float] = None,
+    nz: Optional[float] = None,
+    facet: Optional[str] = None,
+    source: Optional[str] = None,
+    atol: float = 1e-6,
 ):
     """Returns the number of rays which enter the node"""
+
     inner = [
         "SELECT DISTINCT throw_id FROM ray",
         "INNER JOIN event ON ray.rowid = event.ray_id",
@@ -35,6 +67,8 @@ def sql_count_entering_into_node(
         f"AND adjacent = '{node}'",
         "AND kind = 'TRANSMIT'",
     ]
+
+    inner.extend(_process_normal(nx, ny, nz, atol))
 
     if facet:
         inner.append(f"AND facet = '{facet}'")
@@ -47,9 +81,16 @@ def sql_count_entering_into_node(
 
 
 def sql_count_escaping_from_node(
-    node: str, facet: Optional[str] = None, source: Optional[str] = None
+    node: str,
+    nx: Optional[float] = None,
+    ny: Optional[float] = None,
+    nz: Optional[float] = None,
+    facet: Optional[str] = None,
+    source: Optional[str] = None,
+    atol: float = 1e-6,
 ):
     """Returns the number of rays escaping from the node"""
+
     inner = [
         "SELECT DISTINCT throw_id FROM ray",
         "INNER JOIN event ON ray.rowid = event.ray_id",
@@ -57,6 +98,8 @@ def sql_count_escaping_from_node(
         f"AND container = '{node}'",
         "AND kind = 'TRANSMIT'",
     ]
+
+    inner.extend(_process_normal(nx, ny, nz, atol))
 
     if facet:
         inner.append(f"AND facet = '{facet}'")
@@ -85,7 +128,10 @@ def sql_count_nonradiative_loss_in_node(node: str, source: Optional[str] = None)
     return sql
 
 
-def sql_count_reacted_in_node(node: str, source: Optional[str] = None):
+def sql_count_reacted_in_node(
+    node: str,
+    source: Optional[str] = None,
+):
     """Returns the number of rays reacted in the node"""
 
     inner = [
@@ -102,7 +148,10 @@ def sql_count_reacted_in_node(node: str, source: Optional[str] = None):
     return sql
 
 
-def sql_count_killed_in_node(node: str, source: Optional[str] = None):
+def sql_count_killed_in_node(
+    node: str,
+    source: Optional[str] = None,
+):
 
     inner = [
         "SELECT DISTINCT throw_id, wavelength FROM ray",
@@ -119,7 +168,13 @@ def sql_count_killed_in_node(node: str, source: Optional[str] = None):
 
 
 def sql_spectrum_reflected_from_node(
-    node: str, facet: Optional[str] = None, source: Optional[str] = None
+    node: str,
+    nx: Optional[float] = None,
+    ny: Optional[float] = None,
+    nz: Optional[float] = None,
+    facet: Optional[str] = None,
+    source: Optional[str] = None,
+    atol: float = 1e-6,
 ):
 
     inner = [
@@ -129,6 +184,8 @@ def sql_spectrum_reflected_from_node(
         f"AND adjacent = '{node}'",
         "AND kind = 'REFLECT'",
     ]
+
+    inner.extend(_process_normal(nx, ny, nz, atol))
 
     if facet:
         inner.append(f"AND facet = '{facet}'")
@@ -141,7 +198,13 @@ def sql_spectrum_reflected_from_node(
 
 
 def sql_spectrum_entering_into_node(
-    node: str, facet: Optional[str] = None, source: Optional[str] = None
+    node: str,
+    nx: Optional[float] = None,
+    ny: Optional[float] = None,
+    nz: Optional[float] = None,
+    facet: Optional[str] = None,
+    source: Optional[str] = None,
+    atol: float = 1e-6,
 ):
 
     inner = [
@@ -151,6 +214,8 @@ def sql_spectrum_entering_into_node(
         f"AND adjacent = '{node}'",
         "AND kind = 'TRANSMIT'",
     ]
+
+    inner.extend(_process_normal(nx, ny, nz, atol))
 
     if facet:
         inner.append(f"AND facet = '{facet}'")
@@ -163,9 +228,14 @@ def sql_spectrum_entering_into_node(
 
 
 def sql_spectrum_escaping_from_node(
-    node: str, facet: Optional[str] = None, source: Optional[str] = None
+    node: str,
+    nx: Optional[float] = None,
+    ny: Optional[float] = None,
+    nz: Optional[float] = None,
+    facet: Optional[str] = None,
+    source: Optional[str] = None,
+    atol: float = 1e-6,
 ):
-
     inner = [
         "SELECT DISTINCT throw_id, wavelength FROM ray",
         "INNER JOIN event ON ray.rowid = event.ray_id",
@@ -173,6 +243,8 @@ def sql_spectrum_escaping_from_node(
         f"AND container = '{node}'",
         "AND kind = 'TRANSMIT'",
     ]
+
+    inner.extend(_process_normal(nx, ny, nz, atol))
 
     if facet:
         inner.append(f"AND facet = '{facet}'")

@@ -13,7 +13,7 @@ from pvtrace.cli.db import (
     sql_spectrum_escaping_from_node,
     sql_spectrum_nonradiative_loss_in_node,
     sql_spectrum_reacted_in_node,
-    sql_spectrum_killed_in_node
+    sql_spectrum_killed_in_node,
 )
 
 app = typer.Typer(help="Database ray spectra")
@@ -63,11 +63,23 @@ def reflected(
         resolve_path=True,
         help="Database file",
     ),
+    nx: Optional[float] = typer.Option(
+        None, "--nx", help="Surface normal component in x"
+    ),
+    ny: Optional[float] = typer.Option(
+        None, "--ny", help="Surface normal component in y"
+    ),
+    nz: Optional[float] = typer.Option(
+        None, "--nz", help="Surface normal component in z"
+    ),
     facet: Optional[str] = typer.Option(
         None, "--facet", "-f", help="Label of the facet"
     ),
     source: Optional[str] = typer.Option(
         None, "--source", "-s", help="Label of the rays source"
+    ),
+    atol: Optional[float] = typer.Option(
+        1e-6, "--atol", help="Float comparison absolute tolerance"
     ),
     output: OutputChoice = typer.Option(
         OutputChoice.plot,
@@ -80,7 +92,9 @@ def reflected(
         False, "--vertical", help="Terminal histogram is vertical"
     ),
 ):
-    sql = sql_spectrum_reflected_from_node(node, facet, source)
+    sql = sql_spectrum_reflected_from_node(
+        node, nx=nx, ny=ny, nz=nz, facet=facet, source=source, atol=atol
+    )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
     result = cur.execute(sql).fetchall()
@@ -102,11 +116,23 @@ def entering(
         resolve_path=True,
         help="Database file",
     ),
+    nx: Optional[float] = typer.Option(
+        None, "--nx", help="Surface normal component in x"
+    ),
+    ny: Optional[float] = typer.Option(
+        None, "--ny", help="Surface normal component in y"
+    ),
+    nz: Optional[float] = typer.Option(
+        None, "--nz", help="Surface normal component in z"
+    ),
     facet: Optional[str] = typer.Option(
         None, "--facet", "-f", help="Label of the facet"
     ),
     source: Optional[str] = typer.Option(
         None, "--source", "-s", help="Label of the rays source"
+    ),
+    atol: Optional[float] = typer.Option(
+        1e-6, "--atol", help="Float comparison absolute tolerance"
     ),
     output: OutputChoice = typer.Option(
         OutputChoice.plot,
@@ -119,7 +145,9 @@ def entering(
         False, "--vertical", help="Terminal histogram is vertical"
     ),
 ):
-    sql = sql_spectrum_entering_into_node(node, facet, source)
+    sql = sql_spectrum_entering_into_node(
+        node, nx=nx, ny=ny, nz=nz, facet=facet, source=source, atol=atol
+    )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
     result = cur.execute(sql).fetchall()
@@ -141,11 +169,23 @@ def escaping(
         resolve_path=True,
         help="Database file",
     ),
+    nx: Optional[float] = typer.Option(
+        None, "--nx", help="Surface normal component in x"
+    ),
+    ny: Optional[float] = typer.Option(
+        None, "--ny", help="Surface normal component in y"
+    ),
+    nz: Optional[float] = typer.Option(
+        None, "--nz", help="Surface normal component in z"
+    ),
     facet: Optional[str] = typer.Option(
         None, "--facet", "-f", help="Label of the facet"
     ),
     source: Optional[str] = typer.Option(
         None, "--source", "-s", help="Label of the rays source"
+    ),
+    atol: Optional[float] = typer.Option(
+        1e-6, "--atol", help="Float comparison absolute tolerance"
     ),
     output: OutputChoice = typer.Option(
         OutputChoice.plot,
@@ -158,7 +198,9 @@ def escaping(
         False, "--vertical", help="Terminal histogram is vertical"
     ),
 ):
-    sql = sql_spectrum_escaping_from_node(node, facet, source)
+    sql = sql_spectrum_escaping_from_node(
+        node, nx=nx, ny=ny, nz=nz, facet=facet, source=source, atol=atol
+    )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
     result = cur.execute(sql).fetchall()

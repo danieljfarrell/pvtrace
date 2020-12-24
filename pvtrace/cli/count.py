@@ -8,7 +8,7 @@ from pvtrace.cli.db import (
     sql_count_escaping_from_node,
     sql_count_nonradiative_loss_in_node,
     sql_count_reacted_in_node,
-    sql_count_killed_in_node
+    sql_count_killed_in_node,
 )
 
 app = typer.Typer(help="Database ray counts")
@@ -27,14 +27,28 @@ def reflected(
         resolve_path=True,
         help="Database file",
     ),
+    nx: Optional[float] = typer.Option(
+        None, "--nx", help="Surface normal component in x"
+    ),
+    ny: Optional[float] = typer.Option(
+        None, "--ny", help="Surface normal component in y"
+    ),
+    nz: Optional[float] = typer.Option(
+        None, "--nz", help="Surface normal component in z"
+    ),
     facet: Optional[str] = typer.Option(
         None, "--facet", "-f", help="Label of the facet"
     ),
     source: Optional[str] = typer.Option(
         None, "--source", "-s", help="Label of the rays source"
     ),
+    atol: Optional[float] = typer.Option(
+        1e-6, "--atol", help="Float comparison absolute tolerance"
+    ),
 ):
-    sql = sql_count_reflected_from_node(node, facet, source)
+    sql = sql_count_reflected_from_node(
+        node, nx=nx, ny=ny, nz=nz, facet=facet, source=source, atol=atol
+    )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
     print(cur.execute(sql).fetchone()[0])
@@ -53,14 +67,28 @@ def entering(
         resolve_path=True,
         help="Database file",
     ),
+    nx: Optional[float] = typer.Option(
+        None, "--nx", help="Surface normal component in x"
+    ),
+    ny: Optional[float] = typer.Option(
+        None, "--ny", help="Surface normal component in y"
+    ),
+    nz: Optional[float] = typer.Option(
+        None, "--nz", help="Surface normal component in z"
+    ),
     facet: Optional[str] = typer.Option(
         None, "--facet", "-f", help="Label of the facet"
     ),
     source: Optional[str] = typer.Option(
         None, "--source", "-s", help="Label of the rays source"
     ),
+    atol: Optional[float] = typer.Option(
+        1e-6, "--atol", help="Float comparison absolute tolerance"
+    ),
 ):
-    sql = sql_count_entering_into_node(node, facet, source)
+    sql = sql_count_entering_into_node(
+        node, nx=nx, ny=ny, nz=nz, facet=facet, source=source, atol=atol
+    )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
     print(cur.execute(sql).fetchone()[0])
@@ -79,14 +107,28 @@ def escaping(
         resolve_path=True,
         help="Database file",
     ),
+    nx: Optional[float] = typer.Option(
+        None, "--nx", help="Surface normal component in x"
+    ),
+    ny: Optional[float] = typer.Option(
+        None, "--ny", help="Surface normal component in y"
+    ),
+    nz: Optional[float] = typer.Option(
+        None, "--nz", help="Surface normal component in z"
+    ),
     facet: Optional[str] = typer.Option(
         None, "--facet", "-f", help="Label of the facet"
     ),
     source: Optional[str] = typer.Option(
         None, "--source", "-s", help="Label of the rays source"
     ),
+    atol: Optional[float] = typer.Option(
+        1e-6, "--atol", help="Float comparison absolute tolerance"
+    ),
 ):
-    sql = sql_count_escaping_from_node(node, facet, source)
+    sql = sql_count_escaping_from_node(
+        node, nx=nx, ny=ny, nz=nz, facet=facet, source=source, atol=atol
+    )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
     print(cur.execute(sql).fetchone()[0])
