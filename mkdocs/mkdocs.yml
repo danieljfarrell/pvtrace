@@ -1,0 +1,32 @@
+site_name: pvtrace
+
+theme:
+  name: material
+  palette:
+    primary: deep-purple
+  font:
+    text: Montserrat
+    code: Roboto Mono
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - markdown.extensions.codehilite:
+      guess_lang: false
+  - markdown_include.include:
+      base_path: source
+  - admonition
+  - codehilite
+  - extra
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.arithmatex:
+      generic: true
+
+plugins:
+  - search
+
+extra_javascript:
+  - js/config.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
