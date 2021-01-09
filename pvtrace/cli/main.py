@@ -4,14 +4,14 @@ from numpy.lib.function_base import append
 import typer
 import sqlite3
 import os
-import time
+import time as pytime
 from pathlib import Path
 from typing import Optional
 from queue import Empty
 from pvtrace.cli.parse import parse
 from pvtrace.light.event import Event
 from pvtrace.scene.renderer import MeshcatRenderer
-from pvtrace.cli import count, spectrum
+from pvtrace.cli import count, spectrum, time
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SCHEMA = BASE_DIR / "data" / "schema.sql"
@@ -25,6 +25,7 @@ RENDERER = dict()
 app = typer.Typer()
 app.add_typer(count.app, name="count")
 app.add_typer(spectrum.app, name="spectrum")
+app.add_typer(time.app, name="time")
 
 
 def prepare_database(dbfilepath):
@@ -143,7 +144,7 @@ def monitor_queue(
                         if renderer:
                             renderer.add_history(history[pid])
 
-                # Render every 10 rays
+                # Render every n rays
                 if (len(global_ids) % skip) == 0 or throw_idx == 0:
                     history[pid] = []
                 else:
@@ -243,7 +244,7 @@ def simulate(
         finally:
             # Wait for the queue to be empty before killing the monitor thread
             while not queue.empty():
-                time.sleep(0.2)
+                pytime.sleep(0.2)
             stop.set()
             monitor_thread.join()
     print("OK")

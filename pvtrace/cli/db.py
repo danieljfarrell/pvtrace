@@ -154,7 +154,7 @@ def sql_count_killed_in_node(
 ):
 
     inner = [
-        "SELECT DISTINCT throw_id, wavelength FROM ray",
+        "SELECT DISTINCT throw_id FROM ray",
         "INNER JOIN event ON ray.rowid = event.ray_id",
         f"WHERE container = '{node}'",
         "AND kind = 'KILL'",
@@ -301,6 +301,143 @@ def sql_spectrum_killed_in_node(node: str, source: Optional[str] = None):
         inner.append(f"AND source = '{source}'")
 
     sql = "SELECT throw_id, wavelength FROM ( {} )".format(os.linesep.join(inner))
+    return sql
+
+
+def sql_time_reflected_from_node(
+    node: str,
+    nx: Optional[float] = None,
+    ny: Optional[float] = None,
+    nz: Optional[float] = None,
+    facet: Optional[str] = None,
+    source: Optional[str] = None,
+    atol: float = 1e-6,
+):
+
+    inner = [
+        "SELECT DISTINCT throw_id, duration FROM ray",
+        "INNER JOIN event ON ray.rowid = event.ray_id",
+        f"WHERE hit = '{node}'",
+        f"AND adjacent = '{node}'",
+        "AND kind = 'REFLECT'",
+    ]
+
+    inner.extend(_process_normal(nx, ny, nz, atol))
+
+    if facet:
+        inner.append(f"AND facet = '{facet}'")
+
+    if source:
+        inner.append(f"AND source = '{source}'")
+
+    sql = "SELECT throw_id, duration FROM ( {} )".format(os.linesep.join(inner))
+    return sql
+
+
+def sql_time_entering_into_node(
+    node: str,
+    nx: Optional[float] = None,
+    ny: Optional[float] = None,
+    nz: Optional[float] = None,
+    facet: Optional[str] = None,
+    source: Optional[str] = None,
+    atol: float = 1e-6,
+):
+
+    inner = [
+        "SELECT DISTINCT throw_id, duration FROM ray",
+        "INNER JOIN event ON ray.rowid = event.ray_id",
+        f"WHERE hit = '{node}'",
+        f"AND adjacent = '{node}'",
+        "AND kind = 'TRANSMIT'",
+    ]
+
+    inner.extend(_process_normal(nx, ny, nz, atol))
+
+    if facet:
+        inner.append(f"AND facet = '{facet}'")
+
+    if source:
+        inner.append(f"AND source = '{source}'")
+
+    sql = "SELECT throw_id, duration FROM ( {} )".format(os.linesep.join(inner))
+    return sql
+
+
+def sql_time_escaping_from_node(
+    node: str,
+    nx: Optional[float] = None,
+    ny: Optional[float] = None,
+    nz: Optional[float] = None,
+    facet: Optional[str] = None,
+    source: Optional[str] = None,
+    atol: float = 1e-6,
+):
+    inner = [
+        "SELECT DISTINCT throw_id, duration FROM ray",
+        "INNER JOIN event ON ray.rowid = event.ray_id",
+        f"WHERE hit = '{node}'",
+        f"AND container = '{node}'",
+        "AND kind = 'TRANSMIT'",
+    ]
+
+    inner.extend(_process_normal(nx, ny, nz, atol))
+
+    if facet:
+        inner.append(f"AND facet = '{facet}'")
+
+    if source:
+        inner.append(f"AND source = '{source}'")
+
+    sql = "SELECT throw_id, duration FROM ( {} )".format(os.linesep.join(inner))
+    return sql
+
+
+def sql_time_nonradiative_loss_in_node(node: str, source: Optional[str] = None):
+
+    inner = [
+        "SELECT DISTINCT throw_id, duration FROM ray",
+        "INNER JOIN event ON ray.rowid = event.ray_id",
+        f"WHERE container = '{node}'",
+        "AND kind = 'NONRADIATIVE'",
+    ]
+
+    if source:
+        inner.append(f"AND source = '{source}'")
+
+    sql = "SELECT throw_id, duration FROM ( {} )".format(os.linesep.join(inner))
+    return sql
+
+
+def sql_time_reacted_in_node(node: str, source: Optional[str] = None):
+
+    inner = [
+        "SELECT DISTINCT throw_id, duration FROM ray",
+        "INNER JOIN event ON ray.rowid = event.ray_id",
+        f"WHERE container = '{node}'",
+        "AND kind = 'REACT'",
+    ]
+
+    if source:
+        inner.append(f"AND source = '{source}'")
+
+    sql = "SELECT throw_id, duration FROM ( {} )".format(os.linesep.join(inner))
+    return sql
+
+
+def sql_time_killed_in_node(node: str, source: Optional[str] = None):
+
+    inner = [
+        "SELECT DISTINCT throw_id, duration FROM ray",
+        "INNER JOIN event ON ray.rowid = event.ray_id",
+        f"WHERE container = '{node}'",
+        "AND kind = 'KILL'",
+    ]
+
+    if source:
+        inner.append(f"AND source = '{source}'")
+
+    sql = "SELECT throw_id, duration FROM ( {} )".format(os.linesep.join(inner))
     return sql
 
 

@@ -8,6 +8,7 @@ import pytest
 import os
 import time
 import functools
+import copy
 import numpy as np
 
 # ../tests/
@@ -17,6 +18,10 @@ HERE = os.path.dirname(os.path.relpath(__file__))
 EXAMPLES = os.path.abspath(os.path.join(HERE, "..", "examples"))
 
 FULL_EXAMPLE_YML = os.path.abspath(os.path.join(HERE, "data", "pvtrace-scene-spec.yml"))
+
+LSC_EXAMPLE_YML = os.path.abspath(os.path.join(HERE, "data", "lsc_scene.yml"))
+
+from tests.data.lsc_scene import scene as py_lsc_scene, green_laser as py_light_node
 
 HELLO_WORLD_YML = os.path.abspath(os.path.join(EXAMPLES, "hello_world.yml"))
 
@@ -35,29 +40,29 @@ def meshcat_zmq_url2():
     server_proc.terminate()
 
 
-def make_hello_world_scene():
-    world = Node(
-        name="world",
-        geometry=Sphere(
-            radius=10.0,
-            material=Material(refractive_index=1.0),
-        ),
-    )
-    ball_lens = Node(
-        name="ball-lens",
-        geometry=Sphere(
-            radius=1.0,
-            material=Material(refractive_index=1.5),
-        ),
-        parent=world,
-    )
-    ball_lens.location = (0, 0, 2)
-    green_laser = Node(
-        name="green-laser",
-        light=Light(direction=functools.partial(cone, np.pi / 8), name="green-laser"),
-        parent=world,
-    )
-    return Scene(world)
+# def make_hello_world_scene():
+#     world = Node(
+#         name="world",
+#         geometry=Sphere(
+#             radius=10.0,
+#             material=Material(refractive_index=1.0),
+#         ),
+#     )
+#     ball_lens = Node(
+#         name="ball-lens",
+#         geometry=Sphere(
+#             radius=1.0,
+#             material=Material(refractive_index=1.5),
+#         ),
+#         parent=world,
+#     )
+#     ball_lens.location = (0, 0, 2)
+#     green_laser = Node(
+#         name="green-laser",
+#         light=Light(direction=functools.partial(cone, np.pi / 8), name="green-laser"),
+#         parent=world,
+#     )
+#     return Scene(world)
 
 
 def test_parse_full_example_yml():
@@ -69,8 +74,13 @@ def test_parse_hello_world_yml():
 
 
 def test_equality_by_tracing():
-    scene_A = parse(HELLO_WORLD_YML)
-    scene_B = make_hello_world_scene()
+    """ Quite an important test!
+
+        This checks that a scene yml and an equivalent python scene
+        produce identical path histories for rays (given the same seed).
+    """
+    scene_A = parse(LSC_EXAMPLE_YML)
+    scene_B = copy.deepcopy(py_lsc_scene)
 
     num = len(scene_A.light_nodes)
 
@@ -81,8 +91,7 @@ def test_equality_by_tracing():
 
     # Make sure each light node generates a ray
     result_A = do_simulation(scene_A, num, 42)
-
-    assert result_A == result_B_run1
+    assert result_A[0] == result_B_run1[0]
 
 
 def test_full_example_by_tracing():
@@ -123,3 +132,15 @@ def test_equality_by_renderer(meshcat_zmq_url1, meshcat_zmq_url2):
         rA.add_history(history)
 
     time.sleep(4.0)
+
+
+def test_parse_light_source_in_lsc_scene():
+    yml_scene = parse(LSC_EXAMPLE_YML)
+    # Get light node, name should be same as in python script
+    found = [x for x in yml_scene.root.children if x.name == py_light_node.name]
+    assert (
+        len(found) == 1
+    ), "Python scene and YML seen don't have same light source name"
+
+    yml_light_node = found[0]
+    assert py_light_node.name == yml_light_node.name

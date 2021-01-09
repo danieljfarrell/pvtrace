@@ -199,8 +199,7 @@ def step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="k
             if component.is_radiative(ray):
                 ray = component.emit(
                     ray.representation(scene.root, container), method=emit_method
-                )
-                ray = ray.representation(container, scene.root)
+                ).representation(container, scene.root)
                 if isinstance(component, Luminophore):
                     event = Event.EMIT
                 elif isinstance(component, Scatterer):
@@ -235,12 +234,17 @@ def step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="k
         else:
             ray = ray.propagate(full_distance, refractive_index)
             surface = hit.geometry.material.surface
-            
-            ray = ray.representation(scene.root, hit)
-            normal = hit.vector_to_node(hit.geometry.normal(ray.position), scene.root)
-            if surface.is_reflected(ray, hit.geometry, container, adjacent):
-                ray = surface.reflect(ray, hit.geometry, container, adjacent)
-                ray = ray.representation(hit, scene.root)
+
+            # Need the ray in the frame of the hit object to compute normal
+            # and to perform relfections and refractions.
+            local_ray = ray.representation(scene.root, hit)
+            normal = hit.vector_to_node(
+                hit.geometry.normal(local_ray.position), scene.root
+            )
+            if surface.is_reflected(local_ray, hit.geometry, container, adjacent):
+                ray = surface.reflect(
+                    local_ray, hit.geometry, container, adjacent
+                ).representation(hit, scene.root)
                 yield (
                     ray,
                     Event.REFLECT,
@@ -253,8 +257,9 @@ def step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="k
                 )
                 continue
             else:
-                ray = surface.transmit(ray, hit.geometry, container, adjacent)
-                ray = ray.representation(hit, scene.root)
+                ray = surface.transmit(
+                    local_ray, hit.geometry, container, adjacent
+                ).representation(hit, scene.root)
                 yield (
                     ray,
                     Event.TRANSMIT,

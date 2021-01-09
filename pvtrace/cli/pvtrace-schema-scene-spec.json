@@ -445,15 +445,15 @@
         "luminophore": {
             "type": "object",
             "properties": {
+                "hist": {
+                    "type": "boolean"
+                },
                 "absorption": {
                     "type": "object",
                     "properties": {
                         "coefficient": {
                             "type": "number",
                             "minimum": 0
-                        },
-                        "hist": {
-                            "type": "boolean"
                         },
                         "spectrum": {
                             "$ref": "#/definitions/spectrum"
@@ -470,9 +470,6 @@
                         },
                         "spectrum": {
                             "$ref": "#/definitions/spectrum"
-                        },
-                        "hist": {
-                            "type": "boolean"
                         }
                     }
                 }
@@ -500,6 +497,7 @@
                     "$ref": "#/definitions/direction-mask"
                 }
             },
+            "additionalProperties": false,
             "anyOf": [
                 {
                     "required": [
@@ -533,6 +531,7 @@
                     "$ref": "#/definitions/spectrum"
                 }
             },
+            "additionalProperties": false,
             "anyOf": [
                 {
                     "required": [
@@ -583,6 +582,7 @@
                     "additionalProperties": false
                 }
             },
+            "additionalProperties": false,
             "oneOf": [
                 {
                     "required": [

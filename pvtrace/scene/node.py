@@ -6,7 +6,7 @@ from pvtrace.common.errors import AppError
 from pvtrace.geometry.intersection import Intersection
 from pvtrace.geometry.transformable import Transformable
 from pvtrace.geometry.utils import distance_between
-from pvtrace.geometry.transformations import rotation_from_matrix, rotation_matrix
+from pvtrace.geometry.transformations import rotation_from_matrix
 import logging
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class Node(NodeMixin, Transformable):
         c = np.dot(a, b)
         if np.isclose(c, -1.0):
             # Anti-parallel rotation can be done without computation
-            self._pose = rotation_matrix(np.pi, [0, 1, 0], point=self._location)
+            self.rotate(np.pi, [0, 1, 0])
             return
 
         v = np.cross(a, b)
@@ -59,7 +59,7 @@ class Node(NodeMixin, Transformable):
         R = np.identity(4)
         R[:3, :3] = r
         angle, direc, point = rotation_from_matrix(R)
-        self._pose = rotation_matrix(angle, direc, point=self._location)
+        self.rotate(angle, direc)
 
     # Convert between coordinate systems
 

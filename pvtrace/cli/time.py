@@ -8,15 +8,15 @@ import asciiplotlib as apl
 from typing import Optional
 from pathlib import Path
 from pvtrace.cli.db import (
-    sql_spectrum_reflected_from_node,
-    sql_spectrum_entering_into_node,
-    sql_spectrum_escaping_from_node,
-    sql_spectrum_nonradiative_loss_in_node,
-    sql_spectrum_reacted_in_node,
-    sql_spectrum_killed_in_node,
+    sql_time_reflected_from_node,
+    sql_time_entering_into_node,
+    sql_time_escaping_from_node,
+    sql_time_nonradiative_loss_in_node,
+    sql_time_reacted_in_node,
+    sql_time_killed_in_node,
 )
 
-app = typer.Typer(help="Spectral distribution")
+app = typer.Typer(help="Temporal distribution")
 
 
 class OutputChoice(str, enum.Enum):
@@ -55,7 +55,7 @@ def handle_output(result, output, vertical=None):
         print(buffer.getvalue())
 
 
-@app.command(short_help="Spectrum reflected by node")
+@app.command(short_help="Time when reflected by node")
 def reflected(
     node: str = typer.Argument(..., help="Node name"),
     database: Path = typer.Argument(
@@ -94,7 +94,7 @@ def reflected(
         False, "--vertical", help="Terminal histogram is vertical"
     ),
 ):
-    sql = sql_spectrum_reflected_from_node(
+    sql = sql_time_reflected_from_node(
         node, nx=nx, ny=ny, nz=nz, facet=facet, source=source, atol=atol
     )
     conn = sqlite3.connect(database)
@@ -104,7 +104,7 @@ def reflected(
         handle_output(result, output, vertical=vertical)
 
 
-@app.command(short_help="Spectrum entering node")
+@app.command(short_help="Time when entering node")
 def entering(
     node: str = typer.Argument(..., help="Node name"),
     database: Path = typer.Argument(
@@ -143,7 +143,7 @@ def entering(
         False, "--vertical", help="Terminal histogram is vertical"
     ),
 ):
-    sql = sql_spectrum_entering_into_node(
+    sql = sql_time_entering_into_node(
         node, nx=nx, ny=ny, nz=nz, facet=facet, source=source, atol=atol
     )
     conn = sqlite3.connect(database)
@@ -153,7 +153,7 @@ def entering(
         handle_output(result, output, vertical=vertical)
 
 
-@app.command(short_help="Spectrum escaping node")
+@app.command(short_help="Time when escaping node")
 def escaping(
     node: str = typer.Argument(..., help="Node name"),
     database: Path = typer.Argument(
@@ -192,7 +192,7 @@ def escaping(
         False, "--vertical", help="Terminal histogram is vertical"
     ),
 ):
-    sql = sql_spectrum_escaping_from_node(
+    sql = sql_time_escaping_from_node(
         node, nx=nx, ny=ny, nz=nz, facet=facet, source=source, atol=atol
     )
     conn = sqlite3.connect(database)
@@ -202,7 +202,7 @@ def escaping(
         handle_output(result, output, vertical=vertical)
 
 
-@app.command(short_help="Spectrum non-radiatively lost in node")
+@app.command(short_help="Time when non-radiatively lost in node")
 def lost(
     node: str = typer.Argument(..., help="Node name"),
     database: Path = typer.Argument(
@@ -229,15 +229,16 @@ def lost(
     ),
 ):
 
-    sql = sql_spectrum_nonradiative_loss_in_node(node, source)
+    sql = sql_time_nonradiative_loss_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
     result = cur.execute(sql).fetchall()
     if len(result) > 0:
-        handle_output(result, output, vertical=vertical)
+        _, samples = zip(*result)
+        handle_output(samples, output, vertical=vertical)
 
 
-@app.command(short_help="Spectrum reacted in node")
+@app.command(short_help="Time when reacted in node")
 def reacted(
     node: str = typer.Argument(..., help="Node name"),
     database: Path = typer.Argument(
@@ -264,15 +265,16 @@ def reacted(
     ),
 ):
 
-    sql = sql_spectrum_reacted_in_node(node, source)
+    sql = sql_time_reacted_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
     result = cur.execute(sql).fetchall()
     if len(result) > 0:
-        handle_output(result, output, vertical=vertical)
+        _, samples = zip(*result)
+        handle_output(samples, output, vertical=vertical)
 
 
-@app.command(short_help="Spectrum killed in node")
+@app.command(short_help="Time when killed in node")
 def killed(
     node: str = typer.Argument(..., help="Node name"),
     database: Path = typer.Argument(
@@ -299,12 +301,13 @@ def killed(
     ),
 ):
 
-    sql = sql_spectrum_killed_in_node(node, source)
+    sql = sql_time_killed_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
     result = cur.execute(sql).fetchall()
     if len(result) > 0:
-        handle_output(result, output, vertical=vertical)
+        _, samples = zip(*result)
+        handle_output(samples, output, vertical=vertical)
 
 
 def main():

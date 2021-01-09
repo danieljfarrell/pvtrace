@@ -253,7 +253,9 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         if "hist" in spec:
             hist = spec["hist"]
 
-        spectrum = parse_spectrum(spec["spectrum"], named_type="absorption")
+        spectrum = None
+        if "spectrum" in spec:
+            spectrum = parse_spectrum(spec["spectrum"], named_type="absorption")
 
         if coefficient and (spectrum is not None):
             spectrum[:, 1] = spectrum[:, 1] / numpy.max(spectrum[:, 1]) * coefficient
@@ -324,7 +326,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
         hist = False
         if "hist" in spec:
-            hist = spec["absorption"]["hist"]
+            hist = spec["hist"]
 
         phase_function = isotropic_phase_function
         quantum_yield = 1.0
@@ -408,13 +410,6 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
                     spec[geometry_type], component_map=component_map
                 )
                 return Node(geometry=geometry, name=name)
-                # node = Node(geometry=geometry, name=name)
-                # if "direction" in spec:
-                #     node.look_at(spec["direction"])
-
-                # if "location" in spec:
-                #     node.location = spec["location"]
-                # return node
 
         if "light" in spec:
             light = parse_light(spec["light"], name=name)
