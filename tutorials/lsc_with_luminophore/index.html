@@ -1,0 +1,1738 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="shortcut icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.0.2">
+    
+    
+      
+        <title>LSC with Lumogen Red Dye - pvtrace</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.38780c08.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.3f72e892.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#7e56c2">
+        
+      
+    
+    
+    
+      
+        
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>body,input{font-family:"Montserrat",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="deep-purple" data-md-color-accent="">
+      
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#lsc-with-lumogen-red-dye" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href="../.." title="pvtrace" class="md-header-nav__button md-logo" aria-label="pvtrace">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 003-3 3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            pvtrace
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              LSC with Lumogen Red Dye
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="pvtrace" class="md-nav__button md-logo" aria-label="pvtrace">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 003-3 3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    pvtrace
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../.." class="md-nav__link">
+      pvtrace
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../units/" class="md-nav__link">
+      Scale
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3" checked>
+    
+    <label class="md-nav__link" for="nav-3">
+      Tutorials
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        <span class="md-nav__icon md-icon"></span>
+        Tutorials
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        LSC with Lumogen Red Dye
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" class="md-nav__link md-nav__link--active">
+      LSC with Lumogen Red Dye
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scene" class="md-nav__link">
+    Scene
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#world-node" class="md-nav__link">
+    World node
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lsc-node" class="md-nav__link">
+    LSC node
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#light-source" class="md-nav__link">
+    Light source
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check-scene" class="md-nav__link">
+    Check scene
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dye-component" class="md-nav__link">
+    Dye component
+  </a>
+  
+    <nav class="md-nav" aria-label="Dye component">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#absorption-coefficient" class="md-nav__link">
+    Absorption coefficient
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#emission-spectrum" class="md-nav__link">
+    Emission spectrum
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check-scene_1" class="md-nav__link">
+    Check scene
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#full-simulation" class="md-nav__link">
+    Full simulation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ray-statistics" class="md-nav__link">
+    Ray statistics
+  </a>
+  
+    <nav class="md-nav" aria-label="Ray statistics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#killed-rays" class="md-nav__link">
+    Killed rays
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#incident-rays" class="md-nav__link">
+    Incident rays
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#luminescent-rays" class="md-nav__link">
+    Luminescent rays
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ray-spectrum" class="md-nav__link">
+    Ray spectrum
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#collection-efficiency" class="md-nav__link">
+    Collection efficiency
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exporting-ray-statistics" class="md-nav__link">
+    Exporting ray statistics
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next steps
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../lsc_with_luminophore_and_background_absorption/" class="md-nav__link">
+      LSC with Lumogen Red Dye and PMMA background absorption
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scene" class="md-nav__link">
+    Scene
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#world-node" class="md-nav__link">
+    World node
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lsc-node" class="md-nav__link">
+    LSC node
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#light-source" class="md-nav__link">
+    Light source
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check-scene" class="md-nav__link">
+    Check scene
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dye-component" class="md-nav__link">
+    Dye component
+  </a>
+  
+    <nav class="md-nav" aria-label="Dye component">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#absorption-coefficient" class="md-nav__link">
+    Absorption coefficient
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#emission-spectrum" class="md-nav__link">
+    Emission spectrum
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check-scene_1" class="md-nav__link">
+    Check scene
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#full-simulation" class="md-nav__link">
+    Full simulation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ray-statistics" class="md-nav__link">
+    Ray statistics
+  </a>
+  
+    <nav class="md-nav" aria-label="Ray statistics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#killed-rays" class="md-nav__link">
+    Killed rays
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#incident-rays" class="md-nav__link">
+    Incident rays
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#luminescent-rays" class="md-nav__link">
+    Luminescent rays
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ray-spectrum" class="md-nav__link">
+    Ray spectrum
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#collection-efficiency" class="md-nav__link">
+    Collection efficiency
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exporting-ray-statistics" class="md-nav__link">
+    Exporting ray statistics
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    Next steps
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                
+                <h1 id="lsc-with-lumogen-red-dye">LSC with Lumogen Red Dye<a class="headerlink" href="#lsc-with-lumogen-red-dye" title="Permanent link">&para;</a></h1>
+<p>This example demonstrates how to simulate a Luminescent Solar Concentrator (LSC) using pvtrace. It covers,</p>
+<ul>
+<li>Writing a YAML file scene</li>
+<li>Adding an LSC waveguide</li>
+<li>Adding luminescent dye to the waveguide</li>
+<li>Using the CLI to:<ul>
+<li>Run simulations</li>
+<li>Get ray statistics</li>
+<li>Subtract killed rays</li>
+<li>Calculate the optical efficiency</li>
+</ul>
+</li>
+</ul>
+<h2 id="scene">Scene<a class="headerlink" href="#scene" title="Permanent link">&para;</a></h2>
+<p>Create an empty YAML file.</p>
+<p>Add a version tag, this tells pvtrace how it should parse the file.</p>
+<div class="highlight"><pre><span></span><code><span class="hll"><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+</span>
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+</code></pre></div>
+<h2 id="world-node">World node<a class="headerlink" href="#world-node" title="Permanent link">&para;</a></h2>
+<p>Create a <code>nodes:</code> object,</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="hll"><span class="nt">nodes</span><span class="p">:</span>
+</span>  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+</code></pre></div>
+<p>Add a sphere node called "world" with radius 100 to the list of nodes</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The world node must be sized large enough to contain all other nodes.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+<span class="hll">  <span class="nt">world</span><span class="p">:</span>
+</span><span class="hll">    <span class="nt">sphere</span><span class="p">:</span>
+</span><span class="hll">      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+</span>      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+</code></pre></div>
+<p>Assign the node a material with refractive index 1.0 (air). We will see later how to include other options under the material section.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+<span class="hll">      <span class="nt">material</span><span class="p">:</span>
+</span><span class="hll">        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+</span></code></pre></div>
+<h2 id="lsc-node">LSC node<a class="headerlink" href="#lsc-node" title="Permanent link">&para;</a></h2>
+<p>Add a node with box geometry of length and width 5 and thicknesses 1.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+<span class="hll">  <span class="nt">lsc</span><span class="p">:</span>
+</span>    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.5</span><span class="p p-Indicator">]</span>
+<span class="hll">    <span class="nt">box</span><span class="p">:</span>
+</span><span class="hll">      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+</span>      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+</code></pre></div>
+<p>Move the centre of the box to coordinate <code>[0, 0, 0.5]</code>. This is not strickly required but just means that the bottom surface is a <code>z=0</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+<span class="hll">    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.5</span><span class="p p-Indicator">]</span>
+</span>    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+</code></pre></div>
+<p>Add a material attribute with refractive index 1.5,</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.5</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+<span class="hll">      <span class="nt">material</span><span class="p">:</span>
+</span><span class="hll">        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+</span></code></pre></div>
+<h2 id="light-source">Light source<a class="headerlink" href="#light-source" title="Permanent link">&para;</a></h2>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Direction are specified as Cartesian vectors with components: <code>[x, y, z]</code>. The length of the vector must be one.</p>
+</div>
+<p>Add another node called <code>green-laser</code>, put the location above the top surface of the LSC and set the direction vector so that it fires downwards into the top surface,</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.5</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+
+<span class="hll">  <span class="nt">green-laser</span><span class="p">:</span>
+</span><span class="hll">    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">1.25</span><span class="p p-Indicator">]</span>
+</span><span class="hll">    <span class="nt">direction</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">-1</span><span class="p p-Indicator">]</span>
+</span>    <span class="nt">light</span><span class="p">:</span>
+      <span class="nt">wavelength</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">555</span>
+      <span class="nt">mask</span><span class="p">:</span>
+        <span class="nt">direction</span><span class="p">:</span>
+          <span class="nt">cone</span><span class="p">:</span>
+            <span class="nt">half-angle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">22.5</span>
+</code></pre></div>
+<p>Specify this node as a <code>light</code> node and set the wavelength attribute, this is specified in nanometers.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>As a rule of thumb blue light is 450nm, green 555nm, and red 650nm</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.5</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+
+  <span class="nt">green-laser</span><span class="p">:</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">1.25</span><span class="p p-Indicator">]</span>
+    <span class="nt">direction</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">-1</span><span class="p p-Indicator">]</span>
+    <span class="nt">light</span><span class="p">:</span>
+<span class="hll">      <span class="nt">wavelength</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">555</span>
+</span>      <span class="nt">mask</span><span class="p">:</span>
+        <span class="nt">direction</span><span class="p">:</span>
+          <span class="nt">cone</span><span class="p">:</span>
+            <span class="nt">half-angle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">22.5</span>
+</code></pre></div>
+<p>Add a direction mask: the highlighted lines request that the light source generates rays randomly inside a cone of solid angle with half-angle 22.5 degrees. This will make visualising the rays in this section easier because they will all take slightly different paths.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.5</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+
+  <span class="nt">green-laser</span><span class="p">:</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">1.25</span><span class="p p-Indicator">]</span>
+    <span class="nt">direction</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">-1</span><span class="p p-Indicator">]</span>
+    <span class="nt">light</span><span class="p">:</span>
+      <span class="nt">wavelength</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">555</span>
+<span class="hll">      <span class="nt">mask</span><span class="p">:</span>
+</span><span class="hll">        <span class="nt">direction</span><span class="p">:</span>
+</span><span class="hll">          <span class="nt">cone</span><span class="p">:</span>
+</span><span class="hll">            <span class="nt">half-angle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">22.5</span>
+</span></code></pre></div>
+<h2 id="check-scene">Check scene<a class="headerlink" href="#check-scene" title="Permanent link">&para;</a></h2>
+<p>Before continuing with the script lets check that everything is OK by running a quick simulation using the command line interface.</p>
+<p>In a new terminal window activate the pvtrace environment and start the Meshcat Server</p>
+<div class="highlight"><pre><span></span><code>meshcat-server
+</code></pre></div>
+<p>This will print two URLs which we will need for this section.</p>
+<div class="highlight"><pre><span></span><code><span class="nv">zmq_url</span><span class="o">=</span>tcp://127.0.0.1:6000
+<span class="nv">web_url</span><span class="o">=</span>http://127.0.0.1:7000/static/
+</code></pre></div>
+<p>In a new terminal window, activate the pvtrace environment and navigate to the folder containing your scene file. The following command will open the renderer and trace 10 rays.</p>
+<p>Use the CLI's <code>simulate</code> command</p>
+<div class="highlight"><pre><span></span><code><span class="hll">pvtrace-cli simulate <span class="se">\</span>
+</span>--rays <span class="m">10</span> <span class="se">\</span>
+--workers <span class="m">1</span> <span class="se">\</span>
+--zmq tcp://127.0.0.1:6000 <span class="se">\</span>
+--render-every <span class="m">1</span> <span class="se">\</span>
+--render-max <span class="m">10</span> <span class="se">\</span>
+scene.yml
+</code></pre></div>
+<p>Set the number of rays to 10 and the number of workers to 1.</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli simulate <span class="se">\</span>
+<span class="hll">--rays <span class="m">10</span> <span class="se">\</span>
+</span><span class="hll">--workers <span class="m">1</span> <span class="se">\</span>
+</span>--zmq tcp://127.0.0.1:6000 <span class="se">\</span>
+--render-every <span class="m">1</span> <span class="se">\</span>
+--render-max <span class="m">10</span> <span class="se">\</span>
+scene.yml
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>By default pvtrace-cli simulation use multiple processes. However, for <em>small</em> number of rays setting <code>--workers 1</code> is faster due to overhead in starting the additional processes.</p>
+</div>
+<p>Use the Meshcat server ZMQ URL you found before and the commands below to ensure that all rays are visualised and held in the viewer</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli simulate <span class="se">\</span>
+--rays <span class="m">10</span> <span class="se">\</span>
+--workers <span class="m">1</span> <span class="se">\</span>
+<span class="hll">--zmq tcp://127.0.0.1:6000 <span class="se">\</span>
+</span><span class="hll">--render-every <span class="m">1</span> <span class="se">\</span>
+</span><span class="hll">--render-max <span class="m">10</span> <span class="se">\</span>
+</span>scene.yml
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Rendering slows down tracing the <code>--render-every</code> option only visualises every n-th ray and <code>--render-max</code> is the number of rays to keep in the scene; old rays are removed.</p>
+</div>
+<p>Finally, supply the name of the YML file,</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli simulate <span class="se">\</span>
+--rays <span class="m">10</span> <span class="se">\</span>
+--workers <span class="m">1</span> <span class="se">\</span>
+--zmq tcp://127.0.0.1:6000 <span class="se">\</span>
+--render-every <span class="m">1</span> <span class="se">\</span>
+--render-max <span class="m">10</span> <span class="se">\</span>
+<span class="hll">scene.yml
+</span></code></pre></div>
+<p>Your default browser should open and display the scene with a 10 rays</p>
+<p><img alt="pvtrace-cli simulate" src="../../static/lsc_lumogen_red_cli/tutorial001.jpg" /></p>
+<h2 id="dye-component">Dye component<a class="headerlink" href="#dye-component" title="Permanent link">&para;</a></h2>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Components section should be added as the root level.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Don't forget to include the component name in the <em>node's</em> material's component list.</p>
+</div>
+<p>Add a new components section to the YML file and pick a name for the component, here we used <code>my-lumogen-dye</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+<span class="hll">        <span class="nt">components</span><span class="p">:</span>
+</span><span class="hll">          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">my-lumogen-dye</span>
+</span>
+  <span class="nt">green-laser</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">2</span><span class="p p-Indicator">]</span>
+    <span class="nt">direction</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">-1</span><span class="p p-Indicator">]</span>
+    <span class="nt">light</span><span class="p">:</span>
+      <span class="nt">wavelength</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">555</span>
+      <span class="nt">mask</span><span class="p">:</span>
+        <span class="nt">direction</span><span class="p">:</span>
+          <span class="nt">cone</span><span class="p">:</span>
+            <span class="nt">half-angle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">22.5</span>
+
+<span class="hll"><span class="nt">components</span><span class="p">:</span>
+</span><span class="hll">  <span class="nt">my-lumogen-dye</span><span class="p">:</span>
+</span><span class="hll">    <span class="nt">luminophore</span><span class="p">:</span>
+</span><span class="hll">      <span class="nt">absorption</span><span class="p">:</span>
+</span><span class="hll">        <span class="nt">coefficient</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+</span><span class="hll">        <span class="nt">spectrum</span><span class="p">:</span>
+</span><span class="hll">          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+</span><span class="hll">          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span class="hll">          <span class="nt">range</span><span class="p">:</span>
+</span><span class="hll">            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+</span><span class="hll">            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+</span><span class="hll">            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+</span><span class="hll">      <span class="nt">emission</span><span class="p">:</span>
+</span><span class="hll">        <span class="nt">quantum-yield</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.98</span>
+</span><span class="hll">        <span class="nt">phase-function</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">isotropic</span>
+</span><span class="hll">        <span class="nt">spectrum</span><span class="p">:</span>
+</span><span class="hll">          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+</span><span class="hll">          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span class="hll">          <span class="nt">range</span><span class="p">:</span>
+</span><span class="hll">            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+</span><span class="hll">            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+</span><span class="hll">            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+</span></code></pre></div>
+<p>This specifies that the component is a luminophore; it can absorb and emit light,</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+        <span class="nt">components</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">my-lumogen-dye</span>
+
+  <span class="nt">green-laser</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">2</span><span class="p p-Indicator">]</span>
+    <span class="nt">direction</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">-1</span><span class="p p-Indicator">]</span>
+    <span class="nt">light</span><span class="p">:</span>
+      <span class="nt">wavelength</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">555</span>
+      <span class="nt">mask</span><span class="p">:</span>
+        <span class="nt">direction</span><span class="p">:</span>
+          <span class="nt">cone</span><span class="p">:</span>
+            <span class="nt">half-angle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">22.5</span>
+
+<span class="nt">components</span><span class="p">:</span>
+  <span class="nt">my-lumogen-dye</span><span class="p">:</span>
+<span class="hll">    <span class="nt">luminophore</span><span class="p">:</span>
+</span>      <span class="nt">absorption</span><span class="p">:</span>
+        <span class="nt">coefficient</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+          <span class="nt">range</span><span class="p">:</span>
+            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+      <span class="nt">emission</span><span class="p">:</span>
+        <span class="nt">quantum-yield</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.98</span>
+        <span class="nt">phase-function</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">isotropic</span>
+        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+          <span class="nt">range</span><span class="p">:</span>
+            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>pvtrace has different types of components: absorbers, scatters, reactors and luminophores. Luminophores are the most complicated.</p>
+</div>
+<h3 id="absorption-coefficient">Absorption coefficient<a class="headerlink" href="#absorption-coefficient" title="Permanent link">&para;</a></h3>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>pvtrace has absorption and emission spectrum of Lumogen F Red 305 builtin. If you need to specify your own absorption and emission spectrums then can be done by importing the data from CSV files. Please read one of the other tutorials on how to do this.</p>
+</div>
+<p>Add an absorption section. Let's go through these lines!</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+        <span class="nt">components</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">my-lumogen-dye</span>
+
+  <span class="nt">green-laser</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">2</span><span class="p p-Indicator">]</span>
+    <span class="nt">direction</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">-1</span><span class="p p-Indicator">]</span>
+    <span class="nt">light</span><span class="p">:</span>
+      <span class="nt">wavelength</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">555</span>
+      <span class="nt">mask</span><span class="p">:</span>
+        <span class="nt">direction</span><span class="p">:</span>
+          <span class="nt">cone</span><span class="p">:</span>
+            <span class="nt">half-angle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">22.5</span>
+
+<span class="nt">components</span><span class="p">:</span>
+  <span class="nt">my-lumogen-dye</span><span class="p">:</span>
+    <span class="nt">luminophore</span><span class="p">:</span>
+<span class="hll">      <span class="nt">absorption</span><span class="p">:</span>
+</span><span class="hll">        <span class="nt">coefficient</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+</span><span class="hll">        <span class="nt">spectrum</span><span class="p">:</span>
+</span><span class="hll">          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+</span><span class="hll">          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span class="hll">          <span class="nt">range</span><span class="p">:</span>
+</span><span class="hll">            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+</span><span class="hll">            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+</span><span class="hll">            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+</span>      <span class="nt">emission</span><span class="p">:</span>
+        <span class="nt">quantum-yield</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.98</span>
+        <span class="nt">phase-function</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">isotropic</span>
+        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+          <span class="nt">range</span><span class="p">:</span>
+            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+</code></pre></div>
+<p>Let's say I have measured the absorption coefficient of my LSC containing Lumogen F Red 305 by looking at the light transmitted through the device and have determined it to be <span class="arithmatex">\(\alpha=5~\text{cm}^{-1}\)</span> at main absorption peak using the Beer-Lambert law,</p>
+<div class="arithmatex">\[ I = I_0 e^{-\alpha d} \]</div>
+<p>where <span class="arithmatex">\(d\)</span> is the thickness of the layer.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>pvtrace uses base-<span class="arithmatex">\(e\)</span> rather than base-10 definition of absorption coefficient.</p>
+</div>
+<p>To express the peak absorption coefficient is <span class="arithmatex">\(5~\text{cm}^{-1}\)</span> set the <code>coefficient</code> attribute and to use builtin Lumogen F Red 305 spectrum set name attribute to <code>lumogen-f-red-305</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+        <span class="nt">components</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">my-lumogen-dye</span>
+
+  <span class="nt">green-laser</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">2</span><span class="p p-Indicator">]</span>
+    <span class="nt">direction</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">-1</span><span class="p p-Indicator">]</span>
+    <span class="nt">light</span><span class="p">:</span>
+      <span class="nt">wavelength</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">555</span>
+      <span class="nt">mask</span><span class="p">:</span>
+        <span class="nt">direction</span><span class="p">:</span>
+          <span class="nt">cone</span><span class="p">:</span>
+            <span class="nt">half-angle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">22.5</span>
+
+<span class="nt">components</span><span class="p">:</span>
+  <span class="nt">my-lumogen-dye</span><span class="p">:</span>
+    <span class="nt">luminophore</span><span class="p">:</span>
+      <span class="nt">absorption</span><span class="p">:</span>
+<span class="hll">        <span class="nt">coefficient</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+</span>        <span class="nt">spectrum</span><span class="p">:</span>
+<span class="hll">          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+</span>          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+          <span class="nt">range</span><span class="p">:</span>
+            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+      <span class="nt">emission</span><span class="p">:</span>
+        <span class="nt">quantum-yield</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.98</span>
+        <span class="nt">phase-function</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">isotropic</span>
+        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+          <span class="nt">range</span><span class="p">:</span>
+            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+</code></pre></div>
+<p>The spectrum is continuous but pvtrace will need to sample the spectrum over a range of wavelength points. The following samples the absorption spectrum over an interval of 500nm to 1000nm in steps of 2nm. This <code>hist: true</code> option tells pvtrace to treat the sampled values as histogram and not to interpolate the spectrum.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If your spectrum has sharp discontinuities you will get better results by using <code>hist: true</code> which will tread the spectrum as a histogram. If <code>hist</code> option is omitted or set to <code>hist: false</code> then the spectrum will be treated as continuous and linear interpolation will be used.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+        <span class="nt">components</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">my-lumogen-dye</span>
+
+  <span class="nt">green-laser</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">2</span><span class="p p-Indicator">]</span>
+    <span class="nt">direction</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">-1</span><span class="p p-Indicator">]</span>
+    <span class="nt">light</span><span class="p">:</span>
+      <span class="nt">wavelength</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">555</span>
+      <span class="nt">mask</span><span class="p">:</span>
+        <span class="nt">direction</span><span class="p">:</span>
+          <span class="nt">cone</span><span class="p">:</span>
+            <span class="nt">half-angle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">22.5</span>
+
+<span class="nt">components</span><span class="p">:</span>
+  <span class="nt">my-lumogen-dye</span><span class="p">:</span>
+    <span class="nt">luminophore</span><span class="p">:</span>
+      <span class="nt">absorption</span><span class="p">:</span>
+        <span class="nt">coefficient</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+<span class="hll">          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span class="hll">          <span class="nt">range</span><span class="p">:</span>
+</span><span class="hll">            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+</span><span class="hll">            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+</span><span class="hll">            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+</span>      <span class="nt">emission</span><span class="p">:</span>
+        <span class="nt">quantum-yield</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.98</span>
+        <span class="nt">phase-function</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">isotropic</span>
+        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+          <span class="nt">range</span><span class="p">:</span>
+            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+</code></pre></div>
+<h3 id="emission-spectrum">Emission spectrum<a class="headerlink" href="#emission-spectrum" title="Permanent link">&para;</a></h3>
+<p>Add an emission section.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+        <span class="nt">components</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">my-lumogen-dye</span>
+
+  <span class="nt">green-laser</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">2</span><span class="p p-Indicator">]</span>
+    <span class="nt">direction</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">-1</span><span class="p p-Indicator">]</span>
+    <span class="nt">light</span><span class="p">:</span>
+      <span class="nt">wavelength</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">555</span>
+      <span class="nt">mask</span><span class="p">:</span>
+        <span class="nt">direction</span><span class="p">:</span>
+          <span class="nt">cone</span><span class="p">:</span>
+            <span class="nt">half-angle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">22.5</span>
+
+<span class="nt">components</span><span class="p">:</span>
+  <span class="nt">my-lumogen-dye</span><span class="p">:</span>
+    <span class="nt">luminophore</span><span class="p">:</span>
+      <span class="nt">absorption</span><span class="p">:</span>
+        <span class="nt">coefficient</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+          <span class="nt">range</span><span class="p">:</span>
+            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="hll">      <span class="nt">emission</span><span class="p">:</span>
+</span><span class="hll">        <span class="nt">quantum-yield</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.98</span>
+</span><span class="hll">        <span class="nt">phase-function</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">isotropic</span>
+</span><span class="hll">        <span class="nt">spectrum</span><span class="p">:</span>
+</span><span class="hll">          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+</span><span class="hll">          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span class="hll">          <span class="nt">range</span><span class="p">:</span>
+</span><span class="hll">            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+</span><span class="hll">            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+</span><span class="hll">            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+</span></code></pre></div>
+<p>Set the quantum yield of the luminophore to be 98% and make the emission directions isotropic,</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+        <span class="nt">components</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">my-lumogen-dye</span>
+
+  <span class="nt">green-laser</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">2</span><span class="p p-Indicator">]</span>
+    <span class="nt">direction</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">-1</span><span class="p p-Indicator">]</span>
+    <span class="nt">light</span><span class="p">:</span>
+      <span class="nt">wavelength</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">555</span>
+      <span class="nt">mask</span><span class="p">:</span>
+        <span class="nt">direction</span><span class="p">:</span>
+          <span class="nt">cone</span><span class="p">:</span>
+            <span class="nt">half-angle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">22.5</span>
+
+<span class="nt">components</span><span class="p">:</span>
+  <span class="nt">my-lumogen-dye</span><span class="p">:</span>
+    <span class="nt">luminophore</span><span class="p">:</span>
+      <span class="nt">absorption</span><span class="p">:</span>
+        <span class="nt">coefficient</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+          <span class="nt">range</span><span class="p">:</span>
+            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+      <span class="nt">emission</span><span class="p">:</span>
+<span class="hll">        <span class="nt">quantum-yield</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.98</span>
+</span><span class="hll">        <span class="nt">phase-function</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">isotropic</span>
+</span>        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+          <span class="nt">range</span><span class="p">:</span>
+            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+</code></pre></div>
+<p>Set the the sampling range and treat the emission spectrum as continuous by setting <code>hist: false</code>, this will allow pvtrace to interpolate the emission spectrum rather than treating the spectrum as a histogram.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+        <span class="nt">components</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">my-lumogen-dye</span>
+
+  <span class="nt">green-laser</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">2</span><span class="p p-Indicator">]</span>
+    <span class="nt">direction</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">-1</span><span class="p p-Indicator">]</span>
+    <span class="nt">light</span><span class="p">:</span>
+      <span class="nt">wavelength</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">555</span>
+      <span class="nt">mask</span><span class="p">:</span>
+        <span class="nt">direction</span><span class="p">:</span>
+          <span class="nt">cone</span><span class="p">:</span>
+            <span class="nt">half-angle</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">22.5</span>
+
+<span class="nt">components</span><span class="p">:</span>
+  <span class="nt">my-lumogen-dye</span><span class="p">:</span>
+    <span class="nt">luminophore</span><span class="p">:</span>
+      <span class="nt">absorption</span><span class="p">:</span>
+        <span class="nt">coefficient</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+          <span class="nt">range</span><span class="p">:</span>
+            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+      <span class="nt">emission</span><span class="p">:</span>
+        <span class="nt">quantum-yield</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.98</span>
+        <span class="nt">phase-function</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">isotropic</span>
+        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+<span class="hll">          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span class="hll">          <span class="nt">range</span><span class="p">:</span>
+</span><span class="hll">            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+</span><span class="hll">            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+</span><span class="hll">            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+</span></code></pre></div>
+<h2 id="check-scene_1">Check scene<a class="headerlink" href="#check-scene_1" title="Permanent link">&para;</a></h2>
+<p>Again, let's run a small number of rays to test the scene by using the CLI</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli simulate <span class="se">\</span>
+--rays <span class="m">10</span> <span class="se">\</span>
+--workers <span class="m">1</span> <span class="se">\</span>
+--zmq tcp://127.0.0.1:6000 <span class="se">\</span>
+--render-every <span class="m">1</span> <span class="se">\</span>
+--render-max <span class="m">10</span> <span class="se">\</span>
+scene.yml
+</code></pre></div>
+<p>The simulation clearly shows down-shifting of the green laser to red luminescent rays and light trapping inside the waveguide.</p>
+<p><img alt="pvtrace-cli simulate" src="../../static/lsc_lumogen_red_cli/tutorial002.jpg" /></p>
+<h2 id="full-simulation">Full simulation<a class="headerlink" href="#full-simulation" title="Permanent link">&para;</a></h2>
+<p>Before running the full simulation let's edit the light source to illuminate the full surface uniformly and remove the direction sampling.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span> <span class="s">&quot;1.0&quot;</span>
+
+<span class="nt">nodes</span><span class="p">:</span>
+  <span class="nt">world</span><span class="p">:</span>
+    <span class="nt">sphere</span><span class="p">:</span>
+      <span class="nt">radius</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100.0</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+
+  <span class="nt">lsc</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">]</span>
+    <span class="nt">box</span><span class="p">:</span>
+      <span class="nt">size</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">1</span><span class="p p-Indicator">]</span>
+      <span class="nt">material</span><span class="p">:</span>
+        <span class="nt">refractive-index</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+        <span class="nt">components</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">my-lumogen-dye</span>
+
+  <span class="nt">green-laser</span><span class="p">:</span>
+    <span class="nt">parent</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">world</span>
+    <span class="nt">location</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">2</span><span class="p p-Indicator">]</span>
+    <span class="nt">direction</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">0</span><span class="p p-Indicator">,</span> <span class="nv">-1</span><span class="p p-Indicator">]</span>
+    <span class="nt">light</span><span class="p">:</span>
+      <span class="nt">wavelength</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">555</span>
+<span class="hll">      <span class="nt">mask</span><span class="p">:</span>
+</span><span class="hll">        <span class="nt">position</span><span class="p">:</span>
+</span><span class="hll">          <span class="nt">rect</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="nv">2.5</span><span class="p p-Indicator">,</span> <span class="nv">2.5</span><span class="p p-Indicator">]</span>
+</span>
+<span class="nt">components</span><span class="p">:</span>
+  <span class="nt">my-lumogen-dye</span><span class="p">:</span>
+    <span class="nt">luminophore</span><span class="p">:</span>
+      <span class="nt">absorption</span><span class="p">:</span>
+        <span class="nt">coefficient</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+          <span class="nt">range</span><span class="p">:</span>
+            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+      <span class="nt">emission</span><span class="p">:</span>
+        <span class="nt">quantum-yield</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0.98</span>
+        <span class="nt">phase-function</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">isotropic</span>
+        <span class="nt">spectrum</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">lumogen-f-red-305</span>
+          <span class="nt">hist</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+          <span class="nt">range</span><span class="p">:</span>
+            <span class="nt">min</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">500</span>
+            <span class="nt">max</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>
+            <span class="nt">spacing</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+</code></pre></div>
+<p>These lines will randomly sample the ray's starting position in the <span class="arithmatex">\(x\)</span> and <span class="arithmatex">\(y\)</span> components by <span class="arithmatex">\(\pm 2.5\)</span>cm </p>
+<p>If you know the number of cores on your system set that as the number of workers, if not just remove that command option.</p>
+<p>To increase the speed of the simulation live rendering has been disabled.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If you <em>do not</em> specify the number of workers pvtrace will use the number of cores on your system minus one.</p>
+</div>
+<div class="highlight"><pre><span></span><code>pvtrace-cli simulate <span class="se">\</span>
+--rays <span class="m">1000</span> <span class="se">\</span>
+scene.yml
+</code></pre></div>
+<h2 id="ray-statistics">Ray statistics<a class="headerlink" href="#ray-statistics" title="Permanent link">&para;</a></h2>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The CLI saves ray tracing data to a database file.</p>
+</div>
+<p>You should see a file called <code>scene.sqlite3</code> has been created in the same directory as the YML file. This is a standard SQLite3 database file and can be opened and explored with standard SQLite database tools.</p>
+<h3 id="killed-rays">Killed rays<a class="headerlink" href="#killed-rays" title="Permanent link">&para;</a></h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The number of killed rays need to be taken into account carefully when looking at ray statistics. Killed rays should be treated in the statistics as if they where never generated in the first place.</p>
+</div>
+<p>This example scene is quite ideal: there is no background absorotion and no solar cells attached anywhere to the plastic plate. This makes it possible for luminescent rays to get trapped and make 1000s of internal bounces. Thresholds exist in pvtrace for killing these rays to speed up tracing, however they are not currently accessible by the CLI.</p>
+<p>To get the killed count in a particular node use the <code>count</code> command and the <code>killed</code> subcommand along with the node name and database file,</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli count killed <span class="se">\</span>
+lsc scene.sqlite3
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Killed</td>
+<td>28</td>
+</tr>
+</tbody>
+</table>
+<p>This number should always be a small fraction of the total number of rays thrown, otherwise the simulation will be biased and the results inaccurate. Remember that killed rays are entirely valid paths; they have been killed only to avoid slowing down the simulation.</p>
+<h3 id="incident-rays">Incident rays<a class="headerlink" href="#incident-rays" title="Permanent link">&para;</a></h3>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use the <code>--source</code> option to select only rays from a particular light source or luminophore.</p>
+</div>
+<p>Use the <code>count</code> command and the <code>reflected</code> subcommand to get the number of rays from <code>green-laser</code> reflected from the node named <code>lsc</code>,</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli count reflected <span class="se">\</span>
+--source green-laser <span class="se">\</span>
+lsc scene.sqlite3
+</code></pre></div>
+<p>The number of rays from source which are transmitted into the node,</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli count entering <span class="se">\</span>
+--source green-laser <span class="se">\</span>
+lsc scene.sqlite3
+</code></pre></div>
+<p>The number of unabsorbed rays escaping the node,</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli count escaping <span class="se">\</span>
+--source green-laser <span class="se">\</span>
+lsc scene.sqlite3
+</code></pre></div>
+<p>The number of incidence rays lost to non-radiative absorption in the dye,</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli count lost <span class="se">\</span>
+--source green-laser 
+lsc scene.sqlite3
+</code></pre></div>
+<p>You will get numbers similar to the following</p>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Entering</td>
+<td>962</td>
+</tr>
+<tr>
+<td>Reflected</td>
+<td>38</td>
+</tr>
+<tr>
+<td>Escaping</td>
+<td>27</td>
+</tr>
+<tr>
+<td>Lost</td>
+<td>22</td>
+</tr>
+</tbody>
+</table>
+<p>Notice that the entering plus reflected is 1000 as expected, this is the number of rays thrown,</p>
+<div class="arithmatex">\[962 + 38 = 1000\]</div>
+<p>The Fresnel reflectivity for normal incidence from air to plastic is around 4%, we can calculate the reflectivity in the simulation by dividing the reflected count by the number of rays thrown which yields</p>
+<div class="arithmatex">\[38/1000 = 3.8\%%\]</div>
+<p>The absorption coefficient of Lumogen F Red 305 at 555nm drops by about 80% of the peak, therefore the absorptivity of 1cm thick layer should be approximately</p>
+<div class="arithmatex">\[
+a = 1 - \exp\left(-0.8\alpha d\right) = 1 - \exp\left(-4\right) \approx 98\%%
+\]</div>
+<p>Using ray statistics we find approximately the same result,</p>
+<div class="arithmatex">\[
+a = 38/962 \approx 96\%%
+\]</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use options <code>--nx</code>, <code>--ny</code> and <code>--nz</code> to specify surface normal components to isolate rays on a specific surface. These options can be used together to specify a full 3D vector or individually.</p>
+</div>
+<p>The surface normal of the rays entering, reflected or escaping is stored in the database. To check if the escaping rays exited the top (i.e. double reflection) or bottom surface (unabsorbed) the normal component argument can be supplied. </p>
+<p>The surface normal of the bottom surface is -1.0,</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli count escaping <span class="se">\</span>
+--source green-laser 
+<span class="hll">--nz -1.0 
+</span>lsc mkdocs/source/lsc_lumogen_red_cli/tutorial007.sqlite3
+</code></pre></div>
+<p>and the surface normal of the top surface is 1.0,</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli count escaping <span class="se">\</span>
+--source green-laser 
+<span class="hll">--nz <span class="m">1</span>.0 
+</span>lsc mkdocs/source/lsc_lumogen_red_cli/tutorial007.sqlite3
+</code></pre></div>
+<h3 id="luminescent-rays">Luminescent rays<a class="headerlink" href="#luminescent-rays" title="Permanent link">&para;</a></h3>
+<p>To inspect the counts of <em>luminescent</em> rays, change the source option to be the name of the luminophore component. The count for escaping,</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli count escaping <span class="se">\</span>
+--source my-lumogen-dye 
+lsc scene.sqlite3
+</code></pre></div>
+<p>and the count luminescent rays non-radiatively lost,</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli count lost <span class="se">\</span>
+--source my-lumogen-dye 
+lsc scene.sqlite3
+</code></pre></div>
+<p>Gathering all in the statistics together,</p>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>source: green-laser</th>
+<th>source: my-lumogen-dye</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Escaping</td>
+<td>27</td>
+<td>859</td>
+</tr>
+<tr>
+<td>Lost</td>
+<td>22</td>
+<td>26</td>
+</tr>
+<tr>
+<td>Reflected</td>
+<td>38</td>
+<td></td>
+</tr>
+<tr>
+<td>Entering</td>
+<td>962</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>with killed count of <span class="arithmatex">\(28\)</span>.</p>
+<p>The number of incident rays absorbed is the LSC is the the number entering minus the number escaping,</p>
+<div class="arithmatex">\[
+\textrm{absorbed} = 962 - 27 - 28 = 907
+\]</div>
+<p>here we also subtract the killed count.</p>
+<p>We should be able to count the same number by looking at the number of luminescent rays escaping and the number of incident <em>and</em> luminescent rays lost,</p>
+<div class="arithmatex">\[
+859 + 26 + 22 = 907
+\]</div>
+<h3 id="ray-spectrum">Ray spectrum<a class="headerlink" href="#ray-spectrum" title="Permanent link">&para;</a></h3>
+<p>The <code>spectrum</code> command plots histograms of ray wavelengths directly in the terminal. </p>
+<p>The spectrum of rays from <code>my-lumogen-dye</code> escaping the LSC is plotted using,</p>
+<div class="highlight"><pre><span></span><code><span class="hll">pvtrace-cli spectrum escaping --source my-lumogen-dye lsc scene.sqlite3 
+</span>+5.48e+02 - +5.64e+02  <span class="o">[</span>  <span class="m">7</span><span class="o">]</span>  █
++5.64e+02 - +5.80e+02  <span class="o">[</span> <span class="m">12</span><span class="o">]</span>  █▊
++5.80e+02 - +5.95e+02  <span class="o">[</span> <span class="m">38</span><span class="o">]</span>  █████▋
++5.95e+02 - +6.11e+02  <span class="o">[</span><span class="m">105</span><span class="o">]</span>  ███████████████▌
++6.11e+02 - +6.27e+02  <span class="o">[</span><span class="m">270</span><span class="o">]</span>  ████████████████████████████████████████
++6.27e+02 - +6.43e+02  <span class="o">[</span><span class="m">265</span><span class="o">]</span>  ███████████████████████████████████████▎
++6.43e+02 - +6.59e+02  <span class="o">[</span><span class="m">116</span><span class="o">]</span>  █████████████████▏
++6.59e+02 - +6.75e+02  <span class="o">[</span> <span class="m">35</span><span class="o">]</span>  █████▏
++6.75e+02 - +6.91e+02  <span class="o">[</span>  <span class="m">9</span><span class="o">]</span>  █▍
++6.91e+02 - +7.07e+02  <span class="o">[</span>  <span class="m">2</span><span class="o">]</span>  ▎
+</code></pre></div>
+<p>Removing the <code>--source</code> option will plot the spectrum of all rays,</p>
+<div class="highlight"><pre><span></span><code><span class="hll">pvtrace-cli spectrum escaping lsc scene.sqlite3 
+</span>+5.48e+02 - +5.64e+02  <span class="o">[</span> <span class="m">34</span><span class="o">]</span>  █████
++5.64e+02 - +5.80e+02  <span class="o">[</span> <span class="m">12</span><span class="o">]</span>  █▊
++5.80e+02 - +5.95e+02  <span class="o">[</span> <span class="m">38</span><span class="o">]</span>  █████▋
++5.95e+02 - +6.11e+02  <span class="o">[</span><span class="m">105</span><span class="o">]</span>  ███████████████▌
++6.11e+02 - +6.27e+02  <span class="o">[</span><span class="m">270</span><span class="o">]</span>  ████████████████████████████████████████
++6.27e+02 - +6.43e+02  <span class="o">[</span><span class="m">265</span><span class="o">]</span>  ███████████████████████████████████████▎
++6.43e+02 - +6.59e+02  <span class="o">[</span><span class="m">116</span><span class="o">]</span>  █████████████████▏
++6.59e+02 - +6.75e+02  <span class="o">[</span> <span class="m">35</span><span class="o">]</span>  █████▏
++6.75e+02 - +6.91e+02  <span class="o">[</span>  <span class="m">9</span><span class="o">]</span>  █▍
++6.91e+02 - +7.07e+02  <span class="o">[</span>  <span class="m">2</span><span class="o">]</span>  ▎
+</code></pre></div>
+<p>The laser plots includes escaping (unabsorbed) rays from <code>green-laser</code> as can be seen in the histogram bin containing the 555nm wavelength.</p>
+<h3 id="collection-efficiency">Collection efficiency<a class="headerlink" href="#collection-efficiency" title="Permanent link">&para;</a></h3>
+<p>There are several LSC efficiency metrics use in the literature. Although not a requirements and also not necessarily the optimum location, let's find a figure of merit for how efficiently the LSC transports absorbed photons to the sheet edges. There is significant trapping of light at the sheet edges because of the air interface, whereas a real device would have solar cells attached. The values here should be considered a lower estimate.</p>
+<p>With that stated, let's define the optical efficiency as the number of rays escaping the edge (<span class="arithmatex">\(n_{\text{edge}}\)</span>) divided by the number of incident ways absorbed (<span class="arithmatex">\(n_{\text{abs}}\)</span>),</p>
+<div class="arithmatex">\[
+\eta_{opt} = n_{\text{edge}} /  n_{\text{abs}}
+\]</div>
+<p>The luminescent rays escaping the edge is the total escaping minus the rays escaping from the top and bottom. </p>
+<p>Use <code>--nz -1.0</code> option to get the count escaping the bottom surface,</p>
+<div class="highlight"><pre><span></span><code><span class="hll">pvtrace-cli count escaping <span class="se">\</span>
+</span>--source my-lumogen-dye
+--nz -1.0 
+lsc scene.sqlite3
+</code></pre></div>
+<p>and <code>--nx 1.0</code> option for the top surface,</p>
+<div class="highlight"><pre><span></span><code><span class="hll">pvtrace-cli count escaping <span class="se">\</span>
+</span>--source my-lumogen-dye
+--nz <span class="m">1</span>.0 
+lsc scene.sqlite3
+</code></pre></div>
+<p>You will get values similar to these,</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Escaping</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bottom</td>
+<td>160</td>
+</tr>
+<tr>
+<td>Top</td>
+<td>204</td>
+</tr>
+</tbody>
+</table>
+<p>An estimate for the optical efficiency is therefore,</p>
+<div class="arithmatex">\[
+\eta_{opt} = n_{\text{edge}} /  n_{\text{abs}} = \left( 859 - 160 - 204 \right) / 907  \approx 55\%% 
+\]</div>
+<p>This is probably a over estimation because of the small number of rays used in the simulation!</p>
+<h3 id="exporting-ray-statistics">Exporting ray statistics<a class="headerlink" href="#exporting-ray-statistics" title="Permanent link">&para;</a></h3>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use <code>--output csv</code> or <code>--output json</code> to save ray spectrum to a file.</p>
+</div>
+<p>To process ray statistics in your own scripts use the CLI to export data in CSV or JSON format by using the <code>--output</code> option,</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli spectrum escaping <span class="se">\</span>
+--source my-lumogen-dye 
+<span class="hll">--output csv <span class="se">\</span>
+</span>lsc mkdocs/source/lsc_lumogen_red_cli/tutorial007.sqlite3 &gt; lsc_escaping_my_lumogen_dye.csv
+</code></pre></div>
+<p>Note that the output is being piped to a file otherwise the result would simply be printed as text in the terminal window. The file is being saved using the node node, component name and stream name (i.e. escaping in the case) so the file can be easily understood later on,</p>
+<div class="highlight"><pre><span></span><code>pvtrace-cli spectrum escaping <span class="se">\</span>
+--source my-lumogen-dye 
+--output csv <span class="se">\</span>
+<span class="hll">lsc mkdocs/source/lsc_lumogen_red_cli/tutorial007.sqlite3 &gt; lsc_escaping_my_lumogen_dye.csv
+</span></code></pre></div>
+<p>The first column of the output CSV file is index which is <em>"unique identifier</em>" for the full path of the ray and the second column is the wavelength of the ray. </p>
+<div class="highlight"><pre><span></span><code><span class="hll">,nanometers
+</span>0,613.2045646949557
+1,624.4606487141539
+<span class="hll">2,645.4020650453261
+</span><span class="hll">5,660.9866414189798
+</span>8,630.2903737255457
+9,615.9063462086117
+...
+</code></pre></div>
+<p>Notice that the unique identifier is not monotonic; on line 5 the identifier jumps from 2 to 5. This is because ray's 3 and 4 are not apart of the escaping stream, those rays has other fates.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The unique identifier allows multiple output CSV to be combined into a single data frame in your own processing scripts.</p>
+</div>
+<p>The CSV file can be imported into a Python script using Pandas,</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">pandas</span>
+
+<span class="hll"><span class="n">df</span> <span class="o">=</span> <span class="n">pandas</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;lsc_escaping_my_lumogen_dye.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Use the <code>index_col=0</code> keyword to correctly important the index column.</p>
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<p>In the next tutorial we will take several improvements to the scene script which make it more realistic; including back ground absorption due to the host matrix, including a rear surface air-gap mirror, attaching solar cells to the different locations.</p>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../../units/" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Scale
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../lsc_with_luminophore_and_background_absorption/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                LSC with Lumogen Red Dye and PMMA background absorption
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../../assets/javascripts/vendor.77e55a48.min.js"></script>
+      <script src="../../assets/javascripts/bundle.9554a270.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      
+      <script>
+        app = initialize({
+          base: "../..",
+          features: [],
+          search: Object.assign({
+            worker: "../../assets/javascripts/worker/search.4ac00218.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+        <script src="../../js/config.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
