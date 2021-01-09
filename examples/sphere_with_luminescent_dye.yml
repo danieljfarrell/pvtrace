@@ -25,9 +25,9 @@ nodes:
 components:
   my-lumogen-dye:
     luminophore:
+      hist: true
       absorption:
         coefficient: 5
-        hist: true
         spectrum:
           name: lumogen-f-red-305
           range:
