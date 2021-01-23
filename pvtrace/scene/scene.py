@@ -1,5 +1,23 @@
 from __future__ import annotations
-import multiprocessing
+
+from pvtrace import MP_OPT
+
+if MP_OPT == "pathos":
+    try:
+        import pathos
+        from pathos.helpers import mp as multiprocessing
+
+        print("Using pathos")
+    except ImportError:
+        import multiprocessing
+
+        MP_OPT = "multiprocessing"
+
+if MP_OPT == "multiprocessing":
+    import multiprocessing
+
+    print("Using multiprocessing")
+
 import os
 from typing import Optional, Sequence, Tuple
 from anytree import PostOrderIter, LevelOrderIter
@@ -236,7 +254,7 @@ class Scene(object):
         You must also set workers to one during debugging.
         """
         if workers is None:
-            workers = max(1, multiprocessing.cpu_count() - 1)
+            workers = max(1, multiprocessing.cpu_count())
 
         if workers == 1:
             if queue:
@@ -266,25 +284,50 @@ class Scene(object):
                 "Seed must be None to ensure different quasi-random sequences in each process"
             )
 
-        pool = multiprocessing.Pool(processes=workers)
+        if MP_OPT == "multiprocessing":
+            pool = multiprocessing.Pool(processes=workers)
+        else:
+            pool = pathos.pools.ProcessPool(nodes=workers)
 
         # Results are send to queue
         if queue:
-            results_proxy = [
-                pool.apply_async(
-                    do_simulation_add_to_queue,
-                    (self, rays[idx], seeds[idx], queue, end_rays),
-                )
-                for idx in range(workers)
-            ]
-            [result.get() for result in results_proxy]
-            return
+            if MP_OPT == "multiprocessing":
+                results_proxy = [
+                    pool.apply_async(
+                        do_simulation_add_to_queue,
+                        (self, rays[idx], seeds[idx], queue, end_rays),
+                    )
+                    for idx in range(workers)
+                ]
+                [result.get() for result in results_proxy]
+                return
+            elif MP_OPT == "pathos":
+                results_proxy = [
+                    pool.apipe(
+                        do_simulation_add_to_queue,
+                        self,
+                        rays[idx],
+                        seeds[idx],
+                        queue,
+                        end_rays,
+                    )
+                    for idx in range(workers)
+                ]
+                [result.get() for result in results_proxy]
+                return
 
         # Results are processed directly and returned
-        results_proxy = [
-            pool.apply_async(do_simulation, (self, rays[idx], seeds[idx]))
-            for idx in range(workers)
-        ]
+        if MP_OPT == "multiprocessing":
+            results_proxy = [
+                pool.apply_async(do_simulation, (self, rays[idx], seeds[idx]))
+                for idx in range(workers)
+            ]
+        elif MP_OPT == "pathos":
+            results_proxy = [
+                pool.apipe(do_simulation, self, rays[idx], seeds[idx])
+                for idx in range(workers)
+            ]
+
         results = []
         for result in results_proxy:
             histories = result.get()

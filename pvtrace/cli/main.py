@@ -1,6 +1,22 @@
-import multiprocessing
+from pvtrace import MP_OPT
+
+if MP_OPT == "pathos":
+    try:
+        import pathos
+        from pathos.helpers import mp as multiprocessing
+
+        print("Using pathos")
+    except ImportError:
+        import multiprocessing
+
+        MP_OPT = "multiprocessing"
+
+if MP_OPT == "multiprocessing":
+    import multiprocessing
+
+    print("Using multiprocessing")
+
 import threading
-from numpy.lib.function_base import append
 import typer
 import sqlite3
 import os

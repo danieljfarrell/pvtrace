@@ -9,6 +9,10 @@ logger = logging.getLogger("pvtrace")
 logging.getLogger("trimesh").setLevel(logging.CRITICAL)
 logging.getLogger("shapely.geos").setLevel(logging.CRITICAL)
 
+# Use multiprocessing or paths
+MP_OPT = "multiprocessing"
+if MP_OPT not in {"multiprocessing", "pathos"}:
+    raise ValueError("Unknown MP_OPT")
 
 # Import commonly used classes to pvtrace namespace so users don't
 # have to understand module layout.
