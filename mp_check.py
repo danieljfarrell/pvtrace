@@ -1,7 +1,9 @@
-from pathlib import Path
 from pvtrace.cli.parse import parse
+from pvtrace import MP_OPT
 import os
 import pandas as pd
+import multiprocessing
+import pathos
 
 # This scene contains a LSC slab with red dye
 # and a host with fairly large background absorption
@@ -18,8 +20,14 @@ RAYS_THROWN = 5000
 if __name__ == "__main__":
     import time
     import logging
+    import os
 
     logging.disable(logging.CRITICAL)
+
+    if MP_OPT == "multiprocessing":
+        pool = multiprocessing.Pool(processes=os.cpu_count())
+    else:
+        pool = pathos.pools.ProcessPool(nodes=os.cpu_count())
 
     num_workers = []
     time_for_sim = []
@@ -32,7 +40,7 @@ if __name__ == "__main__":
         scene = parse(SCENE_YML)
         for rep in range(num_reps):
             start_t = time.time()
-            scene.simulate(num_rays=RAYS_THROWN, workers=workers)
+            scene.simulate(num_rays=RAYS_THROWN, workers=workers, pool=pool)
             took = time.time() - start_t
             row = {
                 "workers": workers,
@@ -46,4 +54,4 @@ if __name__ == "__main__":
             data = data.append(row, ignore_index=True)
 
     data.reset_index()
-    data.to_csv("mp_check.csv")
+    data.to_csv("mp_check_pathos.csv")

@@ -19,7 +19,7 @@ if MP_OPT == "multiprocessing":
     print("Using multiprocessing")
 
 import os
-from typing import Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple, Union
 from anytree import PostOrderIter, LevelOrderIter
 from pvtrace.scene.node import Node
 from pvtrace.light.light import Light
@@ -219,6 +219,9 @@ class Scene(object):
         seed: Optional[int] = None,
         queue: Optional[multiprocessing.Queue] = None,
         end_rays: Optional[bool] = False,
+        pool: Union[
+            Optional[multiprocessing.Pool], Optional[pathos.pools.ProcessPool]
+        ] = None,
     ):
         """Concurrently emit rays from light sources and return results.
 
@@ -285,9 +288,11 @@ class Scene(object):
             )
 
         if MP_OPT == "multiprocessing":
-            pool = multiprocessing.Pool(processes=workers)
+            if pool is None:
+                pool = multiprocessing.Pool(processes=workers)
         else:
-            pool = pathos.pools.ProcessPool(nodes=workers)
+            if pool is None:
+                pool = pathos.pools.ProcessPool(nodes=workers)
 
         # Results are send to queue
         if queue:
