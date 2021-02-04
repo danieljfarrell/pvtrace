@@ -1,11 +1,13 @@
+import logging
 from pvtrace import MP_OPT
 
+logger = logging.getLogger(__name__)
 if MP_OPT == "pathos":
     try:
         import pathos
         from pathos.helpers import mp as multiprocessing
 
-        print("Using pathos")
+        logger.info("Using pathos")
     except ImportError:
         import multiprocessing
 
@@ -14,7 +16,7 @@ if MP_OPT == "pathos":
 if MP_OPT == "multiprocessing":
     import multiprocessing
 
-    print("Using multiprocessing")
+    logger.info("Using multiprocessing")
 
 import threading
 import typer
