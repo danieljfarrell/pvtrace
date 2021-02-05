@@ -1,13 +1,14 @@
 from __future__ import annotations
-
+import logging
 from pvtrace import MP_OPT
 
+logger = logging.getLogger(__name__)
 if MP_OPT == "pathos":
     try:
         import pathos
         from pathos.helpers import mp as multiprocessing
 
-        print("Using pathos")
+        logger.info("Using pathos")
     except ImportError:
         import multiprocessing
 
@@ -16,7 +17,7 @@ if MP_OPT == "pathos":
 if MP_OPT == "multiprocessing":
     import multiprocessing
 
-    print("Using multiprocessing")
+    logger.info("Using multiprocessing")
 
 import os
 from typing import Optional, Sequence, Tuple, Union
@@ -275,7 +276,7 @@ class Scene(object):
         else:
             remainder = (num_rays_per_worker * workers) % num_rays
 
-        print(
+        logger.info(
             f"Simulating with {workers} workers with {num_rays_per_worker} ray per worker (with remainder {remainder})"
         )
         rays = [num_rays_per_worker] * workers
