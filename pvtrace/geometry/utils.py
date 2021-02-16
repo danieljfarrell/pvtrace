@@ -57,7 +57,7 @@ def on_aabb_surface(size, point, centre=(0.0, 0.0, 0.0), atol=EPS_ZERO):
 
     dists = (xmin_dist, xmax_dist, ymin_dist, ymax_dist, zmin_dist, zmax_dist)
     tests = [np.abs(dist) < (atol / 2) for dist in dists]
-    surfaces = np.where(np.array(tests) is True)[0].tolist()
+    surfaces = np.where(np.array(tests))[0].tolist()
     return np.any(tests), surfaces
 
 
@@ -128,7 +128,7 @@ def aabb_intersection(min_point, max_point, ray_position, ray_direction):
 
 
 def ray_z_cylinder(length, radius, ray_origin, ray_direction):
-    """ Returns ray-cylinder intersection points for a cylinder aligned
+    r""" Returns ray-cylinder intersection points for a cylinder aligned
         along the z-axis with centre at (0, 0, 0).
         
         Parameters
