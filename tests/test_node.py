@@ -34,7 +34,7 @@ class TestNode:
         assert a.parent == None
         assert b.parent == a
 
-    def test_coodinate_system_conversions(self):
+    def test_coordinate_system_conversions(self):
         a = Node(name='a')
         b = Node(name='b', parent=a)
         c = Node(name='c', parent=b)
@@ -99,7 +99,7 @@ class TestNode:
         intersections = a.intersections(aloc, avec)
         points = np.array(tuple(x.to(a).point for x in intersections))
         expected = np.array(((0.0, 0.0, 0.0), (2.0, 0.0, 0.0)))
-        # In frame of a everything is shifed 1 along x
+        # In frame of a everything is shifted 1 along x
         assert np.allclose(points, expected)
     
     def test_is_entering_true(self):

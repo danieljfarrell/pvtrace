@@ -14,14 +14,14 @@ class Material(object):
         self.components = [] if components is None else components
 
     # Cache this function!
-    def total_attenutation_coefficient(self, wavelength: float) -> float:
+    def total_attenuation_coefficient(self, wavelength: float) -> float:
         coefs = [x.coefficient(wavelength) for x in self.components]
         alpha = np.sum(coefs)
         return alpha
 
     def is_absorbed(self, ray, full_distance) -> Tuple[bool, float]:
         distance = self.penetration_depth(ray.wavelength)
-        return (distance < full_distance, distance)
+        return distance < full_distance, distance
 
     def penetration_depth(self, wavelength: float) -> float:
         """ Monte-Carlo sampling to find penetration depth of ray due to total
@@ -37,7 +37,7 @@ class Material(object):
             depth: float
                 The penetration depth in centimetres or `float('inf')`.
         """
-        alpha = self.total_attenutation_coefficient(wavelength)
+        alpha = self.total_attenuation_coefficient(wavelength)
         if np.isclose(alpha, 0.0):
             return float("inf")
         elif not np.isfinite(alpha):

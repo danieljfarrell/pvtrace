@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Tuple
 from anytree import NodeMixin, Walker, PostOrderIter, LevelOrderIter
 from pvtrace.light.ray import Ray
 from pvtrace.light.light import Light
@@ -23,7 +23,7 @@ class Scene(object):
         self.root = root
 
     def finalise_nodes(self):
-        """ Update bounding boxes of node hierarchy in prepration for tracing.
+        """ Update bounding boxes of node hierarchy in preparation for tracing.
         """
         root = self.root
         if root is not None:
@@ -32,7 +32,7 @@ class Scene(object):
             for node in PostOrderIter(root):
                 node.bounding_box = None
 
-            # More efficiency to calcualte from leaves to root because because
+            # More efficiency to calculate from leaves to root because because
             # the parent's bounding box calculation requires the size of the
             # child's bounding box.
             leaves = self.root.leaves
@@ -70,7 +70,7 @@ class Scene(object):
     def emit(self, num_rays):
         """ Rays are emitted in the coordinate system of the world node.
         
-            Internally the scene cycles through Light nodes, askes them to emit
+            Internally the scene cycles through Light nodes, asks them to emit
             a ray and the converts the ray to the world coordinate system.
         """
         world = self.root

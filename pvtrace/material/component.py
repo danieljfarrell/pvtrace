@@ -344,13 +344,13 @@ class Luminophore(Scatterer):
         # Different ways of sampling the emission distribution.
         if method == "kT":
             # Known issue: this can blue shift outside simulation range!
-            # Emission energy can be within 3kT above current value. Simple bolzmann.
+            # Emission energy can be within 3kT above current value. Simple Bolzmann.
             eV = 1240.0 / nm
             eV = eV + 3 / 2 * kB * T  # Assumes 3 dimensional degrees of freedom
             nm = 1240.0 / eV
             p1 = dist.lookup(nm)
         elif method == "boltzmann":
-            # Convolve the emission spectrum with a bolzmann factor centered at
+            # Convolve the emission spectrum with a Bolzmann factor centered at
             # the current photon energy. This will allow the energy to go up via
             # the tail in the distribution but will favor lower energy states.
             raise NotImplementedError()
