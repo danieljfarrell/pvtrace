@@ -14,23 +14,23 @@ class TestCylinder:
 
     def test_is_on_surface(self):
         obj = Cylinder(length=1.0, radius=1.0)
-        assert obj.is_on_surface((0.0, 0.0, 0.5)) == True
-        assert obj.is_on_surface((0.0, 0.0, -0.5)) == True
-        assert obj.is_on_surface((0.0, 1.0, 0.0)) == True
-        assert obj.is_on_surface((-1.0, 0.0, 0.0)) == True
-        assert obj.is_on_surface((0.0, 0.0, 0.6)) == False
-        assert obj.is_on_surface((0.0, 1.1, 0.0)) == False
+        assert obj.is_on_surface((0.0, 0.0, 0.5)) is True
+        assert obj.is_on_surface((0.0, 0.0, -0.5)) is True
+        assert obj.is_on_surface((0.0, 1.0, 0.0)) is True
+        assert obj.is_on_surface((-1.0, 0.0, 0.0)) is True
+        assert obj.is_on_surface((0.0, 0.0, 0.6)) is False
+        assert obj.is_on_surface((0.0, 1.1, 0.0)) is False
         
     def test_contains(self):
         obj = Cylinder(length=1.0, radius=1.0)
-        assert obj.contains((0.0, 0.0, 0.5)) == False
-        assert obj.contains((0.0, 0.0, -0.5)) == False
-        assert obj.contains((0.0, 1.0, 0.0)) == False
-        assert obj.contains((-1.0, 0.0, 0.0)) == False
-        assert obj.contains((0.0, 0.0, 0.6)) == False
-        assert obj.contains((0.0, 1.1, 0.0)) == False
-        assert obj.contains((0.0, 0.0, 0.0)) == True
-        assert obj.contains((0.25, 0.25, 0.25)) == True
+        assert obj.contains((0.0, 0.0, 0.5)) is False
+        assert obj.contains((0.0, 0.0, -0.5)) is False
+        assert obj.contains((0.0, 1.0, 0.0)) is False
+        assert obj.contains((-1.0, 0.0, 0.0)) is False
+        assert obj.contains((0.0, 0.0, 0.6)) is False
+        assert obj.contains((0.0, 1.1, 0.0)) is False
+        assert obj.contains((0.0, 0.0, 0.0)) is True
+        assert obj.contains((0.25, 0.25, 0.25)) is True
 
     def test_intersection(self):
         obj = Cylinder(length=1.0, radius=1.0)
@@ -55,19 +55,19 @@ class TestCylinder:
     def test_is_entering_true(self):
         obj = Cylinder(length=1.0, radius=1.0)
         ro, rd = (0.0, 0.0, 0.5), norm((1.0, 1.0, -1.0))
-        assert obj.is_entering(ro, rd) == True
+        assert obj.is_entering(ro, rd) is True
         ro, rd = (0.0, 0.0, 0.5), norm((1.0, 1.0, 1.0))
-        assert obj.is_entering(ro, rd) == False
+        assert obj.is_entering(ro, rd) is False
         ro, rd = (0.0, 0.0, -0.5), norm((1.0, 1.0, 1.0))
-        assert obj.is_entering(ro, rd) == True
+        assert obj.is_entering(ro, rd) is True
         ro, rd = (0.0, 0.0, -0.5), norm((1.0, 1.0, -1.0))
-        assert obj.is_entering(ro, rd) == False
+        assert obj.is_entering(ro, rd) is False
         ro, rd = (0.0, 1.0, 0.0), norm((1.0, -1.0, 1.0))
-        assert obj.is_entering(ro, rd) == True
+        assert obj.is_entering(ro, rd) is True
         ro, rd = (0.0, 1.0, 0.0), norm((1.0, 1.0, 1.0))
-        assert obj.is_entering(ro, rd) == False
+        assert obj.is_entering(ro, rd) is False
         ro, rd = (-1.0, 0.0, 0.0), norm((1.0, 1.0, 1.0))
-        assert obj.is_entering(ro, rd) == True
+        assert obj.is_entering(ro, rd) is True
         ro, rd = (-1.0, 0.0, 0.0), norm((-1.0, 1.0, 1.0))
-        assert obj.is_entering(ro, rd) == False
+        assert obj.is_entering(ro, rd) is False
 

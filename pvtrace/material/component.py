@@ -346,7 +346,7 @@ class Luminophore(Scatterer):
             # Known issue: this can blue shift outside simulation range!
             # Emission energy can be within 3kT above current value. Simple Bolzmann.
             eV = 1240.0 / nm
-            eV = eV + 3 / 2 * kB * T  # Assumes 3 dimensional degrees of freedom
+            eV += 3 / 2 * kB * T  # Assumes 3 dimensional degrees of freedom
             nm = 1240.0 / eV
             p1 = dist.lookup(nm)
         elif method == "boltzmann":

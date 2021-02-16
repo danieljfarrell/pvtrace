@@ -51,12 +51,12 @@ class OptionalMirrorAndSolarCell(FresnelSurfaceDelegate):
         cell_locations = self.lsc._solar_cell_surfaces
         normal = geometry.normal(ray.position)
         if (
-            (np.allclose((-1, 0, 0), normal) and "left" in cell_locations)
-            or (np.allclose((1, 0, 0), normal) and "right" in cell_locations)
-            or (np.allclose((0, -1, 0), normal) and "near" in cell_locations)
-            or (np.allclose((0, 1, 0), normal) and "far" in cell_locations)
+                (np.allclose((-1, 0, 0), normal) and "left" in cell_locations)
+                or (np.allclose((1, 0, 0), normal) and "right" in cell_locations)
+                or (np.allclose((0, -1, 0), normal) and "near" in cell_locations)
+                or (np.allclose((0, 1, 0), normal) and "far" in cell_locations)
         ):
-            return ray.direction  #  solar cell is perfectly index matched
+            return ray.direction  # solar cell is perfectly index matched
         return super(OptionalMirrorAndSolarCell, self).transmitted_direction(
             surface, ray, geometry, container, adjacent
         )  # opt-out of handling custom reflection
@@ -226,10 +226,10 @@ class LSC(object):
     def light_names(self):
         if self._scene is None:
             raise ValueError("Run a simulation before calling this method.")
-        return {l["name"] for l in self._user_lights}
+        return {light["name"] for light in self._user_lights}
 
     def add_luminophore(
-        self, name, coefficient, emission, quantum_yield, phase_function=None
+            self, name, coefficient, emission, quantum_yield, phase_function=None
     ):
         self._user_components.append(
             {
@@ -258,13 +258,13 @@ class LSC(object):
         )
 
     def add_light(
-        self,
-        name,
-        location,  # node location in parent
-        rotation=None,  # node rotation in parent frame
-        direction=None,  # direction delegate callable
-        wavelength=None,  # wavelength delegate callable
-        position=None,  # position delegate callable
+            self,
+            name,
+            location,  # node location in parent
+            rotation=None,  # node rotation in parent frame
+            direction=None,  # direction delegate callable
+            wavelength=None,  # wavelength delegate callable
+            position=None,  # position delegate callable
     ):
         self._user_lights.append(
             {
@@ -299,13 +299,13 @@ class LSC(object):
     # Simulate
 
     def show(
-        self,
-        wireframe=True,
-        baubles=True,
-        bauble_radius=None,
-        world_segment="short",
-        short_length=None,
-        open_browser=False,
+            self,
+            wireframe=True,
+            baubles=True,
+            bauble_radius=None,
+            world_segment="short",
+            short_length=None,
+            open_browser=False,
     ):
 
         if bauble_radius is None:
@@ -509,7 +509,7 @@ class LSC(object):
         df = self._df
 
         if kind is not None:
-            if not kind in {"first", "last"}:
+            if kind not in {"first", "last"}:
                 raise ValueError("Direction must be either `'first'` or `'last'.`")
 
         if kind is None:
@@ -607,7 +607,7 @@ class LSC(object):
                 "Optical Efficiency": optical_efficiency,
                 "Waveguide Efficiency": waveguide_efficiency,
                 "Waveguide Efficiency (Thermodynamic Prediction)": (
-                    n ** 2 / (Cg + n ** 2)
+                        n ** 2 / (Cg + n ** 2)
                 ),
                 "Non-radiative Loss (fraction):": lost / incident,
                 "Incident": incident,

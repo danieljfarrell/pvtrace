@@ -87,6 +87,3 @@ class TestScene:
         )
         a_intersections = tuple(map(lambda x: x.to(root), scene_intersections))
         assert scene_intersections == a_intersections
-
-if __name__ == '__main__':
-    pass

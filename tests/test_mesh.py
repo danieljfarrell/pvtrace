@@ -5,6 +5,7 @@ from pvtrace.geometry.mesh import Mesh
 from pvtrace.common.errors import GeometryError
 import trimesh
 
+
 class TestMesh:
     
     def test_init(self):
@@ -51,58 +52,58 @@ class TestMesh:
         m = Mesh(trimesh.creation.icosphere())
         position = (0, 0, -1.1)
         # Assert not contained
-        assert m.contains(position) == False
+        assert m.contains(position) is False
 
     def test_interior_point_contained(self):
         m = Mesh(trimesh.creation.icosphere())
         position = (0, 0, 0.9)
         # Assert not contained
-        assert m.contains(position) == True
+        assert m.contains(position) is True
 
     def test_surface_point_not_contained(self):
         m = Mesh(trimesh.creation.icosphere())
         position = (0, 0, 1.0)
         # Assert not contained
-        assert m.contains(position) == False
+        assert m.contains(position) is False
     
     def test_far_point_not_on_surface(self):
         m = Mesh(trimesh.creation.icosphere())
         position = (0, 0, -1.1)
         # Assert not on surface
-        assert m.is_on_surface(position) == False
+        assert m.is_on_surface(position) is False
 
     def test_interior_point_not_on_surface(self):
         m = Mesh(trimesh.creation.icosphere())
         position = (0, 0, 0.9)
         # Assert not on surface
-        assert m.is_on_surface(position) == False
+        assert m.is_on_surface(position) is False
 
     def test_on_surface(self):
         m = Mesh(trimesh.creation.icosphere())
         position = (0, 0, 1.0)
         # Assert not on surface
-        assert m.is_on_surface(position) == True
+        assert m.is_on_surface(position) is True
 
     def test_surface_point_is_entering_1(self):
         m = Mesh(trimesh.creation.icosphere())
         position = (0, 0, -1)
         direction = (0, 0, 1)
         # Assert surface point is entering
-        assert m.is_entering(position, direction) == True
+        assert m.is_entering(position, direction) is True
 
     def test_surface_point_is_exiting_2(self):
         m = Mesh(trimesh.creation.icosphere())
         position = (0, 0, -1)
         direction = (0, 0, -1)
         # Assert surface point is entering
-        assert m.is_entering(position, direction) == False
+        assert m.is_entering(position, direction) is False
 
     def test_surface_point_is_exiting_3(self):
         m = Mesh(trimesh.creation.icosphere())
         position = (0, 0, -1)
         direction = norm((1, 0, -1))  # tangential ray
         # Assert surface point is entering
-        assert m.is_entering(position, direction) == False
+        assert m.is_entering(position, direction) is False
 
     def test_far_point_arg_to_is_entering_raises(self):
         m = Mesh(trimesh.creation.icosphere())
@@ -131,11 +132,10 @@ class TestMesh:
         m = Mesh(trimesh.creation.icosphere())
         position = (0, 0, -1.0)
         direction = (0, 0, -1)  # Travelling away, not entering
-        assert m.is_entering(position, direction) == False
+        assert m.is_entering(position, direction) is False
 
     def test_is_entering_2(self):
         m = Mesh(trimesh.creation.icosphere())
         position = (0, 0, -1.0)
         direction = (0, 0, 1.0)  # Travelling towards, is entering
-        assert m.is_entering(position, direction) == True
-
+        assert m.is_entering(position, direction) is True

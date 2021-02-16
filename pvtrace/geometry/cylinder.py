@@ -23,7 +23,7 @@ class Cylinder(Geometry):
         return self._material
 
     @material.setter
-    def set_material(self, new_value):
+    def material(self, new_value):
         self._material = new_value
 
     def is_on_surface(self, point):
@@ -41,7 +41,7 @@ class Cylinder(Geometry):
     def contains(self, point):
         z = point[2]
         r = np.sqrt(np.sum(np.array(point[:2]) ** 2))
-        if z > -0.5 * self.length and z < 0.5 * self.length and r < self.radius:
+        if -0.5 * self.length < z < 0.5 * self.length and r < self.radius:
             return True
         return False
 
@@ -54,9 +54,9 @@ class Cylinder(Geometry):
         """
         z = surface_point[2]
         if np.isclose(z, -0.5 * self.length):
-            return (0.0, 0.0, -1.0)
+            return 0.0, 0.0, -1.0
         elif np.isclose(z, 0.5 * self.length):
-            return (0.0, 0.0, 1.0)
+            return 0.0, 0.0, 1.0
         elif np.isclose(self.radius, np.sqrt(np.sum(np.array(surface_point[:2]) ** 2))):
             v = np.array(surface_point) - np.array([0.0, 0.0, surface_point[2]])
             n = tuple(norm(v).tolist())

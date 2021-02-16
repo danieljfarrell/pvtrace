@@ -66,7 +66,6 @@ class Transformable(object):
     def pose(self, new_value):
         self._location = translation_from_matrix(new_value)
         self._pose = np.array(new_value)
-        return self
 
     @property
     def location(self):
@@ -76,7 +75,6 @@ class Transformable(object):
     def location(self, new_value):
         self._location = new_value
         self._pose[0:3, 3] = np.array(new_value)
-        return self
 
     def translate(self, vector):
         """ Apply a relative translation to the node location. Here

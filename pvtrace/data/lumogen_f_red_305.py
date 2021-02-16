@@ -40,7 +40,7 @@ def absorption(x):
         + 0.7042787252835550
         * np.exp(-(((336.0548556730901 - x) / 34.24136755250487) ** 2))
     )
-    spec = spec / np.max(spec)
+    spec /= np.max(spec)
     return spec
 
 

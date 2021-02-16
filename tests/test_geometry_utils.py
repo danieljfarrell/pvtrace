@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from pvtrace.geometry.utils import angle_between, magnitude, norm, smallest_angle_between, close_to_zero, floats_close, ray_z_cylinder, EPS_ZERO
 
+
 class TestGeometryUtils:
     
     def test_close_to_zero(self):

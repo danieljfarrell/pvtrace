@@ -5,7 +5,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 # Set reasonable precision for comparing floats to zero. Originally the multiplier was
 # 10, but I needed to set this to 1000 because some of the trimesh distance methods
 # do not see as accurate as with primitive shapes.
@@ -58,7 +57,7 @@ def on_aabb_surface(size, point, centre=(0.0, 0.0, 0.0), atol=EPS_ZERO):
 
     dists = (xmin_dist, xmax_dist, ymin_dist, ymax_dist, zmin_dist, zmax_dist)
     tests = [np.abs(dist) < (atol / 2) for dist in dists]
-    surfaces = np.where(np.array(tests) == True)[0].tolist()
+    surfaces = np.where(np.array(tests) is True)[0].tolist()
     return np.any(tests), surfaces
 
 
@@ -70,7 +69,7 @@ def aabb_intersection(min_point, max_point, ray_position, ray_direction):
     Arguments
     ---------
     min_point: tuple like (x0, y0, z0) which is the minimum corner.
-    box_size: tuple like (x1, y1, z1) which is the maximum corner.
+    max_point: tuple like (x1, y1, z1) which is the maximum corner.
     ray_position: tuple like (x, y, z), the ray origin.
     ray_direction: tuple like (i, j, k), the ray direction.
     
@@ -339,7 +338,7 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
     cyl_candidates = [
         (point, t)
         for (point, t) in cyl_candidates
-        if point[2] > -0.5 * length and point[2] < 0.5 * length
+        if -0.5 * length < point[2] < 0.5 * length
     ]
     intersection_info = tuple(cyl_candidates) + tuple(cap_candidates)
     intersection_info = sorted(intersection_info, key=lambda pair: pair[1])
@@ -436,5 +435,5 @@ def intersection_point_is_ahead(ray_position, ray_direction, intersection_point)
         The intersection point must be a point on the line, p(a) = p0 + a * n.
     """
     return (
-        np.dot(ray_direction, intersection_point) - np.dot(ray_direction, ray_position)
-    ) > EPS_ZERO
+                   np.dot(ray_direction, intersection_point) - np.dot(ray_direction, ray_position)
+           ) > EPS_ZERO

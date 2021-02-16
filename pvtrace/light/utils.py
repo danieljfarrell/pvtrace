@@ -24,36 +24,36 @@ def wavelength_to_rgb(nanometers: float) -> Tuple[int, int, int]:
     w = int(nanometers)
 
     # colour
-    if w >= 380 and w < 440:
+    if 380 <= w < 440:
         r, g, b = -(w - 440.0) / (440.0 - 350.0), 0.0, 1.0
-    elif w >= 440 and w < 490:
+    elif 440 <= w < 490:
         r, g, b = 0.0, (w - 440.0) / (490.0 - 440.0), 1.0
-    elif w >= 490 and w < 510:
+    elif 490 <= w < 510:
         r, g, b = 0.0, 1.0, -(w - 510.0) / (510.0 - 490.0)
-    elif w >= 510 and w < 580:
+    elif 510 <= w < 580:
         r, g, b = (w - 510.0) / (580.0 - 510.0), 1.0, 0.0
-    elif w >= 580 and w < 645:
+    elif 580 <= w < 645:
         r, g, b = 1.0, -(w - 645.0) / (645.0 - 580.0), 0.0
-    elif w >= 645 and w <= 780:
+    elif 645 <= w <= 780:
         r, g, b = 1.0, 0.0, 0.0
     else:
         r, g, b = 0.0, 0.0, 0.0
 
     # intensity correction
-    if w >= 380 and w < 420:
+    if 380 <= w < 420:
         s = 0.3 + 0.7 * (w - 350) / (420 - 350)
-    elif w >= 420 and w <= 700:
+    elif 420 <= w <= 700:
         s = 1.0
-    elif w > 700 and w <= 780:
+    elif 700 < w <= 780:
         s = 0.3 + 0.7 * (780 - w) / (780 - 700)
     else:
         s = 0.0
     s *= 255
 
-    return (int(s * r), int(s * g), int(s * b))
+    return int(s * r), int(s * g), int(s * b)
 
 
-def rgb_to_hex_int(rgb: Tuple[int]) -> int:
+def rgb_to_hex_int(rgb: Tuple[int, int, int]) -> int:
     """ Converts an RGB tuple to a hex value using the method [1].
     
     Parameters
