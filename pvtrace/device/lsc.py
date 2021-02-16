@@ -633,7 +633,7 @@ class LSC(object):
 
 
 def test1():
-    x = np.arange(400, 801, dtype=np.float)
+    x = np.arange(400, 801, dtype=float)
     size = (l, w, d) = (4.8, 1.8, 0.250)  # cm-1
     lsc = LSC(size, wavelength_range=x)
 
@@ -701,7 +701,7 @@ def test1():
 
 
 def test2():
-    x = np.arange(400, 801, dtype=np.float)
+    x = np.arange(400, 801, dtype=float)
     size = (l, w, d) = (4.8, 1.8, 0.250)  # cm-1
     lsc = LSC(size, wavelength_range=x)
 
