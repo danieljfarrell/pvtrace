@@ -412,8 +412,8 @@ def is_ahead(position, direction, point):
     """
     if points_equal(position, point):
         return False
-    d1 = np.dot(self.direction, np.array(point))
-    d2 = np.dot(self.direction, self.position)
+    d1 = np.dot(direction, np.array(point))
+    d2 = np.dot(direction, position)
     return (d1 - d2) > 0
 
 
