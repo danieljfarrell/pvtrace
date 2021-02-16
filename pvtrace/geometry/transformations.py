@@ -961,7 +961,7 @@ def affine_matrix_from_points(v0, v1, shear=True, scale=True, usesvd=True):
         u, s, vh = numpy.linalg.svd(A.T)
         vh = vh[:ndims].T
         B = vh[:ndims]
-        C = vh[ndims : 2 * ndims]
+        C = vh[ndims: 2 * ndims]
         t = numpy.dot(C, numpy.linalg.pinv(B))
         t = numpy.concatenate((t, numpy.zeros((ndims, 1))), axis=1)
         M = numpy.vstack((t, ((0.0,) * ndims) + (1.0,)))

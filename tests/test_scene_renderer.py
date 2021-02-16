@@ -9,6 +9,7 @@ from pvtrace.scene.node import Node
 from pvtrace.scene.scene import Scene
 from pvtrace.scene.renderer import MeshcatRenderer
 
+
 @pytest.mark.skipif(sys.platform == 'win32', reason="Fails on Windows")
 class TestMeshcatRenderer:
     

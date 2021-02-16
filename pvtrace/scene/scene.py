@@ -42,7 +42,8 @@ class Scene(object):
         self.root = root
 
     def finalise_nodes(self):
-        """Update bounding boxes of node hierarchy in prepration for tracing."""
+        """ Update bounding boxes of node hierarchy in preparation for tracing.
+        """
         root = self.root
         if root is not None:
 
@@ -84,10 +85,10 @@ class Scene(object):
         return found_nodes
 
     def emit(self, num_rays):
-        """Rays are emitted in the coordinate system of the world node.
-
-        Internally the scene cycles through Light nodes, askes them to emit
-        a ray and the converts the ray to the world coordinate system.
+        """ Rays are emitted in the coordinate system of the world node.
+        
+            Internally the scene cycles through Light nodes, asks them to emit
+            a ray and the converts the ray to the world coordinate system.
         """
         world = self.root
         lights = self.light_nodes

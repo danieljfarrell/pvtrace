@@ -29,17 +29,19 @@ def lsc():
         np.column_stack((x, fluro_red.emission(x))),
         quantum_yield=0.95
     )
-    
+
     lsc.add_absorber(
         'PMMA',
-        0.02 # cm-1
+        0.02  # cm-1
     )
-    
+
     def lamp_spectrum(x):
         """ Fit to an experimentally measured lamp spectrum with long wavelength filter.
         """
+
         def g(x, a, p, w):
-            return a * np.exp(-(((p - x) / w)**2 ))
+            return a * np.exp(-(((p - x) / w) ** 2))
+
         a1 = 0.53025700136646192
         p1 = 512.91400020614333
         w1 = 93.491838802960473
@@ -47,10 +49,10 @@ def lsc():
         p2 = 577.63100003089369
         w2 = 66.031706473985736
         return g(x, a1, p1, w1) + g(x, a2, p2, w2)
-    
+
     lamp_dist = Distribution(x, lamp_spectrum(x))
-    wavelength_callable = lambda : lamp_dist.sample(np.random.uniform())
-    position_callable = lambda : rectangular_mask(l/2, w/2)
+    wavelength_callable = lambda: lamp_dist.sample(np.random.uniform())
+    position_callable = lambda: rectangular_mask(l / 2, w / 2)
     lsc.add_light(
         "Oriel Lamp + Filter",
         (0.0, 0.0, 0.5 * d + 0.01),  # put close to top surface
@@ -58,10 +60,11 @@ def lsc():
         wavelength=wavelength_callable,  # wavelength delegate callable
         position=position_callable  # uniform surface illumination
     )
-    
+
     throw = 300
     lsc.simulate(throw, emit_method='redshift')
     return lsc
+
 
 @pytest.mark.skip(reason="Takes to long to include in unit general tests.")
 def test_edge(lsc):
@@ -75,7 +78,8 @@ def test_edge(lsc):
         )
     )
     edge = len(lsc.spectrum(facets={'left', 'right', 'near', 'far'}, source='all'))
-    assert np.isclose(edge/incident, 0.25, atol=0.04)
+    assert np.isclose(edge / incident, 0.25, atol=0.04)
+
 
 @pytest.mark.skip(reason="Takes to long to include in unit general tests.")
 def test_escape(lsc):
@@ -89,7 +93,8 @@ def test_escape(lsc):
         )
     )
     escape = len(lsc.spectrum(facets={'top', 'bottom'}, source='all'))
-    assert np.isclose(escape/incident, 0.64, atol=0.04)
+    assert np.isclose(escape / incident, 0.64, atol=0.04)
+
 
 @pytest.mark.skip(reason="Takes to long to include in unit general tests.")
 def test_lost(lsc):
@@ -103,4 +108,4 @@ def test_lost(lsc):
         )
     )
     lost = len(lsc.spectrum(source='all', events={'absorb'}))
-    assert np.isclose(lost/incident, 0.11, atol=0.04)
+    assert np.isclose(lost / incident, 0.11, atol=0.04)

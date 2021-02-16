@@ -62,7 +62,7 @@ class TestScene:
         scene = Scene(root=root)
         intersections = scene.intersections(loc, vec)
         points = tuple([x.point for x in intersections])
-        # In frame of a everything is shifed 1 along x
+        # In frame of a everything is shifted 1 along x
         assert points == ((0.0, 0.0, 0.0), (2.0, 0.0, 0.0))
 
     def test_intersection_with_rotation_around_x(self):
@@ -182,5 +182,3 @@ class TestScene:
         assert r1 != r2, "Simulation should not be identical"
 
 
-if __name__ == "__main__":
-    pass

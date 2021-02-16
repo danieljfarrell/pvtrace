@@ -52,7 +52,7 @@ class Node(NodeMixin, Transformable):
             return np.identity(4)
         upwards, common, downwards = Walker().walk(self, node)
         transforms = tuple(map(lambda x: x.pose, upwards))
-        transforms = transforms + tuple(map(lambda x: np.linalg.inv(x.pose), downwards))
+        transforms += tuple(map(lambda x: np.linalg.inv(x.pose), downwards))
         if len(transforms) == 1:
             transform = transforms[0]
         else:
@@ -85,7 +85,7 @@ class Node(NodeMixin, Transformable):
         
         Parameters
         ----------
-        point : tuple of float
+        vector : tuple of float
             Cartesian vector `(i, j, k)` in the local coordinate system.
         node : Node
             Node in which the point should be represented.
@@ -146,9 +146,6 @@ class Node(NodeMixin, Transformable):
             num_rays : int of None
                 The maximum number of rays this light source will generate. If set to
                 None then the light will generate until manually terminated.
-        
-            to_world: Bool
-                Represent the ray in the world's coordinate frame.
             
             Returns
             -------

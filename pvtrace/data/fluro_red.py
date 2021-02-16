@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.special import erf
 
+
 def absorption(x):
     """ Fit to Coumarin Fluro Red absorption coefficient spectrum using four Gaussians.
     
@@ -49,7 +50,7 @@ def absorption(x):
         + a3 * np.exp(-(((p3 - x) / w3) ** 2))
         + a4 * np.exp(-(((p4 - x) / w4) ** 2))
     )
-    spec = spec / np.max(spec)
+    spec /= np.max(spec)
     return spec
 
 
@@ -93,6 +94,7 @@ def emission(x):
     d = 12.723704058786568
     spec = emg(x, a, b, c, d)
     return spec
+
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt

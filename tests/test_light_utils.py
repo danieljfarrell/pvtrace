@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from pvtrace.light.utils import wavelength_to_rgb, rgb_to_hex_int
 
+
 class TestLightUtils:
 
     def test_wavelength_to_rgb(self):

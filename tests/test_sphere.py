@@ -13,14 +13,14 @@ class TestSphere:
 
     def test_is_on_surface(self):
         s = Sphere(radius=1)
-        assert s.is_on_surface((0.0, 0.0, 1.0)) == True
-        assert s.is_on_surface((0.0, 0.0, 0.0)) == False
+        assert s.is_on_surface((0.0, 0.0, 1.0))
+        assert not s.is_on_surface((0.0, 0.0, 0.0))
     
     def test_contains(self):
         s = Sphere(radius=1)
-        assert s.contains((0.0, 0.0, 2.0)) == False
-        assert s.contains((0.0, 0.0, 1.0)) == False
-        assert s.contains((0.0, 0.0, 0.0)) == True
+        assert not s.contains((0.0, 0.0, 2.0))
+        assert not s.contains((0.0, 0.0, 1.0))
+        assert s.contains((0.0, 0.0, 0.0))
 
     def test_intersection(self):
         s = Sphere(radius=1)
@@ -34,9 +34,8 @@ class TestSphere:
     
     def test_is_entering_true(self):
         s = Sphere(radius=1)
-        assert s.is_entering((-1.0, 0.0, 0.0), (1.0, 0.0, 0.0)) == True
+        assert s.is_entering((-1.0, 0.0, 0.0), (1.0, 0.0, 0.0))
 
     def test_is_entering_false(self):
         s = Sphere(radius=1)
-        assert s.is_entering((-1.0, 0.0, 0.0), (-1.0, 0.0, 0.0)) == False
-
+        assert not s.is_entering((-1.0, 0.0, 0.0), (-1.0, 0.0, 0.0))

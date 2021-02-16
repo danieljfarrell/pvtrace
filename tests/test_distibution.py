@@ -31,12 +31,11 @@ class TestDistribution:
         dist = Distribution(abs_spec[:, 0], abs_spec[:, 1], hist=True)
         xmin = dist.sample(0)
         assert np.isclose(xmin, nmmin)
-        xmax = dist.sample(1)  # The probabiliity of getting a value > nmedge is zero
+        xmax = dist.sample(1)  # The probability of getting a value > nmedge is zero
         assert np.isclose(xmax, nmedge)
         pmin = dist.lookup(nmmin)
         pmax = dist.lookup(nmmax)
-        assert pmin >= 0.0 and pmin <= dist.lookup(nmmin+spacing)
+        assert 0.0 <= pmin <= dist.lookup(nmmin + spacing)
         assert pmax == 1.0
         values = dist.sample(np.linspace(dist.lookup(599-spacing), dist.lookup(600+spacing), 10000))
         assert len(set(values)) == 3
-        

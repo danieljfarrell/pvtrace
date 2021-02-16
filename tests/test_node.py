@@ -20,27 +20,28 @@ def node_tree():
     c.location = c_pos
     return a, b, c
 
+
 class TestNode:
-    
+
     def test_init(self):
         assert type(Node()) == Node
-    
+
     def test_name(self):
         assert Node(name="a").name == 'a'
-    
+
     def test_parent(self):
         a = Node()
         b = Node(parent=a)
-        assert a.parent == None
+        assert a.parent is None
         assert b.parent == a
 
-    def test_coodinate_system_conversions(self):
+    def test_coordinate_system_conversions(self):
         a = Node(name='a')
         b = Node(name='b', parent=a)
         c = Node(name='c', parent=b)
         d = Node(name='d', parent=a)
-        b.translate((1,1,1))
-        c.translate((0,1,1))
+        b.translate((1, 1, 1))
+        c.translate((0, 1, 1))
         d.translate((-1, -1, -1))
         theta = 0.5 * np.pi
         b.rotate(theta, (0, 0, 1))
@@ -82,7 +83,7 @@ class TestNode:
         points = np.array([x.point for x in intersections])
         expected = np.array([(-1.0, 0.0, 0.0), (1.0, 0.0, 0.0)])
         assert np.allclose(points, expected)
-    
+
     def test_intersection_with_translation(self):
         a = Node(name="A", parent=None)
         b = Node(name="B", parent=a)
@@ -99,9 +100,9 @@ class TestNode:
         intersections = a.intersections(aloc, avec)
         points = np.array(tuple(x.to(a).point for x in intersections))
         expected = np.array(((0.0, 0.0, 0.0), (2.0, 0.0, 0.0)))
-        # In frame of a everything is shifed 1 along x
+        # In frame of a everything is shifted 1 along x
         assert np.allclose(points, expected)
-    
+
     def test_is_entering_true(self):
         a = Node(name="A", parent=None)
         b = Node(name="B", parent=a)
@@ -117,6 +118,7 @@ class TestNode:
         surface_point = (-1.0, 0.0, 0.0)
         entering_direction = (-1.0, 0.0, 0.0)
         assert b.geometry.is_entering(surface_point, entering_direction) == False
+
 
 if __name__ == '__main__':
     pass

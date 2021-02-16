@@ -14,7 +14,7 @@ class Intersection:
 @dataclass
 class Intersection:
     #: Coordinate system node of `point` (not necessarily the hit node). Intersections
-    #: can be prepresented in different coordinate systems.
+    #: can be represented in different coordinate systems.
     coordsys: "Node"
     #: (x, y, z) intersection point
     point: Tuple[float]

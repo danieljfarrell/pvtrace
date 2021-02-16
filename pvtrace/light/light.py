@@ -31,15 +31,15 @@ def default_wavelength():
 
 
 def default_position():
-    return (0.0, 0.0, 0.0)
+    return 0.0, 0.0, 0.0
 
 
 def default_direction():
-    return (0.0, 0.0, 1.0)
+    return 0.0, 0.0, 1.0
 
 
-def rectangular_mask(X, Y):
-    return (np.random.uniform(-X, X), np.random.uniform(-Y, Y), 0.0)
+def rectangular_mask(x, y):
+    return np.random.uniform(-x, x), np.random.uniform(-y, y), 0.0
 
 
 def circular_mask(radius: float) -> Sequence[float]:
@@ -47,14 +47,14 @@ def circular_mask(radius: float) -> Sequence[float]:
     r = np.sqrt(np.random.uniform()) * radius
     x = r * np.cos(rads)
     y = r * np.sin(rads)
-    return (x, y, 0.0)
+    return x, y, 0.0
 
 
-def cube_mask(X, Y, Z):
+def cube_mask(x, y, z):
     return (
-        np.random.uniform(-X, X),
-        np.random.uniform(-Y, Y),
-        np.random.uniform(-Z, Z),
+        np.random.uniform(-x, x),
+        np.random.uniform(-y, y),
+        np.random.uniform(-z, z),
     )
 
 

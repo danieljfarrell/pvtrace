@@ -191,6 +191,8 @@ class MeshcatRenderer(object):
             ----------
             ray : Ray
                 The ray to add to the scene.
+            length : float
+                The length of the line to be drawn.
 
             Notes
             -----
@@ -221,8 +223,6 @@ class MeshcatRenderer(object):
             ----------
             rays : list of Ray
                 List of ray objects.
-            length : float
-                The length of the line to render. Default to 1000.
 
             See also
             --------
@@ -271,7 +271,7 @@ class MeshcatRenderer(object):
                 The bauble radius when `baubles=True`.
         """
         vis = self.vis
-        if not world_segment in {"exclude", "short"}:
+        if world_segment not in {"exclude", "short"}:
             raise ValueError(
                 "`world_segment` should be either `'exclude'` or `'short'`."
             )

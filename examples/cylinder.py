@@ -44,7 +44,7 @@ viewer.render(scene)
 for ray in scene.emit(100):
     history = photon_tracer.follow(scene, ray)
     path, events = zip(*history)
-    viewer.add_ray_path(path)  
+    viewer.add_ray_path(path)
 
 # Keep the script alive until Ctrl-C (optional)
 while True:
