@@ -132,6 +132,7 @@ class TestScene:
         results = scene.simulate(RAYS, workers=1)
         assert len(results) == RAYS, "Missing simulation results"
 
+    @pytest.mark.skip(reason="Improvements to this coming when CLI is merged")
     def test_simulate_workers_set_to_none(self):
         scene = make_test_scene()
         results = scene.simulate(RAYS, workers=None)
@@ -180,5 +181,3 @@ class TestScene:
         r1 = scene.simulate(1)
         r2 = scene.simulate(1)
         assert r1 != r2, "Simulation should not be identical"
-
-

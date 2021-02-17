@@ -42,8 +42,7 @@ class Scene(object):
         self.root = root
 
     def finalise_nodes(self):
-        """ Update bounding boxes of node hierarchy in preparation for tracing.
-        """
+        """Update bounding boxes of node hierarchy in preparation for tracing."""
         root = self.root
         if root is not None:
 
@@ -85,10 +84,10 @@ class Scene(object):
         return found_nodes
 
     def emit(self, num_rays):
-        """ Rays are emitted in the coordinate system of the world node.
-        
-            Internally the scene cycles through Light nodes, asks them to emit
-            a ray and the converts the ray to the world coordinate system.
+        """Rays are emitted in the coordinate system of the world node.
+
+        Internally the scene cycles through Light nodes, asks them to emit
+        a ray and the converts the ray to the world coordinate system.
         """
         world = self.root
         lights = self.light_nodes
@@ -151,7 +150,8 @@ class Scene(object):
         num_rays: int
             The total number of rays to throw
         workers: int or None
-            The number of sub-processes to use for raytracing. None will set to maximum value.
+            The number of sub-processes to use for raytracing. None will set
+            to half the number of available CPUs.
         seed: int or None
             Only to be used for debugging to get reproducible ray sequence.
 
@@ -162,18 +162,36 @@ class Scene(object):
 
         Discussion
         ----------
-        This method automatically re-seeds the random number generator in each process
-        to ensure the same rays are not generated.
+        This method automatically re-seeds the random number generator in each
+        process to ensure the same rays are not generated.
 
-        For debugging purposes generating the same ray sequence is useful. This can be
-        done by setting the value of `seed`::
+        For debugging purposes generating the same ray sequence is useful.
+        This can be done by setting the value of `seed`::
 
             scene.simulate(100, workers=1, seed=0)
 
         You must also set workers to one during debugging.
+
+        Notes
+        -----
+        Scaling with multiprocesses can vary a lot depending the settings in
+        the environment. For full discussion see,
+
+            https://github.com/danieljfarrell/pvtrace/pull/48
+
+        If you are experiencing very poor scaling when using multiple workers,
+        for now at least, you will need to create a development environment
+        and experiment with reducing the number of Numpy threads using the
+        instructions in the link above.
+
+        Rule of thumb: scaling is n=1 linear when using cpu_count/4 and then
+        becomes n~0.3-0.5 as more workers are added. The total computation time
+        should alway reduce as new workers are added -- up to the limit of
+        core available on the system!
         """
         if workers is None:
-            workers = multiprocessing.cpu_count()
+            # Testing has shown this actually has better
+            workers = multiprocessing.cpu_count() // 2
 
         if workers == 1:
             return do_simulation(self, num_rays, seed)
@@ -183,7 +201,7 @@ class Scene(object):
             return do_simulation(self, num_rays, seed)
 
         if seed is None:
-            seeds = np.random.randint(0, 2 ** 32 - 1, workers)
+            seeds = np.random.randint(0, 2 ** 31 - 1, workers)
         else:
             raise ValueError(
                 "Seed must be None to ensure different quasi-random sequences in each process"
