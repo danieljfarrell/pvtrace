@@ -38,8 +38,8 @@ On MacOS *pvtrace* can be installed easily using [pyenv](https://github.com/pyen
 
 Next, create a clean virtual environment for pvtrace
 
-    pyenv install 3.7.8
-    pyenv virtualenv 3.7.8 pvtrace-env
+    pyenv install 3.8.7
+    pyenv virtualenv 3.8.7 pvtrace-env
     pyenv activate pvtrace-env
     pip install pvtrace
 
@@ -47,7 +47,7 @@ Next, create a clean virtual environment for pvtrace
 
 On Linux and Windows you must use conda to create the python environment. Optionally you can also use this method on MacOS too if you prefer conda over pyenv.
 
-    conda create --name pvtrace-env python=3.7.8
+    conda create --name pvtrace-env python=3.8
     conda activate pvtrace-env
     conda install Rtree
     pip install pvtrace
@@ -278,9 +278,9 @@ You can get in contact with me directly at dan@excitonlabs.com or raise an issue
 
 Basic environment requires the following packages which will be installed with `pip` automatically
 
-* python >= 3.7.2
+* python >= 3.7.2 and < 3.9
 * numpy
 * pandas
 * trimesh[easy]
-* meshcat >= 0.0.16
+* meshcat >= 0.1.1
 * anytree
