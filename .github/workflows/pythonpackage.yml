@@ -6,6 +6,7 @@ on:
       - master
       - develop
       - feature/*
+      - release/*
   pull_request:
     branches:
       - "*"
@@ -15,7 +16,7 @@ jobs:
     name: Conda ${{ matrix.python-version }} - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
         python-version: ["3.7", "3.8"]
