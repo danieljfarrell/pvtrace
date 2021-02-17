@@ -1,5 +1,5 @@
 anytree
-meshcat>=0.0.16
+meshcat>=0.1.1
 numpy
 pandas
 trimesh[easy]
