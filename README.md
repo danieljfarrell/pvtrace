@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.592982.svg)](https://doi.org/10.5281/zenodo.592982)
+
 ![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/logo.png)
 
 > Optical ray tracing for luminescent materials and spectral converter photovoltaic devices
