@@ -101,15 +101,15 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         # file.
         component_keys = []
         if "components" in spec:
-            component_keys = spec["components"]
+            component_keys = spec.pop("components")  # Remove PvTrace specific attribute to pass spec to Material init()
 
         for k in component_keys:
             if not (k in component_map):
                 raise ValueError(f"Missing {k} component")
 
-        refractive_index = spec["refractive-index"]
+        refractive_index = spec.pop("refractive-index")  # As per components
         components = [component_map[k] for k in component_keys]
-        material = Material(refractive_index=refractive_index, components=components)
+        material = Material(refractive_index=refractive_index, components=components, **spec)
         return material
 
     def parse_box(spec, component_map):
@@ -478,12 +478,14 @@ if __name__ == "__main__":
 
     def load_hello_world_scene():
         scene_spec = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "hello_world.yml"
+            os.path.dirname(os.path.realpath(__file__)), "hello_world_custom_appearances.yml"
         )
         return parse(scene_spec)
 
-    renderer = MeshcatRenderer(
-        zmq_url="tcp://127.0.0.1:6000", open_browser=True, wireframe=True
+    renderer = MeshcatRenderer(open_browser=True, wireframe=True
     )
-    renderer.render(load_hello_world_scene())
-    IPython.embed()
+    scene = load_hello_world_scene()
+    renderer.render(scene)
+    input()
+    # IPython.embed()
+

@@ -29,10 +29,10 @@ class MeshcatRenderer(object):
         zmq_url=None,
         max_histories=10,
         open_browser=False,
-        wireframe=False,
-        transparency=True,
-        opacity=0.5,
-        reflectivity=1.0,
+        wireframe: bool = None,
+        transparency: bool = True,
+        opacity: float = 0.5,
+        reflectivity: float = 1.0,
     ):
         super(MeshcatRenderer, self).__init__()
         self.vis = meshcat.Visualizer(zmq_url=zmq_url)
@@ -41,6 +41,8 @@ class MeshcatRenderer(object):
         self.ray_histories = deque(maxlen=max_histories)
         self.max_histories = max_histories
         self.added_index = 0
+
+        # If set these properties will overwrite any material-level attribute
         self.wireframe = wireframe
         self.transparency = transparency
         self.opacity = opacity
@@ -67,11 +69,15 @@ class MeshcatRenderer(object):
 
     def add_geometry(self, geometry, pathname, transform):
         vis = self.vis
-        material = g.MeshBasicMaterial(
-            reflectivity=self.reflectivity, sides=0, wireframe=self.wireframe
-        )
-        material.transparency = self.transparency
-        material.opacity = self.opacity
+        material = geometry.material
+        if self.wireframe is not None:
+            material.wireframe = self.wireframe
+        if self.transparency is not None:
+            material.transparency = self.transparency
+        if self.opacity is not None:
+            material.opacity = self.opacity
+        if self.reflectivity is not None:
+            material.reflectivity = self.reflectivity
 
         if isinstance(geometry, Sphere):
             sphere = geometry

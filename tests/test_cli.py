@@ -24,6 +24,7 @@ LSC_EXAMPLE_YML = os.path.abspath(os.path.join(HERE, "data", "lsc_scene.yml"))
 from tests.data.lsc_scene import scene as py_lsc_scene, green_laser as py_light_node
 
 HELLO_WORLD_YML = os.path.abspath(os.path.join(EXAMPLES, "hello_world.yml"))
+HELLO_WORLD_YML_CUSTOM_APPEARANCES = os.path.abspath(os.path.join(EXAMPLES, "hello_world_custom_appearances.yml"))
 
 
 @pytest.fixture(scope="session")
@@ -71,6 +72,10 @@ def test_parse_full_example_yml():
 
 def test_parse_hello_world_yml():
     assert isinstance(parse(HELLO_WORLD_YML), Scene)
+
+
+def test_parse_hello_world_yml_custom_appearances():
+    assert isinstance(parse(HELLO_WORLD_YML_CUSTOM_APPEARANCES), Scene)
 
 
 def test_equality_by_tracing():

@@ -390,14 +390,34 @@
             "type": "object",
             "properties": {
                 "refractive-index": {
-                    "type": "number",
-                    "minimum": 1
+                    "type": "number"
                 },
                 "components": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
+                },
+                "color": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 16777215
+                },
+                "reflectivity": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                },
+                "transparent": {
+                    "type": "boolean"
+                },
+                "opacity": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                },
+                "visible": {
+                    "type": "boolean"
                 }
             },
             "required": [
