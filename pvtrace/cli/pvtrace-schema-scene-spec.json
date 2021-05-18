@@ -390,7 +390,8 @@
             "type": "object",
             "properties": {
                 "refractive-index": {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": 1
                 },
                 "components": {
                     "type": "array",

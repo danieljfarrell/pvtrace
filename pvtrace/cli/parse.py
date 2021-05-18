@@ -478,14 +478,12 @@ if __name__ == "__main__":
 
     def load_hello_world_scene():
         scene_spec = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "hello_world_custom_appearances.yml"
+            os.path.dirname(os.path.realpath(__file__)), "hello_world.yml"
         )
         return parse(scene_spec)
 
-    renderer = MeshcatRenderer(open_browser=True, wireframe=True
+    renderer = MeshcatRenderer(
+        zmq_url="tcp://127.0.0.1:6000", open_browser=True, wireframe=True
     )
-    scene = load_hello_world_scene()
-    renderer.render(scene)
-    input()
-    # IPython.embed()
-
+    renderer.render(load_hello_world_scene())
+    IPython.embed()
