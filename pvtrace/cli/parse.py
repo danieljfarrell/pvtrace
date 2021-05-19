@@ -99,7 +99,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         # Check that the declared components on the material have
         # actually been defined in the components section of the
         # file.
-        component_keys = spec.get("components", [])
+        component_keys = spec.get("component", [])
 
         for k in component_keys:
             if not (k in component_map):
