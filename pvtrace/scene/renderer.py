@@ -42,7 +42,7 @@ class MeshcatRenderer(object):
         self.max_histories = max_histories
         self.added_index = 0
 
-        # If set these properties will overwrite any material-level attribute
+        # If set these properties will overwrite any node-level attribute
         self.wireframe = wireframe
         self.transparency = transparency
         self.opacity = opacity
