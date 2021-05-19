@@ -99,17 +99,15 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         # Check that the declared components on the material have
         # actually been defined in the components section of the
         # file.
-        component_keys = []
-        if "components" in spec:
-            component_keys = spec.pop("components")  # Remove PvTrace specific attribute to pass spec to Material init()
+        component_keys = spec.get("components", [])
 
         for k in component_keys:
             if not (k in component_map):
                 raise ValueError(f"Missing {k} component")
 
-        refractive_index = spec.pop("refractive-index")  # As per components
+        refractive_index = spec["refractive-index"]
         components = [component_map[k] for k in component_keys]
-        material = Material(refractive_index=refractive_index, components=components, **spec)
+        material = Material(refractive_index=refractive_index, components=components)
         return material
 
     def parse_box(spec, component_map):
@@ -404,16 +402,17 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             "cylinder": parse_cylinder,
             "mesh": parse_mesh,
         }
+        appearance = spec.get("appearance", dict())
         for geometry_type in geometry_types:
             if geometry_type in spec:
                 geometry = geometry_mapper[geometry_type](
                     spec[geometry_type], component_map=component_map
                 )
-                return Node(geometry=geometry, name=name)
+                return Node(geometry=geometry, name=name, appearance=appearance)
 
         if "light" in spec:
             light = parse_light(spec["light"], name=name)
-            return Node(light=light, name=name)
+            return Node(light=light, name=name, appearance=appearance)
 
         raise ValueError()
 

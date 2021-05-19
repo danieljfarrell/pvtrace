@@ -25,10 +25,7 @@ class Node(NodeMixin, Transformable):
         self.parent = parent
         self.geometry = geometry
         self.light = light
-        if appearance:
-            self.appearance = appearance
-        else:
-            self.appearance = dict()
+        self.appearance = appearance if appearance else dict()
 
     def __repr__(self):
         return "Node({})".format(self.name)
