@@ -13,7 +13,7 @@ nodes:
       radius: 1.0
       material:
         refractive-index: 1.5
-        component: ["my-lumogen-dye"]
+        component: ["my-lumogen-dye", "my-absorber"]
 
   green-laser:
     location: [0, 0, 0]
@@ -44,3 +44,7 @@ components:
             min: 500
             max: 1000
             spacing: 2
+  my-absorber:
+    absorber:
+      coefficient: 1
+      hist: true
