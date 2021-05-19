@@ -384,7 +384,6 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         raise ValueError("Unexpected luminophore format.")
 
     def parse_component(spec, name):
-        print(spec)
         if "absorber" in spec:
             return parse_absorber(spec["absorber"], name)
         elif "scatterer" in spec:
