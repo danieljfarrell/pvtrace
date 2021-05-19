@@ -62,22 +62,29 @@ class MeshcatRenderer(object):
         # you would get that behaviour.
         pathname = " | ".join([x.name for x in node.path])
         if node.geometry is not None:
+            # TODO: add common material properties (color etc) and meshcat specific ones, if present.
+            # e.g.
+            if "color" in node.appearance:
+                ...
+
+            if "meshcat" in node.appearance:
+                meshcat_properties = node.appearance["meshcat"]
+            else:
+                meshcat_properties = dict()
+            # Preparing material
+            material = g.MeshBasicMaterial(
+                reflectivity=self.reflectivity, sides=0, wireframe=self.wireframe, **meshcat_properties
+            )
+            material.transparency = self.transparency
+            material.opacity = self.opacity
+
             # Transforming everything to global
             self.add_geometry(
-                node.geometry, pathname, node.transformation_to(node.root)
+                node.geometry, pathname, node.transformation_to(node.root), material
             )
 
-    def add_geometry(self, geometry, pathname, transform):
+    def add_geometry(self, geometry, pathname, transform, material):
         vis = self.vis
-        material = geometry.material
-        if self.wireframe is not None:
-            material.wireframe = self.wireframe
-        if self.transparency is not None:
-            material.transparency = self.transparency
-        if self.opacity is not None:
-            material.opacity = self.opacity
-        if self.reflectivity is not None:
-            material.reflectivity = self.reflectivity
 
         if isinstance(geometry, Sphere):
             sphere = geometry

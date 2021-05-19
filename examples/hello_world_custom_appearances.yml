@@ -12,12 +12,12 @@ nodes:
     sphere:
       radius: 1.0
       material:
-        color: 0x00ff00
-        reflectivity: 0
-        transparent: True
-        opacity: 0.5
-        visible: True
         refractive-index: 1.5
+    appearance:
+      color: 0x00ff00
+      visible: True
+      meshcat:
+        opacity: 0.5
 
   green-laser:
     location: [0, 0, 0]

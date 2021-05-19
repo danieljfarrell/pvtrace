@@ -2,19 +2,17 @@ from typing import Tuple
 import numpy as np
 from pvtrace.material.component import Component
 from pvtrace.material.surface import Surface
-import meshcat.geometry as g
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-class Material(g.MeshBasicMaterial):
+class Material:
     """
     Material representation. This include the PvTrace-specific properties (refractive index, absorption components) as
     well as the visualization properties used to visualize the object from the meshcat.geometry MeshBasicMaterial class.
     """
-    def __init__(self, refractive_index: float, surface=None, components=None, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, refractive_index: float, surface=None, components=None):
         self.refractive_index = refractive_index
         self.surface = Surface() if surface is None else surface
         self.components = [] if components is None else components

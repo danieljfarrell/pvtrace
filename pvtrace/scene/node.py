@@ -18,13 +18,17 @@ class Node(NodeMixin, Transformable):
     """
 
     def __init__(
-        self, name=None, parent=None, location=None, geometry=None, light=None
+        self, name=None, parent=None, location=None, geometry=None, light=None, appearance=None
     ):
         super(Node, self).__init__(location=location)
         self.name = name
         self.parent = parent
         self.geometry = geometry
         self.light = light
+        if appearance:
+            self.appearance = appearance
+        else:
+            self.appearance = dict()
 
     def __repr__(self):
         return "Node({})".format(self.name)
