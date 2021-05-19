@@ -219,7 +219,8 @@
                 "meshcat": {
                     "$ref": "#/definitions/meshcat"
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "meshcat": {
             "id": "#/definitions/meshcat",
