@@ -78,6 +78,9 @@
                 "light": {
                     "$ref": "#/definitions/light"
                 },
+                "appearance": {
+                    "$ref": "#/definitions/appearance"
+                },
                 "location": {
                     "type": "array",
                     "items": {
@@ -202,6 +205,49 @@
                     "$ref": "#/definitions/mask"
                 }
             }
+        },
+        "appearance": {
+            "id": "#/definitions/appearance",
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "integer"
+                },
+                "visible": {
+                    "type": "boolean"
+                },
+                "meshcat": {
+                    "$ref": "#/definitions/meshcat"
+                }
+            }
+        },
+        "meshcat": {
+            "id": "#/definitions/meshcat",
+            "type": "object",
+            "properties": {
+                "opacity": {
+                    "type": "number"
+                },
+                "wireframe": {
+                    "type": "boolean"
+                },
+                "reflectivity": {
+                    "type": "number"
+                },
+                "side": {
+                    "type": "integer"
+                },
+                "linewidth": {
+                    "type": "number"
+                },
+                "wireframeLinewidth": {
+                    "type": "number"
+                },
+                "vertexColors": {
+                    "type": "number"
+                }
+            },
+            "additionalProperties": true
         },
         "mask": {
             "id": "#/definitions/mask",
