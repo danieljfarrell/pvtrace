@@ -8,10 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class Material:
-    """
-    Material representation. This include the PvTrace-specific properties (refractive index, absorption components) as
-    well as the visualization properties used to visualize the object from the meshcat.geometry MeshBasicMaterial class.
-    """
     def __init__(self, refractive_index: float, surface=None, components=None):
         self.refractive_index = refractive_index
         self.surface = Surface() if surface is None else surface
