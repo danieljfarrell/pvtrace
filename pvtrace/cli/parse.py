@@ -362,7 +362,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
                 name=name,
                 hist=hist,
             )
-        elif absorption_spectrum:
+        elif absorption_spectrum is not None:
             return Luminophore(
                 absorption_spectrum,
                 emission=emission_spectrum,
