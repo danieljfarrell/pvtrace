@@ -38,7 +38,7 @@ class Node(NodeMixin, Transformable):
         The "face" of the node is defined to be direction [0, 0, 1]. This method
         with always point the face of the node along the direction vector
         specified. Note that the if the node is displaced from the origin this
-        will be respected and the node will be rotate around it's centre.
+        will be respected and the node will be rotate around its centre.
 
         References
         ----------
