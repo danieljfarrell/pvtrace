@@ -233,11 +233,14 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             filename = os.path.abspath(os.path.join(working_directory, filename))
             print(f"Reading {filename}")
 
-        df = pandas.read_csv(
-            filename,
-            usecols=[0, 1, 2],
-            index_col=0,
-        )
+        try:
+            df = pandas.read_csv(
+                filename,
+                usecols=[0, 1, 2],
+                index_col=0,
+            )
+        except FileNotFoundError as e:
+            raise AppError(f"Cannot find file {filename}!") from e
         # like numpy.column_stack((x, y))
         spectrum = df.iloc[:, 0:2].values
         return spectrum
