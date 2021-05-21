@@ -460,7 +460,6 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
         direction = coordsys.get("direction", None)
         if direction:
-            print(f"Using direction {direction} for node {node}")
             node.look_at(direction)
 
     return Scene(nodes["world"])
