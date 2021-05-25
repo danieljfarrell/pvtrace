@@ -405,7 +405,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             "cylinder": parse_cylinder,
             "mesh": parse_mesh,
         }
-        appearance = spec.get("appearance", dict())
+        appearance = spec.get("appearance", {})
         for geometry_type in geometry_types:
             if geometry_type in spec:
                 geometry = geometry_mapper[geometry_type](
