@@ -24,6 +24,8 @@ setup(
     entry_points={"console_scripts": ["pvtrace-cli=pvtrace.cli.main:main"]},
     python_requires=">=3.7.2,<3.8",
     packages=find_packages(),
+    package_data={"": ["*.json"]},
+    include_package_data=True,
     keywords=["optics", "raytracing", "photovoltaics", "energy"],
     install_requires=["numpy", "pandas", "anytree", "meshcat>=0.0.16", "trimesh[easy]"],
     classifiers=[
