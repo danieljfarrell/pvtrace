@@ -27,7 +27,7 @@ setup(
     package_data={"": ["*.json", "schema.sql"]},
     include_package_data=True,
     keywords=["optics", "raytracing", "photovoltaics", "energy"],
-    install_requires=["numpy", "pandas", "anytree", "meshcat>=0.0.16", "trimesh[easy]"],
+    install_requires=["numpy", "pandas", "anytree", "meshcat>=0.0.16", "trimesh[easy]", "typer", "asciiplotlib"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
