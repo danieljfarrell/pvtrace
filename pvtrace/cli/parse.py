@@ -13,7 +13,7 @@ import os
 import trimesh
 import numpy as np
 import pvtrace
-from typing import Callable, Tuple, List, Dict, Optional
+from typing import Callable, Tuple, List, Dict, Optional, Union
 from pvtrace.common.errors import AppError
 from pvtrace import (
     Scene,
@@ -71,7 +71,7 @@ def load_spec(filename):
         return spec
 
 
-def parse(filename: str) -> Scene:
+def parse(filename: Union[str, bytes, os.PathLike]) -> Scene:
     schema = load_schema()
     spec = load_spec(filename)
     jsonschema.validate(spec, schema=schema)
