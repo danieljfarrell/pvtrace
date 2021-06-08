@@ -258,7 +258,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         if coefficient and (spectrum is not None):
             spectrum[:, 1] = spectrum[:, 1] / numpy.max(spectrum[:, 1]) * coefficient
             return Absorber(spectrum, name=name, hist=hist)
-        elif spectrum:
+        elif spectrum is not None:
             return Absorber(spectrum, name=name, hist=hist)
         elif coefficient:
             return Absorber(coefficient, name=name)
@@ -297,7 +297,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
                 name=name,
                 hist=hist,
             )
-        elif spectrum:
+        elif spectrum is not None:
             return Scatterer(
                 spectrum,
                 quantum_yield=quantum_yield,
