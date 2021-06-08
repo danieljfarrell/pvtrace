@@ -29,10 +29,10 @@ class MeshcatRenderer(object):
         zmq_url=None,
         max_histories=10,
         open_browser=False,
-        wireframe: bool = None,
-        transparency: bool = True,
-        opacity: float = 0.5,
-        reflectivity: float = 1.0,
+        wireframe=False,
+        transparency=True,
+        opacity=0.5,
+        reflectivity=1.0,
     ):
         super(MeshcatRenderer, self).__init__()
         self.vis = meshcat.Visualizer(zmq_url=zmq_url)

@@ -16,13 +16,13 @@ def make_hello_world_scene():
     )
     ball_lens = Node(
         name="ball-lens",
+        location=(0,0,2),
         geometry=Sphere(
             radius=1.0,
             material=Material(refractive_index=1.5),
         ),
         parent=world,
     )
-    ball_lens.location = (0, 0, 2)
 
     green_laser = Node(
         name="green-laser",

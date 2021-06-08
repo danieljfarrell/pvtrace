@@ -14,6 +14,7 @@ import trimesh
 import numpy as np
 import pvtrace
 from typing import Callable, Tuple, List, Dict, Optional
+from pvtrace.common.errors import AppError
 from pvtrace import (
     Scene,
     Box,
@@ -232,11 +233,14 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             filename = os.path.abspath(os.path.join(working_directory, filename))
             print(f"Reading {filename}")
 
-        df = pandas.read_csv(
-            filename,
-            usecols=[0, 1, 2],
-            index_col=0,
-        )
+        try:
+            df = pandas.read_csv(
+                filename,
+                usecols=[0, 1, 2],
+                index_col=0,
+            )
+        except FileNotFoundError as e:
+            raise AppError(f"Cannot find file {filename}!") from e
         # like numpy.column_stack((x, y))
         spectrum = df.iloc[:, 0:2].values
         return spectrum
@@ -362,7 +366,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
                 name=name,
                 hist=hist,
             )
-        elif absorption_spectrum:
+        elif absorption_spectrum is not None:
             return Luminophore(
                 absorption_spectrum,
                 emission=emission_spectrum,
@@ -401,7 +405,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             "cylinder": parse_cylinder,
             "mesh": parse_mesh,
         }
-        appearance = spec.get("appearance", dict())
+        appearance = spec.get("appearance", {})
         for geometry_type in geometry_types:
             if geometry_type in spec:
                 geometry = geometry_mapper[geometry_type](
@@ -456,7 +460,6 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
         direction = coordsys.get("direction", None)
         if direction:
-            print(f"Using direction {direction} for node {node}")
             node.look_at(direction)
 
     return Scene(nodes["world"])
