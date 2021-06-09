@@ -57,7 +57,6 @@ SPECTRUM_MODULES = {"lumogen-f-red-305": lumogen_f_red_305, "fluro-red": fluro_r
 
 
 def load_schema():
-    print(SCHEMA)
     with open(SCHEMA, "r") as fp:
         schema = json.load(fp)
         jsonschema.Draft7Validator.check_schema(schema)
