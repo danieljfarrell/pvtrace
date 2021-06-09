@@ -23,7 +23,7 @@ class Cylinder(Geometry):
         return self._material
 
     @material.setter
-    def set_material(self, new_value):
+    def material(self, new_value):
         self._material = new_value
 
     def is_on_surface(self, point):
