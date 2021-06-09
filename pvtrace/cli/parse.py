@@ -3,7 +3,6 @@ Parses the pvtrace-scene.yml file and generates Python objects.
 """
 
 from pvtrace.material.distribution import Distribution
-from pvtrace.material.component import Luminophore, Scatterer
 import jsonschema
 import yaml
 import json
@@ -26,6 +25,7 @@ from pvtrace import (
     Absorber,
     Scatterer,
     Luminophore,
+    Reactor,
     Light,
     MeshcatRenderer,
 )
@@ -268,6 +268,30 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
         raise ValueError("Unexpected absorber format.")
 
+    def parse_reactor(spec, name):
+
+        coefficient = None
+        if "coefficient" in spec:
+            coefficient = spec["coefficient"]
+
+        hist = False
+        if "hist" in spec:
+            hist = spec["hist"]
+
+        spectrum = None
+        if "spectrum" in spec:
+            spectrum = parse_spectrum(spec["spectrum"], named_type="absorption")
+
+        if coefficient and (spectrum is not None):
+            spectrum[:, 1] = spectrum[:, 1] / numpy.max(spectrum[:, 1]) * coefficient
+            return Reactor(spectrum, name=name, hist=hist)
+        elif spectrum is not None:
+            return Reactor(spectrum, name=name, hist=hist)
+        elif coefficient:
+            return Reactor(coefficient, name=name)
+
+        raise ValueError("Unexpected absorber format.")
+
     def parse_phase_function(spec):
         return parse_direction_mask(spec)
 
@@ -393,6 +417,8 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             return parse_scatterer(spec["scatterer"], name)
         elif "luminophore" in spec:
             return parse_luminophore(spec["luminophore"], name)
+        elif "reactor" in spec:
+            return parse_reactor(spec["reactor"], name)
         raise ValueError("Unknown component type")
 
     def parse_node(spec, name, component_map=None):

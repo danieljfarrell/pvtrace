@@ -465,6 +465,9 @@
                 "absorber": {
                     "$ref": "#/definitions/absorber"
                 },
+                "reactor": {
+                    "$ref": "#/definitions/reactor"
+                },
                 "builtin": {
                     "description": "Name of build in component",
                     "type": "string"
@@ -484,6 +487,11 @@
                 {
                     "required": [
                         "absorber"
+                    ]
+                },
+                {
+                    "required": [
+                        "reactor"
                     ]
                 }
             ],
@@ -565,6 +573,40 @@
             ]
         },
         "absorber": {
+            "type": "object",
+            "properties": {
+                "coefficient": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "hist": {
+                    "type": "boolean"
+                },
+                "spectrum": {
+                    "$ref": "#/definitions/spectrum"
+                }
+            },
+            "additionalProperties": false,
+            "anyOf": [
+                {
+                    "required": [
+                        "coefficient"
+                    ]
+                },
+                {
+                    "required": [
+                        "spectrum"
+                    ]
+                },
+                {
+                    "required": [
+                        "coefficient",
+                        "spectrum"
+                    ]
+                }
+            ]
+        },
+        "reactor": {
             "type": "object",
             "properties": {
                 "coefficient": {
