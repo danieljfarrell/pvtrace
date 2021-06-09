@@ -230,7 +230,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         # Get absolute path to the spectrum CSV
         if not os.path.isabs(filename):
             filename = os.path.abspath(os.path.join(working_directory, filename))
-            print(f"Reading {filename}")
+            # print(f"Reading {filename}")
 
         try:
             df = pandas.read_csv(
@@ -422,7 +422,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
     component_specs = spec.get("components", None)
     if "components" in spec:
         for k, v in component_specs.items():
-            print(f"component: {k}")
+            # print(f"component: {k}")
             component_map[k] = parse_component(component_specs[k], k)
 
     coordinate_systems = dict()
@@ -431,7 +431,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
     for k, v in node_specs.items():
 
         # YAML to node
-        print(f"node: {k}")
+        # print(f"node: {k}")
         nodes[k] = parse_node(v, k, component_map=component_map)
 
         # Capture additional information which can apply later
