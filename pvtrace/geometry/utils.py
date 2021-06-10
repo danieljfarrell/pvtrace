@@ -139,7 +139,7 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
         radius : float
             The radius of the cylinder
         ray_origin : tuple of float
-            The origin of the ray like, e.g. :math:`\left(0.0, 1.0, 2.0 \\right)`
+            The origin of the ray like, e.g. :math:`\\left(0.0, 1.0, 2.0 \\right)`
         ray_direction : tuple of float
             The direction **unit** vector of the ray like, e.g. :math:`(n_x, n_y, n_z)`.
         
@@ -165,12 +165,12 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
             x(t) \\
             y(t) \\
             z(t) \\ 
-            \end{bmatrix} = 
+            \\end{bmatrix} =
             \\begin{bmatrix}
             x_E + t x_D \\
             y_E + t y_D \\
             z_E + t z_D\\ 
-            \end{bmatrix}
+            \\end{bmatrix}
 
         The equation of cylinder aligned along the z direction is,
 
@@ -191,9 +191,9 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
 
         .. math::
         
-            t^2\left(x_D^2 + y_D^2\\right) + 
-            t \left(2 x_E x_D + 2 y_E y _D \\right) + 
-            \left( x_E^2 + y_E^2 - R^2 \\right) = 0
+            t^2\\left(x_D^2 + y_D^2\\right) +
+            t \\left(2 x_E x_D + 2 y_E y _D \\right) +
+            \\left( x_E^2 + y_E^2 - R^2 \\right) = 0
 
         which is a standard quadratic equation,
 
@@ -201,9 +201,9 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
             
             at^2 + bt + c = 0
 
-        Solution of this equation give two values :math:`\left( t_1, t_2 \\right)` which 
+        Solution of this equation give two values :math:`\\left( t_1, t_2 \\right)` which
         give the ray's distance to intersection points. To be ahead on the ray's path 
-        :math:`\left( t_1, t_2 \\right) >= 0` and to be real intersection points the 
+        :math:`\\left( t_1, t_2 \\right) >= 0` and to be real intersection points the
         values must be finite and have imaginary component of zero. 
 
         The intersection with the cylinder caps is found by intersecting the ray with 
@@ -212,7 +212,7 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
 
         .. math::
         
-            t = \\frac{(Q - P) \cdot n}{D \cdot n}
+            t = \\frac{(Q - P) \\cdot n}{D \\cdot n}
 
         where :math:`t` is the distance from the ray origin to the intersection point, 
         :math:`Q` is a point on the plane and :math:`n` the **outward** facing surface 
@@ -225,34 +225,34 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
 
             t_{\\text{bot}} = 
             \\frac{
-            \left(
+            \\left(
                 \\begin{bmatrix}
                 0 \\
                 0 \\
                 -0.5 L \\ 
-                \end{bmatrix} - 
+                \\end{bmatrix} -
             \\begin{bmatrix}
                 x_E \\
                 y_E \\
                 z_E \\ 
-            \end{bmatrix}
-            \\right) \cdot 
+            \\end{bmatrix}
+            \\right) \\cdot
             \\begin{bmatrix}
                 0 \\
                 0 \\
                 -1 \\ 
-            \end{bmatrix}
+            \\end{bmatrix}
             }{
             \\begin{bmatrix}
                 x_D \\
                 y_D \\
                 z_D \\ 
-            \end{bmatrix} \cdot
+            \\end{bmatrix} \\cdot
             \\begin{bmatrix}
                 0 \\
                 0 \\
                 -1 \\ 
-            \end{bmatrix}
+            \\end{bmatrix}
             }
 
         and for the top cap at :math:`z=L`,
@@ -260,34 +260,34 @@ def ray_z_cylinder(length, radius, ray_origin, ray_direction):
         .. math::
             t_{\\text{bot}} = 
             \\frac{
-            \left(
+            \\left(
                 \\begin{bmatrix}
                 0 \\
                 0 \\
                 0.5 L \\ 
-                \end{bmatrix} - 
+                \\end{bmatrix} -
             \\begin{bmatrix}
                 x_E \\
                 y_E \\
                 z_E \\ 
-            \end{bmatrix}
-            \\right) \cdot 
+            \\end{bmatrix}
+            \\right) \\cdot
             \\begin{bmatrix}
                 0 \\
                 0 \\
                 1 \\ 
-            \end{bmatrix}
+            \\end{bmatrix}
             }{
             \\begin{bmatrix}
                 x_D \\
                 y_D \\
                 z_D \\ 
-            \end{bmatrix} \cdot
+            \\end{bmatrix} \\cdot
             \\begin{bmatrix}
                 0 \\
                 0 \\
                 1 \\ 
-            \end{bmatrix}
+            \\end{bmatrix}
             }
     
 
@@ -376,7 +376,7 @@ def allinrange(x, x_range):
         x_range : tuple of float
             A tuple defining a range like (xmin, xmax)
     """
-    if isinstance(x, (int, float, np.float, np.int)):
+    if isinstance(x, (int, float)):
         x = np.array([x])
     return np.where(np.logical_or(x < x_range[0], x > x_range[1]))[0].size == 0
 
