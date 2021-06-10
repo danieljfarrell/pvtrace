@@ -36,12 +36,8 @@ jobs:
         shell: bash -l {0}
         run: |
           pip install .
-      - name: Test with pytest
+      - name: Test with pytest + Coverage
         shell: bash -l {0}
-        run: |
-          pip install pytest
-          pytest tests
-      - name: Generate coverage report
         run: |
           pip install pytest
           pip install pytest-cov
