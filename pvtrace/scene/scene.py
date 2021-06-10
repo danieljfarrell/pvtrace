@@ -97,7 +97,7 @@ class Scene(object):
         self.root = root
 
     def finalise_nodes(self):
-        """Update bounding boxes of node hierarchy in prepration for tracing."""
+        """Update bounding boxes of node hierarchy in preparation for tracing."""
         root = self.root
         if root is not None:
 
@@ -118,30 +118,25 @@ class Scene(object):
                         break
 
     @property
-    def light_nodes(self) -> Sequence[Light]:
+    def light_nodes(self) -> Sequence[Node]:
         """Returns all lights in the scene."""
-        root = self.root
-        found_nodes = []
-        for node in LevelOrderIter(root):
-            if isinstance(node.light, Light):
-                found_nodes.append(node)
-        return found_nodes
+        return [node for node in LevelOrderIter(self.root) if isinstance(node.light, Light)]
 
     @property
     def component_nodes(self) -> Sequence[Component]:
-        """Returns all lights in the scene."""
+        """Returns all the components present in the scene."""
         root = self.root
-        found_nodes = []
+        component = []
         for node in LevelOrderIter(root):
             if node.geometry:
                 if node.geometry.material:
-                    found_nodes.extend(node.geometry.material.components)
-        return found_nodes
+                    component.extend(node.geometry.material.components)
+        return component
 
-    def emit(self, num_rays):
+    def emit(self, num_rays: int):
         """Rays are emitted in the coordinate system of the world node.
 
-        Internally the scene cycles through Light nodes, askes them to emit
+        Internally the scene cycles through Light nodes, asks them to emit
         a ray and the converts the ray to the world coordinate system.
         """
         lights = self.light_nodes
