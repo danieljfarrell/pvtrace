@@ -50,3 +50,6 @@ from .material.utils import isotropic, henyey_greenstein, cone
 from .scene.node import Node
 from .scene.scene import Scene
 from .scene.renderer import MeshcatRenderer
+
+# cli
+from .cli.parse import parse

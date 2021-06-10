@@ -8,7 +8,7 @@ import time as pytime
 from pathlib import Path
 from typing import Optional
 from queue import Empty
-from pvtrace.cli.parse import parse
+from pvtrace import parse
 from pvtrace.light.event import Event
 from pvtrace.scene.renderer import MeshcatRenderer
 from pvtrace.cli import count, spectrum, time
