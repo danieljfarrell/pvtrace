@@ -238,6 +238,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             filename,
             usecols=[0, 1, 2],
             index_col=0,
+            dtype=np.float64
         )
         # like numpy.column_stack((x, y))
         spectrum = df.iloc[:, 0:2].values
