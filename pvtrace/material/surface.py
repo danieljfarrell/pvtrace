@@ -232,7 +232,7 @@ class Surface(BaseSurface):
         """ Returns `True` is the ray is reflected.
         """
         r = self.delegate.reflectivity(self, ray, geometry, container, adjacent)
-        if not isinstance(r, (int, float, np.float, np.int)):
+        if not isinstance(r, (int, float)):
             raise ValueError("Reflectivity must be a number.")
         if r == 0.0:
             return False

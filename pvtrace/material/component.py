@@ -107,7 +107,7 @@ class Scatterer(Component):
         self._coefficient = coefficient
         if coefficient is None:
             raise ValueError("Coefficient must be specified.")
-        elif isinstance(coefficient, (float, np.float)):
+        elif isinstance(coefficient, float):
             self._abs_dist = Distribution(x=None, y=coefficient, hist=hist)
         elif isinstance(coefficient, np.ndarray):
             self._abs_dist = Distribution(
