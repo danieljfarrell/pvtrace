@@ -22,7 +22,7 @@ setup(
         __version__
     ),
     entry_points={"console_scripts": ["pvtrace-cli=pvtrace.cli.main:main"]},
-    python_requires=">=3.7.2,<3.8",
+    python_requires=">=3.7.2,<3.10",
     packages=find_packages(),
     keywords=["optics", "raytracing", "photovoltaics", "energy"],
     install_requires=["numpy", "pandas", "anytree", "meshcat>=0.0.16", "trimesh[easy]"],
