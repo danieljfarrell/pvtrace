@@ -144,7 +144,7 @@ class CircularMask(object):
 
 
 class CubeMask(object):
-    """Helper object which generates rays uniformally inside a cube."""
+    """Helper object which generates rays uniformly inside a cube."""
 
     def __init__(self, x, y, z):
         self.x = x

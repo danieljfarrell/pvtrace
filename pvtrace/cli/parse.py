@@ -341,9 +341,11 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
             if "quantum-yield" in spec["emission"]:
                 quantum_yield = spec["emission"]["quantum-yield"]
 
-        absorption_spectrum = parse_spectrum(
-            spec["absorption"]["spectrum"], named_type="absorption"
-        )
+        absorption_spectrum = None
+        if "spectrum" in spec["absorption"]:
+            absorption_spectrum = parse_spectrum(
+                spec["absorption"]["spectrum"], named_type="absorption"
+            )
 
         emission_spectrum = parse_spectrum(
             spec["emission"]["spectrum"], named_type="emission"
@@ -366,7 +368,7 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
                 name=name,
                 hist=hist,
             )
-        elif absorption_spectrum:
+        elif absorption_spectrum is not None:
             return Luminophore(
                 absorption_spectrum,
                 emission=emission_spectrum,
