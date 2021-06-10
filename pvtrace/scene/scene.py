@@ -1,17 +1,13 @@
 from __future__ import annotations
-import multiprocessing
 import os
+from concurrent.futures import ProcessPoolExecutor
 from typing import Optional, Sequence, Tuple
 from anytree import PostOrderIter, LevelOrderIter
 from pvtrace.scene.node import Node
 from pvtrace.light.light import Light
 from pvtrace.light.event import Event
 from pvtrace.material.component import Component
-from pvtrace.geometry.utils import (
-    distance_between,
-    close_to_zero,
-    intersection_point_is_ahead,
-)
+from pvtrace.geometry.utils import intersection_point_is_ahead
 from pvtrace.algorithm import photon_tracer
 import numpy as np
 import logging
@@ -57,36 +53,6 @@ def is_end_ray(event, metadata):
         elif metadata["hit"] == metadata["container"] and event == Event.TRANSMIT:
             return True  # escaped node
     return False
-
-
-def do_simulation_add_to_queue(scene, num_rays, seed, queue, end_rays):
-    """Worker function for multiple processing puts results into queue."""
-    # Re-seed for this thread/process
-    if seed is not None:
-        np.random.seed(seed)
-
-    count = 0
-    pid = os.getpid()
-
-    # What is an "end ray"?
-    # Only record major ray events should as entering/reflecting from nodes
-    # or being absorbed by reactor or non-radiatively. This option speeds
-    # up raytracing and allows full ray statistics on surfaces to be known.
-    # However, the full ray history is lost. Re-absorption events, and
-    # internal proagation details inside nodes are lost. The only details
-    # that remain from internal propagation is the total path length travelled
-    # and the duration it took.
-
-    for idx, ray in enumerate(scene.emit(num_rays)):
-        count = count + 1
-        for info in photon_tracer.step_forward(scene, ray):
-            ray, event, metadata = info
-            if end_rays:
-                if is_end_ray(event, metadata):
-                    queue.put((pid, idx, ray, event, metadata))
-            else:
-                queue.put((pid, idx, ray, event, metadata))
-    return pid
 
 
 class Scene(object):
@@ -193,9 +159,7 @@ class Scene(object):
         self,
         num_rays: int,
         workers: Optional[int] = None,
-        seed: Optional[int] = None,
-        queue: Optional[multiprocessing.Queue] = None,
-        end_rays: Optional[bool] = False,
+        seed: Optional[int] = None
     ):
         """Concurrently emit rays from light sources and return results.
 
@@ -207,11 +171,6 @@ class Scene(object):
             The number of sub-processes to use for raytracing. None will set to maximum value.
         seed: (Optional) int
             Only to be used for debugging to get reproducible ray sequence.
-        queue: (Optional) multiprocessing.Queue
-            If queue is specified results are delivered to the queue _instead_ of returning
-            results at the end of the simulation. This helps with reducing memory usage.
-        end_rays: (Optional) bool
-            Default if False being that all events are sent to the queue.
 
         Returns
         -------
@@ -231,17 +190,11 @@ class Scene(object):
         You must also set workers to one during debugging.
         """
         if workers is None:
-            workers = max(1, multiprocessing.cpu_count() - 1)
-
-        if workers == 1:
-            if queue:
-                return do_simulation_add_to_queue(self, num_rays, seed, queue, end_rays)
-            return do_simulation(self, num_rays, seed)
+            workers = max(1, os.cpu_count() - 1)
 
         num_rays_per_worker = num_rays // workers
-        if num_rays_per_worker == 0:
-            if queue:
-                return do_simulation_add_to_queue(self, num_rays, seed, queue, end_rays)
+        # Single thread if workers=1 or less than 1 photons/workers
+        if workers == 1 or num_rays_per_worker == 0:
             return do_simulation(self, num_rays, seed)
 
         if num_rays_per_worker * workers < num_rays:
@@ -261,28 +214,14 @@ class Scene(object):
                 "Seed must be None to ensure different quasi-random sequences in each process"
             )
 
-        pool = multiprocessing.Pool(processes=workers)
-
-        # Results are send to queue
-        if queue:
-            results_proxy = [
-                pool.apply_async(
-                    do_simulation_add_to_queue,
-                    (self, rays[idx], seeds[idx], queue, end_rays),
-                )
-                for idx in range(workers)
-            ]
-            [result.get() for result in results_proxy]
-            return
-
-        # Results are processed directly and returned
-        results_proxy = [
-            pool.apply_async(do_simulation, (self, rays[idx], seeds[idx]))
-            for idx in range(workers)
-        ]
         results = []
-        for result in results_proxy:
-            histories = result.get()
-            for history in histories:
-                results.append(history)
+
+        with ProcessPoolExecutor(workers) as pool:
+            # ProcessPoolExecutor has an internal queue
+            results_proxy = pool.map(do_simulation, [self] * workers, rays, seeds)
+
+            for result in results_proxy:
+                for history in result:
+                    results.append(history)
+
         return results
