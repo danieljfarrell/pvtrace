@@ -52,10 +52,7 @@ class Distribution(object):
                 self._edges = np.insert(x, x.size, 2 * x[-1] - x[-2])
             else:
                 cdf = np.cumsum((y[:-1] + y[1:]) * 0.5)
-                try:
-                    cdf = cdf / np.max(cdf)
-                except FloatingPointError:
-                    breakpoint()
+                cdf = cdf / np.max(cdf)
                 cdf = np.hstack([0.0, cdf])
                 self._cdf = cdf
 
