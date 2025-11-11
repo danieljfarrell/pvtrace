@@ -155,7 +155,7 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
     while True:
         count += 1
         if count > maxsteps or ray.travelled > maxpathlength:
-            history.append([ray, Event.KILL])
+            history.append((ray, Event.KILL))
             break
 
         info = next_hit(scene, ray)
