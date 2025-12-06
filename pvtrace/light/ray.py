@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class Ray:
-    """ A ray of light. Has the physical attributes of position, direction and 
+    """ A ray of light. Has the physical attributes of position, direction, time and 
     wavelength.
     
     Attributes
@@ -27,6 +27,8 @@ class Ray:
         Total propagation distance. This gets updated when when calling `propagate`.
     source: float
         Identifier of the light source of luminophore that emitted the ray.
+    time: float
+        Total time since Event.GENERATE
     """
 
     position: tuple
@@ -35,15 +37,48 @@ class Ray:
     is_alive: bool = True
     travelled: float = 0.0
     source: Optional[str] = None
+    time: float = 0.0
 
     def __repr__(self):
         position = "(" + ", ".join(["{:.2f}".format(x) for x in self.position]) + ")"
         direction = "(" + ", ".join(["{:.2f}".format(x) for x in self.direction]) + ")"
         wavelength = "{:.2f}".format(self.wavelength)
+        time = "{:.2f}".format(self.time)
         is_alive = "True" if self.is_alive else "False"
-        args = (position, direction, wavelength, is_alive)
-        return "Ray(pos={}, dir={}, nm={}, alive={})".format(*args)
-
+        args = (position, direction, wavelength, is_alive, time)
+        return "Ray(pos={}, dir={}, nm={}, alive={}, time={})".format(*args)
+    
+    def add_time(self, val):
+        """ Returns a new ray with clock value incremented by 'val'
+        
+        Parameters
+        ----------
+        val : float
+            time to add
+        """
+        if not self.is_alive:
+            raise ValueError("Ray is not alive.")
+        new_time = self.time + val
+        new_ray = replace(
+            self, time=new_time
+        )
+        return new_ray
+        
+    def set_time(self, val):
+        """ Returns a new ray with clock value set to 'val'
+        
+        Parameters
+        ----------
+        val : float
+            time to set
+        """
+        if not self.is_alive:
+            raise ValueError("Ray is not alive.")
+        new_ray = replace(
+            self, time=val
+        )
+        return new_ray
+    
     def propagate(self, distance: float) -> Ray:
         """ Returns a new ray which has been moved the specified distance along
         its direction.

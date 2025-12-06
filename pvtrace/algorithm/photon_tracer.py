@@ -4,7 +4,7 @@ import traceback
 import collections
 import traceback
 import numpy as np
-from typing import Optional, Tuple, Sequence
+from typing import Optional, Tuple, Sequence, Callable
 from dataclasses import dataclass, replace
 from pvtrace.scene.scene import Scene
 from pvtrace.scene.node import Node
@@ -109,7 +109,9 @@ def next_hit(scene, ray):
     return hit_node, (container, adjacent), point, distance
 
 
-def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
+SPEED_OF_LIGHT = 1
+
+def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT", break_condition: Optional[Callable] = None):
     """ The main ray-tracing function. Provide a scene and a ray and get a full photon
         path history and list of events.
     
@@ -135,6 +137,24 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
 
             `'full'` option samples the full emission spectrum allowing the emitted
             ray to take any value.
+        break_condition: Optional[Callable]
+            Custom decision function that iterrupts ray tracing earlier by adding user-defined rules.
+            This could reduce computation time or serve any other goal.
+            
+            Recieves parameters:
+                ray: Ray
+                    A current Ray object that will be tracked to the next step
+                hit_node : Node
+                    The node corresponding to the geometry object that was hit.
+                interface : tuple of Node
+                    Two node: the `container` and the `adjacent` which correspond to the
+                        materials either side of the interface.
+                point: tuple of float
+                    The intersection point.
+                distance: float
+                    Distance to the intersection point.
+                
+            Returns boolean. If True, then ray tracing will be interrupted with Event.KILL
     
         Returns
         -------
@@ -154,8 +174,9 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
     history = [(ray, Event.GENERATE)]
     while True:
         count += 1
+        
         if count > maxsteps or ray.travelled > maxpathlength:
-            history.append([ray, Event.KILL])
+            history.append((ray, Event.KILL))
             break
 
         info = next_hit(scene, ray)
@@ -168,35 +189,61 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
             break
 
         material = container.geometry.material
+        refractive_index = material.refractive_index
         absorbed, at_distance = material.is_absorbed(ray, full_distance)
         if absorbed:
             ray = ray.propagate(at_distance)
+            ray = ray.add_time(refractive_index*at_distance/SPEED_OF_LIGHT)
+            time = ray.time
             component = material.component(ray.wavelength)
             if component.is_radiative(ray):
                 ray = component.emit(
                     ray.representation(scene.root, container), method=emit_method
                 )
                 ray = ray.representation(container, scene.root)
+                ray = ray.set_time(time)
                 if isinstance(component, Luminophore):
                     event = Event.EMIT
                 elif isinstance(component, Scatterer):
                     event = Event.SCATTER
-                history.append((ray, event))
+                else:
+                    raise ValueError('Only Luminophore and Scatterer allowed for radiative component')
+                    
+                if break_condition is not None and break_condition(ray, *info, event):
+                    history.append((ray, Event.KILL))
+                    break
+                else:
+                    history.append((ray, event))
+                    
                 continue
             else:
                 if isinstance(component, Reactor):
-                    history.append((ray, Event.REACT))
+                    event = Event.REACT
                 else:
-                    history.append((ray, Event.ABSORB))
+                    event = Event.ABSORB
+                
+                if break_condition is not None and break_condition(ray, *info, event):
+                    history.append((ray, Event.KILL))
+                    break
+                else:
+                    history.append((ray, event))
+                    
                 break
         else:
             ray = ray.propagate(full_distance)
+            ray = ray.add_time(refractive_index*full_distance/SPEED_OF_LIGHT)
             surface = hit.geometry.material.surface
             ray = ray.representation(scene.root, hit)
             if surface.is_reflected(ray, hit.geometry, container, adjacent):
                 ray = surface.reflect(ray, hit.geometry, container, adjacent)
                 ray = ray.representation(hit, scene.root)
-                history.append((ray, Event.REFLECT))
+                
+                if break_condition is not None and break_condition(ray, *info, Event.REFLECT):
+                    history.append((ray, Event.KILL))
+                    break
+                else:
+                    history.append((ray, Event.REFLECT))
+                
                 # print("REFLECT", ray)
                 continue
             else:
@@ -205,7 +252,11 @@ def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
                 #    raise ValueError("Ray did not refract.")
                 ray = ref_ray
                 ray = ray.representation(hit, scene.root)
-                history.append((ray, Event.TRANSMIT))
-                # print("TRANSMIT", ray)
+                
+                if break_condition is not None and break_condition(ray, *info, Event.TRANSMIT):
+                    history.append((ray, Event.KILL))
+                    break
+                else:
+                    history.append((ray, Event.TRANSMIT))
                 continue
     return history
