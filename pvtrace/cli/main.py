@@ -1,6 +1,5 @@
 import multiprocessing
 import threading
-from numpy.lib.function_base import append
 import typer
 import sqlite3
 import os
