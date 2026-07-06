@@ -10,12 +10,17 @@ callers can fall back to the Python tracer.
 import numpy as np
 from anytree import PreOrderIter
 
+from pvtrace.engine.recorder import EVENTS, PROPERTIES, Heatmap, Histogram, Recorder
 from pvtrace.geometry.box import Box
 from pvtrace.geometry.cylinder import Cylinder
 from pvtrace.geometry.sphere import Sphere
 from pvtrace.material.component import Absorber, Luminophore, Reactor, Scatterer
 from pvtrace.material.surface import FresnelSurfaceDelegate, NullSurfaceDelegate
 from pvtrace.material.utils import Cone, HenyeyGreenstein, isotropic
+
+# Volume interaction selectors cannot be restricted by surface facet
+VOLUME_EVENTS = {"lost", "reacted", "killed"}
+MAX_RECORDERS = 64  # distinct-ray tracking uses a 64-bit mask per ray
 
 # Geometry type tags
 GEOM_BOX = 0
@@ -124,6 +129,79 @@ class CompiledScene:
         self.abs_y = np.array(abs_y, dtype=np.float64)
         self.ems_x = np.array(ems_x, dtype=np.float64)
         self.ems_cdf = np.array(ems_cdf, dtype=np.float64)
+
+        self._compile_recorders(nodes)
+
+    def _compile_recorders(self, nodes):
+        recorders = []
+        for i, node in enumerate(nodes):
+            for recorder in getattr(node, "recorders", []):
+                if not isinstance(recorder, Recorder):
+                    raise UnsupportedSceneError(
+                        f"Node {node.name!r} recorders must be Recorder objects."
+                    )
+                if recorder.event in VOLUME_EVENTS and recorder.facet is not None:
+                    raise UnsupportedSceneError(
+                        f"Recorder {recorder.name!r}: facet filters only apply "
+                        "to surface events."
+                    )
+                recorders.append((i, recorder))
+        if len(recorders) > MAX_RECORDERS:
+            raise UnsupportedSceneError(
+                f"At most {MAX_RECORDERS} recorders are supported."
+            )
+        names = [rec.name for _, rec in recorders]
+        if len(set(names)) != len(names):
+            raise UnsupportedSceneError("Recorder names must be unique.")
+
+        n = len(recorders)
+        self.recorder_names = names
+        self.recorder_specs = [rec for _, rec in recorders]
+        self.rec_node = np.zeros(n, dtype=np.int32)
+        self.rec_event = np.zeros(n, dtype=np.int32)
+        self.rec_has_facet = np.zeros(n, dtype=np.int32)
+        self.rec_facet = np.zeros((max(n, 1), 3), dtype=np.float64)
+        self.rec_atol = np.zeros(n, dtype=np.float64)
+        self.rec_hist_start = np.zeros(n, dtype=np.int32)
+        self.rec_hist_n = np.zeros(n, dtype=np.int32)
+
+        h_rows = []
+        offset = 0
+        for r, (node_index, recorder) in enumerate(recorders):
+            self.rec_node[r] = node_index
+            self.rec_event[r] = EVENTS[recorder.event]
+            if recorder.facet is not None:
+                self.rec_has_facet[r] = 1
+                self.rec_facet[r] = recorder.facet
+            self.rec_atol[r] = recorder.atol
+            self.rec_hist_start[r] = len(h_rows)
+            for hist in recorder.histograms:
+                if isinstance(hist, Heatmap):
+                    a, b = hist.a, hist.b
+                    h_rows.append(
+                        [PROPERTIES[a.prop], PROPERTIES[b.prop], a.bins, b.bins,
+                         a.start, a.stop, b.start, b.stop, offset]
+                    )
+                    offset += a.bins * b.bins
+                else:
+                    h_rows.append(
+                        [PROPERTIES[hist.prop], -1, hist.bins, 1,
+                         hist.start, hist.stop, 0.0, 1.0, offset]
+                    )
+                    offset += hist.bins
+            self.rec_hist_n[r] = len(recorder.histograms)
+
+        rows = np.array(h_rows, dtype=np.float64) if h_rows else np.zeros((0, 9))
+        self.hist_prop_a = rows[:, 0].astype(np.int32)
+        self.hist_prop_b = rows[:, 1].astype(np.int32)
+        self.hist_na = rows[:, 2].astype(np.int32)
+        self.hist_nb = rows[:, 3].astype(np.int32)
+        self.hist_lo_a = rows[:, 4].copy()
+        self.hist_hi_a = rows[:, 5].copy()
+        self.hist_lo_b = rows[:, 6].copy()
+        self.hist_hi_b = rows[:, 7].copy()
+        self.hist_offset = rows[:, 8].astype(np.int32)
+        self.total_bins = offset
 
     # -- geometry ------------------------------------------------------
 

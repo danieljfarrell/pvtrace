@@ -113,7 +113,7 @@ def python_per_ray_counts(scene, num_rays, seed):
 
 
 def engine_per_ray_counts(result):
-    n, m = result.num_rays, result.max_events
+    n, m = result.num_recorded, result.max_events
     kinds = result.data["kind"].reshape(n, m)
     valid = np.arange(m)[None, :] < result.data["counts"][:, None]
     return {
@@ -158,7 +158,7 @@ def test_engine_matches_python_tracer_lsc():
 
     # Sanity: emitted wavelengths are red-shifted on average
     kinds = result.data["kind"]
-    n, m = result.num_rays, result.max_events
+    n, m = result.num_recorded, result.max_events
     valid = (np.arange(m)[None, :] < result.data["counts"][:, None]).ravel()
     emitted = result.data["wavelength"][(kinds == Event.EMIT.value) & valid]
     assert emitted.size > 0
@@ -188,6 +188,98 @@ def test_engine_histories_look_like_python_histories():
         assert event in (Event.EXIT, Event.NONRADIATIVE, Event.KILL, Event.REACT)
         if event == Event.EXIT:
             assert metadata["hit"] == "world"
+
+
+def attach_recorder(scene, node_name, recorder):
+    from anytree import PreOrderIter
+
+    for node in PreOrderIter(scene.root):
+        if node.name == node_name:
+            node.recorders.append(recorder)
+            return
+    raise ValueError(node_name)
+
+
+def test_recorders_match_event_log():
+    from pvtrace.engine import Heatmap, Histogram, Recorder
+
+    scene = make_lsc_scene()
+    attach_recorder(
+        scene, "slab",
+        Recorder("entering-slab", event="entering",
+                 histograms=[Histogram("wavelength", 400, 900, 50)]),
+    )
+    attach_recorder(
+        scene, "slab",
+        Recorder("top-escape", event="escaping", facet=(0, 0, 1),
+                 histograms=[Heatmap("x", "y", (-2.5, 2.5, 25), (-2.5, 2.5, 25))]),
+    )
+    attach_recorder(scene, "slab", Recorder("lost-in-slab", event="lost"))
+    attach_recorder(scene, "world", Recorder("world-exit", event="exit"))
+
+    result = engine.simulate(scene, 4000, seed=21, max_events=256)
+    recs = result.recorders
+
+    # Recompute the same distinct-ray tallies from the engine's own
+    # event log; recorders must agree exactly.
+    n_enter = n_escape_top = n_lost = n_exit = 0
+    for history in result.histories():
+        entered = escaped_top = lost_here = exited = False
+        for ray, event, meta in history:
+            if event == Event.TRANSMIT and meta["hit"] == "slab":
+                if meta["adjacent"] == "slab":
+                    entered = True
+                elif meta["container"] == "slab":
+                    normal = meta["normal"]
+                    if (abs(normal[0]) <= 1e-6 and abs(normal[1]) <= 1e-6
+                            and abs(normal[2] - 1.0) <= 1e-6):
+                        escaped_top = True
+            elif event == Event.NONRADIATIVE and meta["container"] == "slab":
+                lost_here = True
+            elif event == Event.EXIT:
+                exited = True
+        n_enter += entered
+        n_escape_top += escaped_top
+        n_lost += lost_here
+        n_exit += exited
+
+    assert recs["entering-slab"].rays == n_enter > 0
+    assert recs["top-escape"].rays == n_escape_top > 0
+    assert recs["lost-in-slab"].rays == n_lost > 0
+    assert recs["world-exit"].rays == n_exit > 0
+
+    # Histogram totals equal distinct counts when values are in range
+    edges, values = recs["entering-slab"].histogram(0)
+    assert values.sum() == n_enter
+    assert edges.size == 51
+    xe, ye, heat = recs["top-escape"].histogram(0)
+    assert heat.shape == (25, 25)
+    assert heat.sum() == n_escape_top
+
+    # The source is monochromatic so the entering mean is exact
+    assert recs["entering-slab"].mean("wavelength") == pytest.approx(555.0)
+    assert recs["entering-slab"].crossings >= recs["entering-slab"].rays
+
+
+def test_recorders_independent_of_history_sampling():
+    from pvtrace.engine import Recorder
+
+    scene = make_lsc_scene()
+    attach_recorder(scene, "slab", Recorder("entering", event="entering"))
+
+    full = engine.simulate(scene, 3000, seed=9, record_every=1, max_events=256)
+    sampled = engine.simulate(scene, 3000, seed=9, record_every=100)
+    none = engine.simulate(scene, 3000, seed=9, record_every=0)
+
+    assert (full.recorders["entering"].rays
+            == sampled.recorders["entering"].rays
+            == none.recorders["entering"].rays)
+    assert full.recorders["entering"].crossings == none.recorders["entering"].crossings
+    assert full.num_recorded == 3000
+    assert sampled.num_recorded == 30
+    assert none.num_recorded == 0
+    assert len(list(sampled.histories())) == 30
+    assert len(list(none.histories())) == 0
 
 
 def test_unsupported_scene_raises():

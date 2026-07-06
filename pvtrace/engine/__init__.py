@@ -18,13 +18,18 @@ from pvtrace.engine.compiler import (
     UnsupportedSceneError,
     compile_scene,
 )
-from pvtrace.engine.api import EngineResult, is_available, simulate
+from pvtrace.engine.recorder import Heatmap, Histogram, Recorder
+from pvtrace.engine.api import EngineResult, RecorderResult, is_available, simulate
 
 __all__ = [
     "CompiledScene",
     "UnsupportedSceneError",
     "compile_scene",
+    "Recorder",
+    "Histogram",
+    "Heatmap",
     "EngineResult",
+    "RecorderResult",
     "is_available",
     "simulate",
 ]

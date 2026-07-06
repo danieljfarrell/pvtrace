@@ -10,7 +10,7 @@ subset: same event sequence, same sampling distributions.
 """
 import numpy as np
 cimport numpy as cnp
-from cython.parallel import prange
+from cython.parallel import prange, threadid
 
 cnp.import_array()
 from libc.math cimport (
@@ -140,6 +140,44 @@ cdef struct SceneT:
     double* abs_y
     double* ems_x
     double* ems_cdf
+    # Recorders (tallies)
+    int n_recorders
+    int total_bins
+    int* rec_node
+    int* rec_event
+    int* rec_has_facet
+    double* rec_facet        # (n_recorders, 3)
+    double* rec_atol
+    int* rec_hist_start
+    int* rec_hist_n
+    int* h_prop_a
+    int* h_prop_b            # -1 for a 1D histogram
+    int* h_na
+    int* h_nb
+    double* h_lo_a
+    double* h_hi_a
+    double* h_lo_b
+    double* h_hi_b
+    int* h_offset
+
+
+# Recorder event selectors, must match pvtrace.engine.recorder.EVENTS
+cdef int REC_ENTERING = 0
+cdef int REC_ESCAPING = 1
+cdef int REC_REFLECTED = 2
+cdef int REC_LOST = 3
+cdef int REC_REACTED = 4
+cdef int REC_KILLED = 5
+cdef int REC_EXIT = 6
+
+
+cdef struct AccBase:
+    # Per-thread tally accumulators; thread `tid` owns the slice
+    # starting at tid * n_recorders (or tid * total_bins for bins).
+    long long* distinct
+    long long* cross
+    double* sums             # (threads, n_recorders, 4 moments, 2)
+    long long* bins          # (threads, total_bins)
 
 
 cdef struct EventLog:
@@ -438,6 +476,86 @@ cdef inline void sample_phase(int phase_type, double phase_param, RNG* rng, doub
 
 
 # ----------------------------------------------------------------------
+# Recorders (tallies)
+
+cdef inline double prop_value(int prop, double wavelength, double angle,
+                              double duration, double travelled,
+                              double* lpos) noexcept nogil:
+    """Value of a histogrammable ray property (ids match recorder.PROPERTIES)."""
+    if prop == 0:
+        return wavelength
+    elif prop == 1:
+        return angle
+    elif prop == 2:
+        return duration
+    elif prop == 3:
+        return travelled
+    elif prop == 4:
+        return lpos[0]
+    elif prop == 5:
+        return lpos[1]
+    return lpos[2]
+
+
+cdef inline void tally(SceneT* S, AccBase* AB, int tid, int sel, int node,
+                       unsigned long long* mask, double* wnormal,
+                       double* lpos, double angle, double wavelength,
+                       double travelled, double duration) noexcept nogil:
+    """Accumulate this interaction into matching recorders.
+
+    Counts, moments and histograms are per distinct ray (first matching
+    interaction only, tracked in `mask`); raw crossings are tallied
+    separately.
+    """
+    cdef long long* distinct = AB.distinct + tid * S.n_recorders
+    cdef long long* cross = AB.cross + tid * S.n_recorders
+    cdef double* sums = AB.sums + tid * S.n_recorders * 8
+    cdef long long* bins = AB.bins + tid * S.total_bins
+    cdef int r, h, ia, ib
+    cdef double va, vb
+    for r in range(S.n_recorders):
+        if S.rec_node[r] != node or S.rec_event[r] != sel:
+            continue
+        if S.rec_has_facet[r] != 0:
+            if wnormal == NULL:
+                continue
+            if fabs(S.rec_facet[r * 3] - wnormal[0]) > S.rec_atol[r]:
+                continue
+            if fabs(S.rec_facet[r * 3 + 1] - wnormal[1]) > S.rec_atol[r]:
+                continue
+            if fabs(S.rec_facet[r * 3 + 2] - wnormal[2]) > S.rec_atol[r]:
+                continue
+        cross[r] += 1
+        if mask[0] & (<unsigned long long>1 << r):
+            continue
+        mask[0] |= (<unsigned long long>1 << r)
+        distinct[r] += 1
+        sums[r * 8 + 0] += wavelength
+        sums[r * 8 + 1] += wavelength * wavelength
+        sums[r * 8 + 2] += angle
+        sums[r * 8 + 3] += angle * angle
+        sums[r * 8 + 4] += duration
+        sums[r * 8 + 5] += duration * duration
+        sums[r * 8 + 6] += travelled
+        sums[r * 8 + 7] += travelled * travelled
+        for h in range(S.rec_hist_start[r], S.rec_hist_start[r] + S.rec_hist_n[r]):
+            va = prop_value(S.h_prop_a[h], wavelength, angle, duration,
+                            travelled, lpos)
+            ia = <int>((va - S.h_lo_a[h]) / (S.h_hi_a[h] - S.h_lo_a[h]) * S.h_na[h])
+            if ia < 0 or ia >= S.h_na[h]:
+                continue
+            if S.h_prop_b[h] < 0:
+                bins[S.h_offset[h] + ia] += 1
+            else:
+                vb = prop_value(S.h_prop_b[h], wavelength, angle, duration,
+                                travelled, lpos)
+                ib = <int>((vb - S.h_lo_b[h]) / (S.h_hi_b[h] - S.h_lo_b[h]) * S.h_nb[h])
+                if ib < 0 or ib >= S.h_nb[h]:
+                    continue
+                bins[S.h_offset[h] + ia * S.h_nb[h] + ib] += 1
+
+
+# ----------------------------------------------------------------------
 # Event recording
 
 cdef inline void record(
@@ -459,7 +577,7 @@ cdef inline void record(
 ) noexcept nogil:
     cdef long row
     cdef int i
-    if count[0] >= elog.max_events:
+    if base < 0 or count[0] >= elog.max_events:
         return
     row = base + count[0]
     elog.kind[row] = <unsigned char>kind
@@ -485,6 +603,8 @@ cdef int trace_one(
     SceneT* S,
     EventLog* elog,
     long base,
+    AccBase* AB,
+    int tid,
     double* pos,
     double* direction,
     double wavelength,
@@ -498,6 +618,8 @@ cdef int trace_one(
     cdef double travelled = 0.0
     cdef double duration = 0.0
     cdef int source = -1
+    cdef unsigned long long rmask = 0
+    cdef int sel
 
     cdef double hit_t[MAX_HITS]
     cdef int hit_node[MAX_HITS]
@@ -532,7 +654,7 @@ cdef int trace_one(
 
         # Kill the ray when its event budget is exhausted rather than
         # silently dropping events (leave room for the KILL record).
-        if nevents >= elog.max_events - 1:
+        if base >= 0 and nevents >= elog.max_events - 1:
             record(elog, base, &nevents, EV_KILL, -1, -1, -1, -1, source,
                    pos, direction, NULL, wavelength, travelled, duration)
             break
@@ -591,6 +713,10 @@ cdef int trace_one(
         if count > maxsteps:
             record(elog, base, &nevents, EV_KILL, -1, container, -1, -1, source,
                    pos, direction, NULL, wavelength, travelled, duration)
+            if S.n_recorders > 0:
+                transform_point(S.w2l + container * 16, pos, local_p)
+                tally(S, AB, tid, REC_KILLED, container, &rmask, NULL,
+                      local_p, 0.0, wavelength, travelled, duration)
             break
 
         n_container = S.nidx[container]
@@ -603,6 +729,15 @@ cdef int trace_one(
             duration += t0 * n_container / C_CM_PER_S
             record(elog, base, &nevents, EV_EXIT, hit, container, adjacent, -1, source,
                    pos, direction, NULL, wavelength, travelled, duration)
+            if S.n_recorders > 0:
+                transform_point(S.w2l + hit * 16, pos, local_p)
+                local_normal(S, hit, local_p, nrm_local)
+                transform_vector(S.l2w + hit * 16, nrm_local, nrm)
+                ddot = fabs(dot3(nrm, direction))
+                if ddot > 1.0:
+                    ddot = 1.0
+                tally(S, AB, tid, REC_EXIT, hit, &rmask, nrm,
+                      local_p, acos(ddot), wavelength, travelled, duration)
             break
 
         # --- volume absorption ----------------------------------------
@@ -682,9 +817,15 @@ cdef int trace_one(
                 if ctype == COMP_REACTOR:
                     record(elog, base, &nevents, EV_REACT, -1, container, -1, comp, source,
                            pos, direction, NULL, wavelength, travelled, duration)
+                    sel = REC_REACTED
                 else:
                     record(elog, base, &nevents, EV_NONRADIATIVE, -1, container, -1, comp, source,
                            pos, direction, NULL, wavelength, travelled, duration)
+                    sel = REC_LOST
+                if S.n_recorders > 0:
+                    transform_point(S.w2l + container * 16, pos, local_p)
+                    tally(S, AB, tid, sel, container, &rmask, NULL,
+                          local_p, 0.0, wavelength, travelled, duration)
                 break
 
         # --- surface interaction --------------------------------------
@@ -700,26 +841,28 @@ cdef int trace_one(
                    pos, direction, NULL, wavelength, travelled, duration)
             break
 
-        # Outward surface normal in the world frame
+        # Outward surface normal in the world frame; the incidence angle
+        # is measured between the incident direction and the normal
+        # flipped to point along it.
         transform_point(S.w2l + hit * 16, pos, local_p)
         local_normal(S, hit, local_p, nrm_local)
         transform_vector(S.l2w + hit * 16, nrm_local, nrm)
+        for i in range(3):
+            nrm_flipped[i] = nrm[i]
+        if dot3(nrm_flipped, direction) < 0.0:
+            for i in range(3):
+                nrm_flipped[i] = -nrm_flipped[i]
+        ddot = dot3(nrm_flipped, direction)
+        if ddot > 1.0:
+            ddot = 1.0
+        elif ddot < -1.0:
+            ddot = -1.0
+        angle = acos(ddot)
 
         r = 0.0
         if S.surf_type[hit] == SURF_FRESNEL:
             n1 = S.nidx[container]
             n2 = S.nidx[adjacent]
-            for i in range(3):
-                nrm_flipped[i] = nrm[i]
-            if dot3(nrm_flipped, direction) < 0.0:
-                for i in range(3):
-                    nrm_flipped[i] = -nrm_flipped[i]
-            ddot = dot3(nrm_flipped, direction)
-            if ddot > 1.0:
-                ddot = 1.0
-            elif ddot < -1.0:
-                ddot = -1.0
-            angle = acos(ddot)
             r = fresnel_reflectivity(angle, n1, n2)
 
         u = 1.0
@@ -731,6 +874,9 @@ cdef int trace_one(
                 direction[i] = new_dir[i]
             record(elog, base, &nevents, EV_REFLECT, hit, container, adjacent, -1, source,
                    pos, direction, nrm, wavelength, travelled, duration)
+            if S.n_recorders > 0 and container != hit:
+                tally(S, AB, tid, REC_REFLECTED, hit, &rmask, nrm,
+                      local_p, angle, wavelength, travelled, duration)
             continue
         else:
             if S.surf_type[hit] == SURF_FRESNEL:
@@ -739,6 +885,10 @@ cdef int trace_one(
                     direction[i] = new_dir[i]
             record(elog, base, &nevents, EV_TRANSMIT, hit, container, adjacent, -1, source,
                    pos, direction, nrm, wavelength, travelled, duration)
+            if S.n_recorders > 0:
+                sel = REC_ESCAPING if container == hit else REC_ENTERING
+                tally(S, AB, tid, sel, hit, &rmask, nrm,
+                      local_p, angle, wavelength, travelled, duration)
             continue
 
     return nevents
@@ -757,15 +907,21 @@ def trace_bundle(
     int max_events,
     int emit_method,
     int num_threads,
+    long record_every,
 ):
-    """Trace a bundle of rays and return packed event arrays.
+    """Trace a bundle of rays and return packed event arrays and tallies.
 
-    Returns a dict of numpy arrays: per-ray event counts and flat
-    per-event fields of shape (n_rays * max_events, ...); the row for
-    event `k` of ray `i` is `i * max_events + k`.
+    Every `record_every`-th ray gets a full event history (all rays when
+    1, none when 0); recorders tally every ray regardless. The returned
+    dict contains per-recorded-ray event counts, flat per-event fields
+    (the row for event `k` of recorded ray `j` is `j * max_events + k`)
+    and the merged recorder accumulators.
     """
     cdef long n = positions.shape[0]
-    cdef long rows = n * max_events
+    cdef long n_recorded = 0
+    if record_every > 0:
+        n_recorded = (n + record_every - 1) // record_every
+    cdef long rows = n_recorded * max_events
 
     if compiled.geom_type.shape[0] > MAX_NODES:
         raise ValueError(f"Engine supports at most {MAX_NODES} geometry nodes.")
@@ -820,6 +976,58 @@ def trace_bundle(
     S.ems_x = <double*>ems_x.data
     S.ems_cdf = <double*>ems_cdf.data
 
+    # Recorder tables
+    cdef cnp.ndarray[cnp.int32_t, ndim=1] rec_node = np.ascontiguousarray(compiled.rec_node)
+    cdef cnp.ndarray[cnp.int32_t, ndim=1] rec_event = np.ascontiguousarray(compiled.rec_event)
+    cdef cnp.ndarray[cnp.int32_t, ndim=1] rec_has_facet = np.ascontiguousarray(compiled.rec_has_facet)
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] rec_facet = np.ascontiguousarray(compiled.rec_facet)
+    cdef cnp.ndarray[cnp.float64_t, ndim=1] rec_atol = np.ascontiguousarray(compiled.rec_atol)
+    cdef cnp.ndarray[cnp.int32_t, ndim=1] rec_hist_start = np.ascontiguousarray(compiled.rec_hist_start)
+    cdef cnp.ndarray[cnp.int32_t, ndim=1] rec_hist_n = np.ascontiguousarray(compiled.rec_hist_n)
+    cdef cnp.ndarray[cnp.int32_t, ndim=1] h_prop_a = np.ascontiguousarray(compiled.hist_prop_a)
+    cdef cnp.ndarray[cnp.int32_t, ndim=1] h_prop_b = np.ascontiguousarray(compiled.hist_prop_b)
+    cdef cnp.ndarray[cnp.int32_t, ndim=1] h_na = np.ascontiguousarray(compiled.hist_na)
+    cdef cnp.ndarray[cnp.int32_t, ndim=1] h_nb = np.ascontiguousarray(compiled.hist_nb)
+    cdef cnp.ndarray[cnp.float64_t, ndim=1] h_lo_a = np.ascontiguousarray(compiled.hist_lo_a)
+    cdef cnp.ndarray[cnp.float64_t, ndim=1] h_hi_a = np.ascontiguousarray(compiled.hist_hi_a)
+    cdef cnp.ndarray[cnp.float64_t, ndim=1] h_lo_b = np.ascontiguousarray(compiled.hist_lo_b)
+    cdef cnp.ndarray[cnp.float64_t, ndim=1] h_hi_b = np.ascontiguousarray(compiled.hist_hi_b)
+    cdef cnp.ndarray[cnp.int32_t, ndim=1] h_offset = np.ascontiguousarray(compiled.hist_offset)
+
+    S.n_recorders = <int>rec_node.shape[0]
+    S.total_bins = <int>compiled.total_bins
+    S.rec_node = <int*>rec_node.data
+    S.rec_event = <int*>rec_event.data
+    S.rec_has_facet = <int*>rec_has_facet.data
+    S.rec_facet = <double*>rec_facet.data
+    S.rec_atol = <double*>rec_atol.data
+    S.rec_hist_start = <int*>rec_hist_start.data
+    S.rec_hist_n = <int*>rec_hist_n.data
+    S.h_prop_a = <int*>h_prop_a.data
+    S.h_prop_b = <int*>h_prop_b.data
+    S.h_na = <int*>h_na.data
+    S.h_nb = <int*>h_nb.data
+    S.h_lo_a = <double*>h_lo_a.data
+    S.h_hi_a = <double*>h_hi_a.data
+    S.h_lo_b = <double*>h_lo_b.data
+    S.h_hi_b = <double*>h_hi_b.data
+    S.h_offset = <int*>h_offset.data
+
+    # Per-thread tally accumulators (merged after tracing)
+    cdef int nthr = max(1, num_threads)
+    cdef int nrec = max(1, S.n_recorders)
+    cdef int nbins = max(1, S.total_bins)
+    cdef cnp.ndarray[cnp.int64_t, ndim=2] acc_distinct = np.zeros((nthr, nrec), dtype=np.int64)
+    cdef cnp.ndarray[cnp.int64_t, ndim=2] acc_cross = np.zeros((nthr, nrec), dtype=np.int64)
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] acc_sums = np.zeros((nthr, nrec * 8), dtype=np.float64)
+    cdef cnp.ndarray[cnp.int64_t, ndim=2] acc_bins = np.zeros((nthr, nbins), dtype=np.int64)
+
+    cdef AccBase AB
+    AB.distinct = <long long*>acc_distinct.data
+    AB.cross = <long long*>acc_cross.data
+    AB.sums = <double*>acc_sums.data
+    AB.bins = <long long*>acc_bins.data
+
     # Event log output arrays
     cdef cnp.ndarray[cnp.uint8_t, ndim=1] ev_kind = np.zeros(rows, dtype=np.uint8)
     cdef cnp.ndarray[cnp.int32_t, ndim=1] ev_hit = np.full(rows, -1, dtype=np.int32)
@@ -833,7 +1041,7 @@ def trace_bundle(
     cdef cnp.ndarray[cnp.float64_t, ndim=1] ev_wavelength = np.zeros(rows, dtype=np.float64)
     cdef cnp.ndarray[cnp.float64_t, ndim=1] ev_travelled = np.zeros(rows, dtype=np.float64)
     cdef cnp.ndarray[cnp.float64_t, ndim=1] ev_duration = np.zeros(rows, dtype=np.float64)
-    cdef cnp.ndarray[cnp.int32_t, ndim=1] counts = np.zeros(n, dtype=np.int32)
+    cdef cnp.ndarray[cnp.int32_t, ndim=1] counts = np.zeros(max(n_recorded, 1), dtype=np.int32)
 
     cdef EventLog elog
     elog.kind = <unsigned char*>ev_kind.data
@@ -858,13 +1066,21 @@ def trace_bundle(
     cdef double* wavp = <double*>wav_work.data
     cdef int* countp = <int*>counts.data
 
-    cdef long i
+    cdef long i, base
+    cdef int tid, nev
     with nogil:
         for i in prange(n, num_threads=num_threads, schedule="dynamic", chunksize=64):
-            countp[i] = trace_one(
+            tid = threadid()
+            if record_every > 0 and i % record_every == 0:
+                base = (i // record_every) * max_events
+            else:
+                base = -1
+            nev = trace_one(
                 &S,
                 &elog,
-                i * max_events,
+                base,
+                &AB,
+                tid,
                 posp + i * 3,
                 dirp + i * 3,
                 wavp[i],
@@ -872,9 +1088,15 @@ def trace_bundle(
                 maxsteps,
                 emit_method,
             )
+            if base >= 0:
+                countp[i // record_every] = nev
 
     return {
-        "counts": counts,
+        "counts": counts[:n_recorded],
+        "rec_distinct": acc_distinct.sum(axis=0)[: S.n_recorders],
+        "rec_crossings": acc_cross.sum(axis=0)[: S.n_recorders],
+        "rec_sums": acc_sums.sum(axis=0)[: S.n_recorders * 8].reshape(S.n_recorders, 4, 2),
+        "rec_bins": acc_bins.sum(axis=0)[: S.total_bins],
         "kind": ev_kind,
         "hit": ev_hit,
         "container": ev_container,

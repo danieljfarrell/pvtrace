@@ -66,9 +66,10 @@ def bench_python(scene, num_rays):
     return elapsed, events
 
 
-def bench_engine(scene, num_rays, workers):
+def bench_engine(scene, num_rays, workers, record_every=1):
     result = engine.simulate(
-        scene, num_rays, seed=0, workers=workers, max_events=256
+        scene, num_rays, seed=0, workers=workers, max_events=256,
+        record_every=record_every,
     )
     events = int(result.data["counts"].sum())
     return result.elapsed, events
@@ -95,6 +96,38 @@ def main():
         print(f"engine ({label:>4s} thr) {n_engine:>8d} rays  {elapsed:8.2f} s  "
               f"{rate:>12,.0f} rays/s  ({events} events, "
               f"speedup x{rate / py_rate:,.0f})")
+
+    # Recorder-only mode: tallies for every ray, full paths for
+    # every 1000th, no bulk event storage.
+    from pvtrace.engine import Heatmap, Histogram, Recorder
+    from anytree import PreOrderIter
+
+    for node in PreOrderIter(scene.root):
+        if node.name == "slab":
+            node.recorders = [
+                Recorder(
+                    "top-escape",
+                    event="escaping",
+                    facet=(0, 0, 1),
+                    histograms=[
+                        Histogram("wavelength", 400, 900, 100),
+                        Heatmap("x", "y", (-2.5, 2.5, 50), (-2.5, 2.5, 50)),
+                    ],
+                ),
+                Recorder("lost", event="lost"),
+            ]
+
+    n_rec = 2000000
+    for workers in (1, 4, None):
+        result = engine.simulate(
+            scene, n_rec, seed=0, workers=workers, record_every=1000
+        )
+        rate = n_rec / result.elapsed
+        label = "auto" if workers is None else str(workers)
+        top = result.recorders["top-escape"]
+        print(f"recorders ({label:>4s}) {n_rec:>8d} rays  {result.elapsed:8.2f} s  "
+              f"{rate:>12,.0f} rays/s  (speedup x{rate / py_rate:,.0f}, "
+              f"top-escape {top.rays}, {result.num_recorded} paths kept)")
 
 
 if __name__ == "__main__":
