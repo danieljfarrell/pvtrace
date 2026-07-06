@@ -46,9 +46,65 @@
             },
             "additionalProperties": false
         },
+        "recorders": {
+            "id": "#/properties/recorders",
+            "type": "object",
+            "description": "Tallies which accumulate ray statistics on nodes during tracing",
+            "patternProperties": {
+                "^[a-zA-Z0-9._-]+$": {
+                    "$ref": "#/definitions/recorder"
+                }
+            },
+            "additionalProperties": false
+        },
         "additionalProperties": false
     },
     "definitions": {
+        "recorder": {
+            "id": "#/definitions/recorder",
+            "type": "object",
+            "properties": {
+                "node": {
+                    "type": "string",
+                    "description": "Name of the node the recorder is attached to"
+                },
+                "event": {
+                    "enum": [
+                        "entering",
+                        "escaping",
+                        "reflected",
+                        "lost",
+                        "reacted",
+                        "killed",
+                        "exit"
+                    ]
+                },
+                "facet": {
+                    "type": "array",
+                    "description": "Restrict a surface recorder to interactions where the outward normal matches this vector",
+                    "items": {
+                        "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                },
+                "atol": {
+                    "type": "number"
+                },
+                "histograms": {
+                    "type": "object",
+                    "description": "Property name to [start, stop, bins], or position to [prop-a, prop-b, [start, stop, bins], [start, stop, bins]]",
+                    "additionalProperties": {
+                        "type": "array"
+                    }
+                }
+            },
+            "required": [
+                "node",
+                "event"
+            ],
+            "additionalProperties": false
+        },
         "node": {
             "id": "#/definitions/node",
             "type": "object",

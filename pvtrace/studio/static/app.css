@@ -76,3 +76,22 @@ button.primary { background: var(--accent); color: #10131a; font-weight: 600; }
   padding: 10px 12px; font-size: 12px;
 }
 #bin-info b { color: var(--accent); }
+
+#toolbar {
+  position: absolute; top: 10px; left: 10px; display: flex; gap: 6px;
+}
+#toolbar button { background: #232733ee; border: 1px solid var(--edge); }
+
+#inspector {
+  position: absolute; top: 10px; right: 10px; width: 230px;
+  background: #1c1f27f2; border: 1px solid var(--edge); border-radius: 8px;
+  padding: 10px 12px; backdrop-filter: blur(4px);
+}
+.inspector-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.inspector-head button { padding: 0 8px; background: none; }
+#inspector-fields .field { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+#inspector-fields .field label { color: var(--dim); width: 62px; font-size: 12px; }
+#inspector-fields .field input { width: 52px; padding: 3px 4px; font-size: 12px; }
+.inspector-actions { display: flex; gap: 6px; margin-top: 10px; }
+.inspector-actions button { flex: 1; font-size: 12px; }
+button.danger { color: var(--err); }

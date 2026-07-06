@@ -6,6 +6,7 @@ from the two tracers are compared within Monte Carlo error.
 """
 import functools
 import math
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -280,6 +281,90 @@ def test_recorders_independent_of_history_sampling():
     assert none.num_recorded == 0
     assert len(list(sampled.histories())) == 30
     assert len(list(none.histories())) == 0
+
+
+def test_python_tally_matches_engine_recorders_exactly():
+    """tally_histories over the engine's own histories reproduces the
+    kernel's tallies exactly."""
+    from pvtrace.engine import Heatmap, Histogram, Recorder, tally_histories
+
+    scene = make_lsc_scene()
+    attach_recorder(
+        scene, "slab",
+        Recorder("entering", event="entering",
+                 histograms=[Histogram("wavelength", 400, 900, 50)]),
+    )
+    attach_recorder(
+        scene, "slab",
+        Recorder("top", event="escaping", facet=(0, 0, 1),
+                 histograms=[Heatmap("x", "y", (-2.5, 2.5, 20), (-2.5, 2.5, 20))]),
+    )
+    attach_recorder(scene, "slab", Recorder("lost", event="lost"))
+    attach_recorder(scene, "world", Recorder("exit", event="exit",
+                    histograms=[Histogram("angle", 0.0, np.pi / 2, 18)]))
+
+    result = engine.simulate(scene, 3000, seed=17, max_events=256)
+    python_tallies = tally_histories(scene, result.histories())
+
+    for name, engine_side in result.recorders.items():
+        python_side = python_tallies[name]
+        assert python_side.rays == engine_side.rays, name
+        assert python_side.crossings == engine_side.crossings, name
+        for index in range(len(engine_side.spec.histograms)):
+            assert np.array_equal(
+                python_side._bins[index], engine_side._bins[index]
+            ), (name, index)
+        assert np.allclose(python_side._moments, engine_side._moments,
+                           rtol=1e-9), name
+
+
+def test_python_tracer_tally_matches_engine_statistically():
+    """Recorders tallied from Python-tracer histories agree with the
+    engine within Monte Carlo error (lockstep)."""
+    from pvtrace.engine import Recorder, tally_histories
+
+    scene = make_lsc_scene()
+    attach_recorder(scene, "slab", Recorder("entering", event="entering"))
+    attach_recorder(scene, "slab", Recorder("lost", event="lost"))
+
+    n_python = 300
+    np.random.seed(5)
+    histories = []
+    for ray in scene.emit(n_python):
+        histories.append(
+            list(photon_tracer.step_forward(scene, ray))
+        )
+    python_tallies = tally_histories(scene, histories)
+
+    n_engine = 20000
+    result = engine.simulate(scene, n_engine, seed=13, record_every=0)
+    engine_tallies = result.recorders
+
+    for name in ("entering", "lost"):
+        p_a = python_tallies[name].rays / n_python
+        p_b = engine_tallies[name].rays / n_engine
+        p = (python_tallies[name].rays + engine_tallies[name].rays) / (
+            n_python + n_engine
+        )
+        se = math.sqrt(max(p * (1 - p), 1e-12) * (1 / n_python + 1 / n_engine))
+        assert abs(p_a - p_b) <= 5 * se, (name, p_a, p_b)
+
+
+def test_yaml_recorders_parse():
+    """The recorders section of the scene spec builds Recorder objects."""
+    from pvtrace.cli.parse import parse
+
+    scene = parse(str(Path(__file__).parent.parent / "examples" / "studio_lsc.yml"))
+    from anytree import PreOrderIter
+
+    recorders = {
+        recorder.name: recorder
+        for node in PreOrderIter(scene.root)
+        for recorder in node.recorders
+    }
+    assert set(recorders) == {"edge-escape", "top-escape", "lost-in-lsc"}
+    assert recorders["edge-escape"].facet == (1.0, 0.0, 0.0)
+    assert len(recorders["top-escape"].histograms) == 2
 
 
 def test_unsupported_scene_raises():

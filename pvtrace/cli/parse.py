@@ -456,7 +456,35 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         if direction:
             node.look_at(direction)
 
+    parse_recorders(spec.get("recorders", {}) or {}, nodes)
+
     return Scene(nodes["world"])
+
+
+def parse_recorders(recorders_spec: dict, nodes: dict):
+    """Build Recorder objects and attach them to their nodes."""
+    from pvtrace.engine.recorder import Heatmap, Histogram, Recorder
+
+    for name, spec in recorders_spec.items():
+        node_name = spec["node"]
+        if node_name not in nodes:
+            raise ValueError(f"Recorder {name!r}: unknown node {node_name!r}")
+        histograms = []
+        for prop, values in (spec.get("histograms") or {}).items():
+            if prop == "position":
+                prop_a, prop_b, range_a, range_b = values
+                histograms.append(Heatmap(prop_a, prop_b, range_a, range_b))
+            else:
+                start, stop, bins = values
+                histograms.append(Histogram(prop, start, stop, bins))
+        recorder = Recorder(
+            name,
+            event=spec["event"],
+            facet=spec.get("facet"),
+            atol=spec.get("atol", 1e-6),
+            histograms=histograms,
+        )
+        nodes[node_name].recorders.append(recorder)
 
 
 if __name__ == "__main__":

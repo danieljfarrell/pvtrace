@@ -19,6 +19,7 @@ from pvtrace.engine.compiler import (
     compile_scene,
 )
 from pvtrace.engine.recorder import Heatmap, Histogram, Recorder
+from pvtrace.engine.tally import tally_histories
 from pvtrace.engine.api import (
     EngineResult,
     RecorderResult,
@@ -39,4 +40,5 @@ __all__ = [
     "is_available",
     "simulate",
     "simulate_stream",
+    "tally_histories",
 ]

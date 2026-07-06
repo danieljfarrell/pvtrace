@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 
 import pvtrace.engine as engine
 from pvtrace.cli.parse import parse as parse_scene_file
-from pvtrace.engine.recorder import Heatmap, Histogram, Recorder
+from pvtrace.engine.recorder import Heatmap
 
 STATIC = Path(__file__).resolve().parent / "static"
 
@@ -33,58 +33,29 @@ class Studio:
     def __init__(self, document=""):
         self.document = document
         self.scene = None
-        self.recorder_specs = {}
 
     def apply(self, text):
         """Validate and parse a new document; returns the scene payload."""
         spec = yaml.safe_load(io.StringIO(text))
         if not isinstance(spec, dict):
             raise ValueError("Document is not a YAML mapping.")
-        recorders = spec.pop("recorders", {}) or {}
 
         # parse() validates against the JSON schema and reads from disk
         with tempfile.NamedTemporaryFile(
             "w", suffix=".yml", delete=False, dir=os.getcwd()
         ) as fp:
-            yaml.safe_dump(spec, fp)
+            fp.write(text)
             path = fp.name
         try:
             scene = parse_scene_file(path)
         finally:
             os.unlink(path)
 
-        self._attach_recorders(scene, recorders)
         compiled = engine.compile_scene(scene)  # raises if unsupported
 
         self.document = text
         self.scene = scene
-        self.recorder_specs = recorders
         return self.scene_payload(compiled)
-
-    def _attach_recorders(self, scene, recorders):
-        from anytree import PreOrderIter
-
-        nodes = {node.name: node for node in PreOrderIter(scene.root)}
-        for name, spec in recorders.items():
-            node_name = spec.get("node")
-            if node_name not in nodes:
-                raise ValueError(f"Recorder {name!r}: unknown node {node_name!r}.")
-            histograms = []
-            for prop, values in (spec.get("histograms") or {}).items():
-                if prop == "position":
-                    prop_a, prop_b, range_a, range_b = values
-                    histograms.append(Heatmap(prop_a, prop_b, range_a, range_b))
-                else:
-                    lo, hi, bins = values
-                    histograms.append(Histogram(prop, lo, hi, bins))
-            recorder = Recorder(
-                name,
-                event=spec.get("event", "entering"),
-                facet=spec.get("facet"),
-                atol=spec.get("atol", 1e-6),
-                histograms=histograms,
-            )
-            nodes[node_name].recorders.append(recorder)
 
     def scene_payload(self, compiled):
         """Geometry description for the three.js viewport."""
@@ -100,6 +71,7 @@ class Studio:
                     # three.js Matrix4.fromArray expects column-major
                     "matrix": compiled.local_to_world[i].T.ravel().tolist(),
                     "root": i == compiled.root_id,
+                    "refractive_index": float(compiled.refractive_index[i]),
                 }
             )
         lights = []
@@ -108,9 +80,10 @@ class Studio:
                 matrix = np.asarray(node.transformation_to(self.scene.root))
                 lights.append({"name": node.name, "matrix": matrix.T.ravel().tolist()})
         recorders = []
-        for name, spec in self.recorder_specs.items():
-            recorders.append({"name": name, "node": spec.get("node"),
-                              "event": spec.get("event", "entering")})
+        for node in PreOrderIter(self.scene.root):
+            for recorder in getattr(node, "recorders", []):
+                recorders.append({"name": recorder.name, "node": node.name,
+                                  "event": recorder.event})
         return {"nodes": nodes, "lights": lights, "recorders": recorders}
 
 
@@ -136,6 +109,28 @@ def create_app(document_path=None):
         except Exception as exception:  # surface parse errors to the UI
             return JSONResponse({"error": str(exception)}, status_code=422)
         return {"scene": scene}
+
+    @app.post("/api/save")
+    async def save_document():
+        if not document_path:
+            return JSONResponse({"error": "No file was opened."}, status_code=422)
+        Path(document_path).write_text(studio.document)
+        return {"saved": str(document_path)}
+
+    @app.post("/api/patch")
+    async def patch_document(payload: dict):
+        """Apply a structured edit to the document.
+
+        GUI interactions edit the document through this endpoint so the
+        YAML text remains the single source of truth; ruamel round-trips
+        the document preserving formatting and comments.
+        """
+        try:
+            text = _patch(studio, payload)
+            scene = studio.apply(text)
+        except Exception as exception:
+            return JSONResponse({"error": str(exception)}, status_code=422)
+        return {"scene": scene, "text": text}
 
     @app.websocket("/ws")
     async def websocket(ws: WebSocket):
@@ -224,6 +219,116 @@ def create_app(document_path=None):
         except Exception:
             pass
     return app
+
+
+# Node snippets inserted by the add-object toolbar
+SNIPPETS = {
+    "box": {"location": [0.0, 0.0, 0.0],
+            "box": {"size": [1.0, 1.0, 1.0],
+                    "material": {"refractive-index": 1.5}}},
+    "sphere": {"location": [0.0, 0.0, 0.0],
+               "sphere": {"radius": 0.5,
+                          "material": {"refractive-index": 1.5}}},
+    "cylinder": {"location": [0.0, 0.0, 0.0],
+                 "cylinder": {"length": 1.0, "radius": 0.5,
+                              "material": {"refractive-index": 1.5}}},
+    "light": {"location": [0.0, 0.0, 2.0], "direction": [0.0, 0.0, -1.0],
+              "light": {"wavelength": 555,
+                        "mask": {"direction": {"cone": {"half-angle": 20}}}}},
+}
+
+
+def _round_trip_yaml():
+    from ruamel.yaml import YAML
+
+    ryaml = YAML()
+    ryaml.preserve_quotes = True
+    return ryaml
+
+
+def _unique_name(existing, stem):
+    index = 1
+    while f"{stem}-{index}" in existing:
+        index += 1
+    return f"{stem}-{index}"
+
+
+def _flow(value):
+    """Lists render inline ([x, y, z]) like hand-written scene files."""
+    from ruamel.yaml.comments import CommentedSeq
+
+    if isinstance(value, list):
+        seq = CommentedSeq(value)
+        seq.fa.set_flow_style()
+        return seq
+    return value
+
+
+def _patch(studio, payload):
+    """Returns new document text for a structured edit; does not apply it."""
+    ryaml = _round_trip_yaml()
+    data = ryaml.load(io.StringIO(studio.document))
+    operation = payload["op"]
+
+    if operation == "set":
+        target = data
+        path = payload["path"]
+        for key in path[:-1]:
+            if key not in target:
+                target[key] = {}
+            target = target[key]
+        target[path[-1]] = _flow(payload["value"])
+
+    elif operation == "move":
+        # World position from the viewport gizmo; location is relative
+        # to the parent node, so convert through the scene graph.
+        from anytree import PreOrderIter
+
+        name = payload["node"]
+        world = payload["world_position"]
+        nodes = {node.name: node for node in PreOrderIter(studio.scene.root)}
+        node = nodes[name]
+        if node.parent is None:
+            raise ValueError("Cannot move the root node.")
+        local = studio.scene.root.point_to_node(tuple(world), node.parent)
+        data["nodes"][name]["location"] = _flow(
+            [round(float(v), 6) for v in local]
+        )
+
+    elif operation == "add-node":
+        kind = payload["kind"]
+        if kind not in SNIPPETS:
+            raise ValueError(f"Unknown object kind {kind!r}")
+        name = _unique_name(data.get("nodes", {}), kind)
+        import copy
+
+        data["nodes"][name] = copy.deepcopy(SNIPPETS[kind])
+
+    elif operation == "add-recorder":
+        node = payload["node"]
+        if node not in data.get("nodes", {}):
+            raise ValueError(f"Unknown node {node!r}")
+        recorders = data.setdefault("recorders", {})
+        name = _unique_name(recorders, f"{node}-escaping")
+        recorders[name] = {
+            "node": node,
+            "event": "escaping",
+            "histograms": {"wavelength": [400, 900, 80]},
+        }
+
+    elif operation == "delete-node":
+        name = payload["node"]
+        del data["nodes"][name]
+        for rec_name in list((data.get("recorders") or {})):
+            if data["recorders"][rec_name].get("node") == name:
+                del data["recorders"][rec_name]
+
+    else:
+        raise ValueError(f"Unknown operation {operation!r}")
+
+    buffer = io.StringIO()
+    ryaml.dump(data, buffer)
+    return buffer.getvalue()
 
 
 def _histogram_meta(compiled):

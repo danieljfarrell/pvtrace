@@ -21,12 +21,30 @@
     <textarea id="editor" spellcheck="false"></textarea>
     <div class="row">
       <button id="apply">Apply</button>
+      <button id="save" title="Write the document back to the file">Save</button>
       <div id="doc-status"></div>
     </div>
   </section>
 
   <section id="view-pane">
     <div id="viewport"></div>
+    <div id="toolbar">
+      <button data-add="box" title="Add box">+ box</button>
+      <button data-add="sphere" title="Add sphere">+ sphere</button>
+      <button data-add="cylinder" title="Add cylinder">+ cylinder</button>
+      <button data-add="light" title="Add light">+ light</button>
+    </div>
+    <div id="inspector" hidden>
+      <div class="inspector-head">
+        <b id="inspector-name"></b>
+        <button id="inspector-close" title="Deselect">×</button>
+      </div>
+      <div id="inspector-fields"></div>
+      <div class="inspector-actions">
+        <button id="add-recorder">+ recorder</button>
+        <button id="delete-node" class="danger">delete</button>
+      </div>
+    </div>
     <div class="run-bar">
       <label>rays <input type="text" id="rays" value="500000" size="8"></label>
       <label>paths <input type="text" id="record-every" value="500" size="5" title="keep one full path every n rays"></label>

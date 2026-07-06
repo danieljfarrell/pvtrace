@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "/static/vendor/OrbitControls.js";
+import { TransformControls } from "/static/vendor/TransformControls.js";
 
 // ----------------------------------------------------------------------
 // Wavelength (nm) to RGB, rough visible-spectrum approximation.
@@ -45,6 +46,29 @@ const geometryGroup = new THREE.Group();
 const pathGroup = new THREE.Group();
 scene3.add(geometryGroup, pathGroup);
 
+// Translation gizmo for the selected node; writes back to the document
+const gizmo = new TransformControls(camera, renderer.domElement);
+gizmo.setMode("translate");
+let dragStart = null;
+gizmo.addEventListener("dragging-changed", (event) => {
+  controls.enabled = !event.value;
+  if (event.value && gizmo.object) {
+    dragStart = gizmo.object.position.clone();
+  } else if (!event.value && gizmo.object && dragStart) {
+    // Only write back if the object actually moved; a click that lands
+    // on the gizmo must not dirty the document.
+    if (gizmo.object.position.distanceTo(dragStart) > 1e-6) {
+      patch({
+        op: "move",
+        node: gizmo.object.userData.name,
+        world_position: gizmo.object.position.toArray(),
+      });
+    }
+    dragStart = null;
+  }
+});
+scene3.add(gizmo);
+
 function resize() {
   const w = viewport.clientWidth, h = viewport.clientHeight;
   renderer.setSize(w, h);
@@ -69,8 +93,12 @@ function buildGeometry(node) {
   return geometry;
 }
 
+const pickable = [];
+
 function renderScene(payload) {
+  gizmo.detach();
   geometryGroup.clear();
+  pickable.length = 0;
   for (const node of payload.nodes) {
     const geometry = buildGeometry(node);
     let mesh;
@@ -90,11 +118,15 @@ function renderScene(payload) {
       edges.matrixAutoUpdate = false;
       edges.matrix.fromArray(node.matrix);
       geometryGroup.add(edges);
+      pickable.push(mesh);
     }
-    mesh.matrixAutoUpdate = false;
-    mesh.matrix.fromArray(node.matrix);
+    // Decomposed transform (not a frozen matrix) so the gizmo can move it
+    new THREE.Matrix4().fromArray(node.matrix)
+      .decompose(mesh.position, mesh.quaternion, mesh.scale);
+    mesh.userData = node;
     geometryGroup.add(mesh);
   }
+  if (selectedName) selectByName(selectedName);
   for (const light of payload.lights) {
     const marker = new THREE.Mesh(
       new THREE.SphereGeometry(0.08, 16, 12),
@@ -110,6 +142,140 @@ function renderScene(payload) {
     geometryGroup.add(new THREE.ArrowHelper(direction, origin, 0.8, 0xffd54a, 0.2, 0.1));
   }
 }
+
+// ----------------------------------------------------------------------
+// Selection, inspector and document patching
+
+let selectedName = null;
+const inspector = document.getElementById("inspector");
+const inspectorFields = document.getElementById("inspector-fields");
+const raycaster = new THREE.Raycaster();
+
+async function patch(operation) {
+  const response = await fetch("/api/patch", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(operation),
+  });
+  const payload = await response.json();
+  if (payload.error) {
+    docStatus.textContent = payload.error;
+    docStatus.className = "err";
+    return false;
+  }
+  docStatus.textContent = "scene ok";
+  docStatus.className = "";
+  editor.value = payload.text;
+  renderScene(payload.scene);
+  if (reactive.checked) startRun();
+  return true;
+}
+
+function meshByName(name) {
+  return pickable.find((mesh) => mesh.userData.name === name) || null;
+}
+
+function selectByName(name) {
+  for (const mesh of pickable) mesh.material.emissive.setHex(0x000000);
+  const mesh = meshByName(name);
+  if (!mesh) { deselect(); return; }
+  selectedName = name;
+  mesh.material.emissive.setHex(0x1a3f7a);
+  gizmo.attach(mesh);
+  buildInspector(mesh.userData);
+  inspector.hidden = false;
+}
+
+function deselect() {
+  selectedName = null;
+  gizmo.detach();
+  inspector.hidden = true;
+  for (const mesh of pickable) mesh.material.emissive.setHex(0x000000);
+}
+
+function field(label, value, onCommit, step = 0.1) {
+  const row = document.createElement("div");
+  row.className = "field";
+  const labelEl = document.createElement("label");
+  labelEl.textContent = label;
+  row.appendChild(labelEl);
+  const inputs = [];
+  const values = Array.isArray(value) ? value : [value];
+  for (const v of values) {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = step;
+    input.value = Number(v.toFixed ? v.toFixed(4) : v);
+    input.addEventListener("change", () => {
+      onCommit(inputs.map((i) => parseFloat(i.value) || 0));
+    });
+    inputs.push(input);
+    row.appendChild(input);
+  }
+  inspectorFields.appendChild(row);
+}
+
+function buildInspector(node) {
+  document.getElementById("inspector-name").textContent =
+    `${node.name} · ${node.type}`;
+  inspectorFields.innerHTML = "";
+  const position = [node.matrix[12], node.matrix[13], node.matrix[14]];
+  field("position", position, (v) =>
+    patch({ op: "move", node: node.name, world_position: v }));
+
+  const base = ["nodes", node.name, node.type];
+  if (node.type === "box") {
+    field("size", node.params.slice(0, 3), (v) =>
+      patch({ op: "set", path: [...base, "size"], value: v }));
+  } else if (node.type === "sphere") {
+    field("radius", node.params[0], (v) =>
+      patch({ op: "set", path: [...base, "radius"], value: v[0] }));
+  } else {
+    field("length", node.params[0], (v) =>
+      patch({ op: "set", path: [...base, "length"], value: v[0] }));
+    field("radius", node.params[1], (v) =>
+      patch({ op: "set", path: [...base, "radius"], value: v[0] }));
+  }
+  field("refr. index", node.refractive_index, (v) =>
+    patch({ op: "set", path: [...base, "material", "refractive-index"], value: v[0] }),
+    0.01);
+}
+
+document.getElementById("inspector-close").addEventListener("click", deselect);
+document.getElementById("add-recorder").addEventListener("click", () => {
+  if (selectedName) patch({ op: "add-recorder", node: selectedName });
+});
+document.getElementById("delete-node").addEventListener("click", () => {
+  if (!selectedName) return;
+  const name = selectedName;
+  deselect();
+  patch({ op: "delete-node", node: name });
+});
+
+for (const button of document.querySelectorAll("#toolbar button")) {
+  button.addEventListener("click", () => patch({ op: "add-node", kind: button.dataset.add }));
+}
+
+// Click to pick (ignore drags used for orbiting)
+let downAt = null;
+renderer.domElement.addEventListener("pointerdown", (event) => {
+  downAt = [event.clientX, event.clientY];
+});
+renderer.domElement.addEventListener("pointerup", (event) => {
+  if (!downAt) return;
+  const moved = Math.hypot(event.clientX - downAt[0], event.clientY - downAt[1]);
+  downAt = null;
+  if (moved > 4 || gizmo.dragging) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  const pointer = new THREE.Vector2(
+    ((event.clientX - rect.left) / rect.width) * 2 - 1,
+    -((event.clientY - rect.top) / rect.height) * 2 + 1,
+  );
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(pickable, false);
+  if (hits.length) selectByName(hits[0].object.userData.name);
+  else deselect();
+});
 
 let pathCount = 0;
 const MAX_PATH_LINES = 400;
@@ -322,6 +488,14 @@ async function applyDocument() {
 }
 
 document.getElementById("apply").addEventListener("click", applyDocument);
+
+document.getElementById("save").addEventListener("click", async () => {
+  if (!(await applyDocument())) return;
+  const response = await fetch("/api/save", { method: "POST" });
+  const payload = await response.json();
+  docStatus.textContent = payload.error ? payload.error : "saved";
+  docStatus.className = payload.error ? "err" : "";
+});
 
 let debounce = null;
 editor.addEventListener("input", () => {
