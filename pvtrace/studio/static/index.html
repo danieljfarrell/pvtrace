@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8">
 <title>pvtrace studio</title>
+<link rel="stylesheet" href="/static/vendor/codemirror.min.css">
+<link rel="stylesheet" href="/static/vendor/codemirror-material-darker.min.css">
 <link rel="stylesheet" href="/static/app.css">
+<script src="/static/vendor/codemirror.min.js"></script>
+<script src="/static/vendor/codemirror-yaml.min.js"></script>
 <script type="importmap">
 { "imports": { "three": "/static/vendor/three.module.js" } }
 </script>
@@ -34,16 +38,13 @@
       <button data-add="cylinder" title="Add cylinder">+ cylinder</button>
       <button data-add="light" title="Add light">+ light</button>
     </div>
-    <div id="inspector" hidden>
+    <div id="inspector">
       <div class="inspector-head">
-        <b id="inspector-name"></b>
+        <b id="inspector-name">View</b>
         <button id="inspector-close" title="Deselect">×</button>
       </div>
       <div id="inspector-fields"></div>
-      <div class="inspector-actions">
-        <button id="add-recorder">+ recorder</button>
-        <button id="delete-node" class="danger">delete</button>
-      </div>
+      <div class="inspector-actions" id="inspector-actions"></div>
     </div>
     <div class="run-bar">
       <label>rays <input type="text" id="rays" value="500000" size="8"></label>

@@ -225,15 +225,9 @@ def simulate(
     if seed is None:
         seed = np.random.randint(0, 2 ** 31 - 1)
 
-    positions = np.zeros((num_rays, 3), dtype=np.float64)
-    directions = np.zeros((num_rays, 3), dtype=np.float64)
-    wavelengths = np.zeros(num_rays, dtype=np.float64)
-    sources = []
-    for i, ray in enumerate(scene.emit(num_rays)):
-        positions[i] = ray.position
-        directions[i] = ray.direction
-        wavelengths[i] = ray.wavelength
-        sources.append(ray.source)
+    from pvtrace.engine.emit import emit_bundle
+
+    positions, directions, wavelengths, sources = emit_bundle(scene, num_rays)
 
     tic = time.perf_counter()
     data = _kernel.trace_bundle(

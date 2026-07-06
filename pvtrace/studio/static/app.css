@@ -39,6 +39,11 @@ section { display: flex; flex-direction: column; min-height: 0; }
   background: var(--panel); color: var(--text); tab-size: 2;
   font: 12px/1.5 "SF Mono", ui-monospace, Menlo, monospace; white-space: pre;
 }
+#editor-pane .CodeMirror {
+  flex: 1; height: auto; background: var(--panel);
+  font: 12px/1.5 "SF Mono", ui-monospace, Menlo, monospace;
+}
+.cm-flash { background: #2b4a7a66 !important; transition: background 0.4s; }
 .row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-top: 1px solid var(--edge); }
 #doc-status { font-size: 12px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #doc-status.err { color: var(--err); }
@@ -90,8 +95,19 @@ button.primary { background: var(--accent); color: #10131a; font-weight: 600; }
 .inspector-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .inspector-head button { padding: 0 8px; background: none; }
 #inspector-fields .field { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-#inspector-fields .field label { color: var(--dim); width: 62px; font-size: 12px; }
-#inspector-fields .field input { width: 52px; padding: 3px 4px; font-size: 12px; }
+#inspector-fields .field label { color: var(--dim); width: 62px; font-size: 12px; flex-shrink: 0; }
+#inspector-fields .field input[type="number"] { width: 52px; padding: 3px 4px; font-size: 12px; }
+#inspector-fields .field input[type="range"] { flex: 1; }
+#inspector-fields .field select {
+  flex: 1; background: var(--bg); border: 1px solid var(--edge);
+  color: var(--text); border-radius: 4px; padding: 3px; font-size: 12px;
+}
+#inspector-fields .hint { color: var(--dim); font-size: 11px; margin: 4px 0 8px; }
+#inspector-fields .rec-link {
+  display: block; width: 100%; text-align: left; margin-bottom: 4px;
+  background: var(--bg); border: 1px solid var(--edge); font-size: 12px;
+}
+#inspector-fields .rec-link span { color: var(--dim); }
 .inspector-actions { display: flex; gap: 6px; margin-top: 10px; }
 .inspector-actions button { flex: 1; font-size: 12px; }
 button.danger { color: var(--err); }

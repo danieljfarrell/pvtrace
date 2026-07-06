@@ -3,6 +3,19 @@ import { OrbitControls } from "/static/vendor/OrbitControls.js";
 import { TransformControls } from "/static/vendor/TransformControls.js";
 
 // ----------------------------------------------------------------------
+// View settings (client-side state, persisted locally; not part of the
+// scene document)
+
+const view = Object.assign(
+  { opacity: 0.55, showWorld: false, showGrid: true },
+  JSON.parse(localStorage.getItem("pvtrace-view") || "{}"),
+);
+
+function saveView() {
+  localStorage.setItem("pvtrace-view", JSON.stringify(view));
+}
+
+// ----------------------------------------------------------------------
 // Wavelength (nm) to RGB, rough visible-spectrum approximation.
 
 function wavelengthToColor(nm) {
@@ -40,13 +53,14 @@ keyLight.position.set(5, -8, 10);
 scene3.add(keyLight);
 const grid = new THREE.GridHelper(20, 20, 0x2a2e3a, 0x20242e);
 grid.rotation.x = Math.PI / 2;
+grid.visible = view.showGrid;
 scene3.add(grid);
 
 const geometryGroup = new THREE.Group();
 const pathGroup = new THREE.Group();
 scene3.add(geometryGroup, pathGroup);
 
-// Translation gizmo for the selected node; writes back to the document
+// Translation gizmo for the selected object; writes back to the document
 const gizmo = new TransformControls(camera, renderer.domElement);
 gizmo.setMode("translate");
 let dragStart = null;
@@ -94,11 +108,72 @@ function buildGeometry(node) {
 }
 
 const pickable = [];
+const recorderOverlays = {};
+let rootMesh = null;
+
+// Rotations that turn a +z facing plane into a face overlay for an
+// axis-aligned facet direction.
+const FACET_ROTATIONS = {
+  "1,0,0": [0, Math.PI / 2, 0],
+  "-1,0,0": [0, -Math.PI / 2, 0],
+  "0,1,0": [-Math.PI / 2, 0, 0],
+  "0,-1,0": [Math.PI / 2, 0, 0],
+  "0,0,1": [0, 0, 0],
+  "0,0,-1": [Math.PI, 0, 0],
+};
+
+function buildRecorderOverlay(recorder, nodePayload) {
+  // Facet recorders on boxes render as a clickable face overlay which
+  // becomes a live heatmap texture during a run.
+  if (!recorder.facet || nodePayload.type !== "box") return null;
+  const key = recorder.facet.map((v) => Math.round(v)).join(",");
+  const rotation = FACET_ROTATIONS[key];
+  if (!rotation) return null;
+  const axis = recorder.facet.findIndex((v) => Math.abs(v) > 0.5);
+  const dims = nodePayload.params.filter((_, i) => i !== axis);
+  const geometry = new THREE.PlaneGeometry(dims[0], dims[1]);
+  geometry.rotateX(rotation[0]);
+  geometry.rotateY(rotation[1]);
+  geometry.rotateZ(rotation[2]);
+  const offset = recorder.facet.map(
+    (v, i) => v * (nodePayload.params[i] / 2 + 0.004));
+  geometry.translate(offset[0], offset[1], offset[2]);
+
+  const heatIndex = recorder.histograms.findIndex((h) => h.kind === "heatmap");
+  let material, canvas = null, texture = null;
+  if (heatIndex >= 0) {
+    canvas = document.createElement("canvas");
+    canvas.width = 256; canvas.height = 256;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#6ea8fe30";
+    ctx.fillRect(0, 0, 256, 256);
+    texture = new THREE.CanvasTexture(canvas);
+    material = new THREE.MeshBasicMaterial({
+      map: texture, transparent: true, opacity: 0.85,
+      side: THREE.DoubleSide, depthWrite: false,
+    });
+  } else {
+    material = new THREE.MeshBasicMaterial({
+      color: 0x6ea8fe, transparent: true, opacity: 0.22,
+      side: THREE.DoubleSide, depthWrite: false,
+    });
+  }
+  const mesh = new THREE.Mesh(geometry, material);
+  new THREE.Matrix4().fromArray(nodePayload.matrix)
+    .decompose(mesh.position, mesh.quaternion, mesh.scale);
+  mesh.userData = { kind: "recorder", ...recorder };
+  recorderOverlays[recorder.name] = { mesh, canvas, texture, heatIndex };
+  return mesh;
+}
 
 function renderScene(payload) {
   gizmo.detach();
   geometryGroup.clear();
   pickable.length = 0;
+  Object.keys(recorderOverlays).forEach((k) => delete recorderOverlays[k]);
+  rootMesh = null;
+  lastScene = payload;
+
   for (const node of payload.nodes) {
     const geometry = buildGeometry(node);
     let mesh;
@@ -106,10 +181,13 @@ function renderScene(payload) {
       mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
         color: 0x39415a, wireframe: true, transparent: true, opacity: 0.12,
       }));
+      mesh.visible = view.showWorld;
+      rootMesh = mesh;
     } else {
       mesh = new THREE.Mesh(geometry, new THREE.MeshPhysicalMaterial({
         color: 0x8fb8ff, metalness: 0, roughness: 0.15,
-        transmission: 0.7, transparent: true, opacity: 0.55, side: THREE.DoubleSide,
+        transmission: 0.7, transparent: true, opacity: view.opacity,
+        side: THREE.DoubleSide, depthWrite: view.opacity > 0.8,
       }));
       const edges = new THREE.LineSegments(
         new THREE.EdgesGeometry(geometry),
@@ -123,17 +201,19 @@ function renderScene(payload) {
     // Decomposed transform (not a frozen matrix) so the gizmo can move it
     new THREE.Matrix4().fromArray(node.matrix)
       .decompose(mesh.position, mesh.quaternion, mesh.scale);
-    mesh.userData = node;
+    mesh.userData = { kind: "node", ...node };
     geometryGroup.add(mesh);
   }
-  if (selectedName) selectByName(selectedName);
+
   for (const light of payload.lights) {
     const marker = new THREE.Mesh(
-      new THREE.SphereGeometry(0.08, 16, 12),
+      new THREE.SphereGeometry(0.12, 16, 12),
       new THREE.MeshBasicMaterial({ color: 0xffd54a }),
     );
-    marker.matrixAutoUpdate = false;
-    marker.matrix.fromArray(light.matrix);
+    new THREE.Matrix4().fromArray(light.matrix)
+      .decompose(marker.position, marker.quaternion, marker.scale);
+    marker.userData = { kind: "light", ...light };
+    pickable.push(marker);
     geometryGroup.add(marker);
     const direction = new THREE.Vector3(
       light.matrix[8], light.matrix[9], light.matrix[10]);
@@ -141,59 +221,75 @@ function renderScene(payload) {
       light.matrix[12], light.matrix[13], light.matrix[14]);
     geometryGroup.add(new THREE.ArrowHelper(direction, origin, 0.8, 0xffd54a, 0.2, 0.1));
   }
+
+  for (const recorder of payload.recorders) {
+    const nodePayload = payload.nodes.find((n) => n.name === recorder.node);
+    if (!nodePayload) continue;
+    const overlay = buildRecorderOverlay(recorder, nodePayload);
+    if (overlay) {
+      pickable.push(overlay);
+      geometryGroup.add(overlay);
+    }
+  }
+
+  if (selected) reselect();
 }
 
 // ----------------------------------------------------------------------
-// Selection, inspector and document patching
+// Selection and the context-aware inspector
 
-let selectedName = null;
-const inspector = document.getElementById("inspector");
+let selected = null; // {kind, name}
+let lastScene = null;
+const inspectorName = document.getElementById("inspector-name");
 const inspectorFields = document.getElementById("inspector-fields");
+const inspectorActions = document.getElementById("inspector-actions");
 const raycaster = new THREE.Raycaster();
 
-async function patch(operation) {
-  const response = await fetch("/api/patch", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(operation),
-  });
-  const payload = await response.json();
-  if (payload.error) {
-    docStatus.textContent = payload.error;
-    docStatus.className = "err";
-    return false;
+function findPickable(kind, name) {
+  return pickable.find(
+    (mesh) => mesh.userData.kind === kind && mesh.userData.name === name) || null;
+}
+
+function select(kind, name) {
+  selected = { kind, name };
+  reselect();
+  scrollEditorTo(name, kind === "recorder" ? "recorders" : "nodes");
+}
+
+function reselect() {
+  for (const mesh of pickable) {
+    if (mesh.material.emissive) mesh.material.emissive.setHex(0x000000);
   }
-  docStatus.textContent = "scene ok";
-  docStatus.className = "";
-  editor.value = payload.text;
-  renderScene(payload.scene);
-  if (reactive.checked) startRun();
-  return true;
-}
-
-function meshByName(name) {
-  return pickable.find((mesh) => mesh.userData.name === name) || null;
-}
-
-function selectByName(name) {
-  for (const mesh of pickable) mesh.material.emissive.setHex(0x000000);
-  const mesh = meshByName(name);
-  if (!mesh) { deselect(); return; }
-  selectedName = name;
-  mesh.material.emissive.setHex(0x1a3f7a);
-  gizmo.attach(mesh);
-  buildInspector(mesh.userData);
-  inspector.hidden = false;
+  gizmo.detach();
+  if (!selected) { buildViewInspector(); return; }
+  const mesh = findPickable(selected.kind, selected.name);
+  if (!mesh) { selected = null; buildViewInspector(); return; }
+  const data = mesh.userData;
+  if (data.kind === "node") {
+    mesh.material.emissive.setHex(0x1a3f7a);
+    gizmo.attach(mesh);
+    buildNodeInspector(data);
+  } else if (data.kind === "light") {
+    gizmo.attach(mesh);
+    buildLightInspector(data);
+  } else {
+    buildRecorderInspector(data);
+  }
 }
 
 function deselect() {
-  selectedName = null;
+  selected = null;
   gizmo.detach();
-  inspector.hidden = true;
-  for (const mesh of pickable) mesh.material.emissive.setHex(0x000000);
+  reselect();
 }
 
-function field(label, value, onCommit, step = 0.1) {
+function clearInspector(title) {
+  inspectorName.textContent = title;
+  inspectorFields.innerHTML = "";
+  inspectorActions.innerHTML = "";
+}
+
+function field(label, value, onCommit, options = {}) {
   const row = document.createElement("div");
   row.className = "field";
   const labelEl = document.createElement("label");
@@ -204,7 +300,7 @@ function field(label, value, onCommit, step = 0.1) {
   for (const v of values) {
     const input = document.createElement("input");
     input.type = "number";
-    input.step = step;
+    input.step = options.step || 0.1;
     input.value = Number(v.toFixed ? v.toFixed(4) : v);
     input.addEventListener("change", () => {
       onCommit(inputs.map((i) => parseFloat(i.value) || 0));
@@ -215,13 +311,68 @@ function field(label, value, onCommit, step = 0.1) {
   inspectorFields.appendChild(row);
 }
 
-function buildInspector(node) {
-  document.getElementById("inspector-name").textContent =
-    `${node.name} · ${node.type}`;
-  inspectorFields.innerHTML = "";
-  const position = [node.matrix[12], node.matrix[13], node.matrix[14]];
-  field("position", position, (v) =>
-    patch({ op: "move", node: node.name, world_position: v }));
+function toggleField(label, value, onChange) {
+  const row = document.createElement("div");
+  row.className = "field";
+  row.innerHTML = `<label>${label}</label>`;
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = value;
+  input.addEventListener("change", () => onChange(input.checked));
+  row.appendChild(input);
+  inspectorFields.appendChild(row);
+}
+
+function actionButton(label, onClick, danger = false) {
+  const button = document.createElement("button");
+  button.textContent = label;
+  if (danger) button.className = "danger";
+  button.addEventListener("click", onClick);
+  inspectorActions.appendChild(button);
+}
+
+function buildViewInspector() {
+  clearInspector("View");
+  const row = document.createElement("div");
+  row.className = "field";
+  row.innerHTML = `<label>opacity</label>`;
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.min = "0.05"; slider.max = "1"; slider.step = "0.05";
+  slider.value = view.opacity;
+  slider.addEventListener("input", () => {
+    view.opacity = parseFloat(slider.value);
+    saveView();
+    for (const mesh of pickable) {
+      if (mesh.userData.kind === "node") {
+        mesh.material.opacity = view.opacity;
+        mesh.material.depthWrite = view.opacity > 0.8;
+      }
+    }
+  });
+  row.appendChild(slider);
+  inspectorFields.appendChild(row);
+
+  toggleField("world", view.showWorld, (checked) => {
+    view.showWorld = checked;
+    saveView();
+    if (rootMesh) rootMesh.visible = checked;
+  });
+  toggleField("grid", view.showGrid, (checked) => {
+    view.showGrid = checked;
+    saveView();
+    grid.visible = checked;
+  });
+  const hint = document.createElement("div");
+  hint.className = "hint";
+  hint.textContent = "Click an object, light or recorder face for its settings.";
+  inspectorFields.appendChild(hint);
+}
+
+function buildNodeInspector(node) {
+  clearInspector(`${node.name} · ${node.type}`);
+  field("position", [node.matrix[12], node.matrix[13], node.matrix[14]],
+    (v) => patch({ op: "move", node: node.name, world_position: v }));
 
   const base = ["nodes", node.name, node.type];
   if (node.type === "box") {
@@ -238,19 +389,96 @@ function buildInspector(node) {
   }
   field("refr. index", node.refractive_index, (v) =>
     patch({ op: "set", path: [...base, "material", "refractive-index"], value: v[0] }),
-    0.01);
+    { step: 0.01 });
+
+  // Recorders attached to this node
+  const recorders = (lastScene?.recorders || []).filter((r) => r.node === node.name);
+  if (recorders.length) {
+    const hint = document.createElement("div");
+    hint.className = "hint";
+    hint.textContent = "recorders";
+    inspectorFields.appendChild(hint);
+    for (const recorder of recorders) {
+      const link = document.createElement("button");
+      link.className = "rec-link";
+      link.innerHTML = `${recorder.name} <span>· ${recorder.event}</span>`;
+      link.addEventListener("click", () => select("recorder", recorder.name));
+      inspectorFields.appendChild(link);
+    }
+  }
+
+  actionButton("+ recorder", () =>
+    patch({ op: "add-recorder", node: node.name }));
+  actionButton("delete", () => {
+    const name = node.name;
+    deselect();
+    patch({ op: "delete-node", node: name });
+  }, true);
+}
+
+function buildLightInspector(light) {
+  clearInspector(`${light.name} · light`);
+  field("position", [light.matrix[12], light.matrix[13], light.matrix[14]],
+    (v) => patch({ op: "move", node: light.name, world_position: v }));
+
+  const spec = light.spec?.light || {};
+  const wavelength = typeof spec.wavelength === "number" ? spec.wavelength : 555;
+  field("λ (nm)", wavelength, (v) =>
+    patch({ op: "set", path: ["nodes", light.name, "light", "wavelength"], value: v[0] }),
+    { step: 1 });
+
+  const cone = spec.mask?.direction?.cone;
+  if (cone && typeof cone["half-angle"] === "number") {
+    field("cone (°)", cone["half-angle"], (v) =>
+      patch({
+        op: "set",
+        path: ["nodes", light.name, "light", "mask", "direction", "cone", "half-angle"],
+        value: v[0],
+      }), { step: 1 });
+  }
+
+  actionButton("delete", () => {
+    const name = light.name;
+    deselect();
+    patch({ op: "delete-node", node: name });
+  }, true);
+}
+
+function buildRecorderInspector(recorder) {
+  clearInspector(`${recorder.name} · recorder`);
+  const row = document.createElement("div");
+  row.className = "field";
+  row.innerHTML = `<label>event</label>`;
+  const selectEl = document.createElement("select");
+  for (const event of ["entering", "escaping", "reflected", "lost", "reacted", "killed", "exit"]) {
+    const option = document.createElement("option");
+    option.value = event;
+    option.textContent = event;
+    option.selected = event === recorder.event;
+    selectEl.appendChild(option);
+  }
+  selectEl.addEventListener("change", () =>
+    patch({ op: "set", path: ["recorders", recorder.name, "event"], value: selectEl.value }));
+  row.appendChild(selectEl);
+  inspectorFields.appendChild(row);
+
+  if (recorder.facet) {
+    field("facet", recorder.facet, (v) =>
+      patch({ op: "set", path: ["recorders", recorder.name, "facet"], value: v }),
+      { step: 1 });
+  }
+  const stats = latest[recorder.name];
+  const hint = document.createElement("div");
+  hint.className = "hint";
+  hint.textContent = stats
+    ? `${stats.rays.toLocaleString()} rays · ⟨λ⟩ ${stats.mean_wavelength.toFixed(1)} nm`
+    : "run the simulation to collect statistics";
+  inspectorFields.appendChild(hint);
+
+  actionButton("owner: " + recorder.node, () => select("node", recorder.node));
 }
 
 document.getElementById("inspector-close").addEventListener("click", deselect);
-document.getElementById("add-recorder").addEventListener("click", () => {
-  if (selectedName) patch({ op: "add-recorder", node: selectedName });
-});
-document.getElementById("delete-node").addEventListener("click", () => {
-  if (!selectedName) return;
-  const name = selectedName;
-  deselect();
-  patch({ op: "delete-node", node: name });
-});
 
 for (const button of document.querySelectorAll("#toolbar button")) {
   button.addEventListener("click", () => patch({ op: "add-node", kind: button.dataset.add }));
@@ -273,9 +501,16 @@ renderer.domElement.addEventListener("pointerup", (event) => {
   );
   raycaster.setFromCamera(pointer, camera);
   const hits = raycaster.intersectObjects(pickable, false);
-  if (hits.length) selectByName(hits[0].object.userData.name);
-  else deselect();
+  if (hits.length) {
+    const data = hits[0].object.userData;
+    select(data.kind, data.name);
+  } else {
+    deselect();
+  }
 });
+
+// ----------------------------------------------------------------------
+// Ray paths
 
 let pathCount = 0;
 const MAX_PATH_LINES = 400;
@@ -340,26 +575,23 @@ function drawBars(canvas, edges, values, spectral) {
   }
 }
 
-function drawHeatmap(canvas, values, shape) {
+function drawHeatmapInto(ctx, width, height, values, shape) {
   const [na, nb] = shape;
-  const ctx = canvas.getContext("2d");
-  const image = ctx.createImageData(na, nb);
+  const image = new ImageData(na, nb);
   const max = Math.max(1, ...values);
   for (let ia = 0; ia < na; ia++) {
     for (let ib = 0; ib < nb; ib++) {
-      // image y axis points down; put ib (second property) up
       const pixel = ((nb - 1 - ib) * na + ia) * 4;
       const [r, g, b] = viridis(values[ia * nb + ib] / max);
       image.data[pixel] = r; image.data[pixel + 1] = g;
       image.data[pixel + 2] = b; image.data[pixel + 3] = 255;
     }
   }
-  // draw at native resolution then scale up with nearest-neighbour
   const off = new OffscreenCanvas(na, nb);
   off.getContext("2d").putImageData(image, 0, 0);
   ctx.imageSmoothingEnabled = false;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, width, height);
+  ctx.drawImage(off, 0, 0, width, height);
 }
 
 // ----------------------------------------------------------------------
@@ -376,6 +608,7 @@ function ensureCards(meta) {
     const card = document.createElement("div");
     card.className = "recorder-card";
     card.innerHTML = `<h3>${name}</h3><div class="meta" id="meta-${cssId(name)}"></div>`;
+    card.querySelector("h3").addEventListener("click", () => select("recorder", name));
     info.histograms.forEach((hist, index) => {
       const label = document.createElement("div");
       label.className = "plot-label";
@@ -414,11 +647,21 @@ function updateCards(recorders) {
       const canvas = canvases[index];
       const values = data.histograms[index].values;
       if (hist.kind === "heatmap") {
-        drawHeatmap(canvas, values, data.histograms[index].shape);
+        drawHeatmapInto(canvas.getContext("2d"), canvas.width, canvas.height,
+          values, data.histograms[index].shape);
       } else {
         drawBars(canvas, hist.edges, values, hist.prop === "wavelength");
       }
     });
+
+    // Live heatmap texture on the recorder's face in the viewport
+    const overlay = recorderOverlays[name];
+    if (overlay && overlay.heatIndex >= 0 && data.histograms[overlay.heatIndex]) {
+      const entry = data.histograms[overlay.heatIndex];
+      drawHeatmapInto(overlay.canvas.getContext("2d"), 256, 256,
+        entry.values, entry.shape);
+      overlay.texture.needsUpdate = true;
+    }
   }
 }
 
@@ -455,17 +698,50 @@ function inspectBin(event, name, index) {
 }
 
 // ----------------------------------------------------------------------
-// Document editing
+// Document editing (CodeMirror)
 
-const editor = document.getElementById("editor");
 const docStatus = document.getElementById("doc-status");
 const statusEl = document.getElementById("status");
 const reactive = document.getElementById("reactive");
 
+const cm = window.CodeMirror.fromTextArea(document.getElementById("editor"), {
+  mode: "yaml",
+  theme: "material-darker",
+  lineNumbers: true,
+  tabSize: 2,
+  indentWithTabs: false,
+  lineWrapping: false,
+});
+let settingText = false;
+
+function setDocumentText(text) {
+  settingText = true;
+  const scroll = cm.getScrollInfo();
+  cm.setValue(text);
+  cm.scrollTo(scroll.left, scroll.top);
+  settingText = false;
+}
+
+function scrollEditorTo(name, section) {
+  const lines = cm.getValue().split("\n");
+  const sectionIndex = lines.findIndex((line) => line.startsWith(`${section}:`));
+  if (sectionIndex < 0) return;
+  const pattern = new RegExp(`^\\s{2}${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:`);
+  for (let i = sectionIndex + 1; i < lines.length; i++) {
+    if (/^\S/.test(lines[i])) break; // left the section
+    if (pattern.test(lines[i])) {
+      cm.scrollIntoView({ line: i, ch: 0 }, 80);
+      cm.addLineClass(i, "background", "cm-flash");
+      setTimeout(() => cm.removeLineClass(i, "background", "cm-flash"), 1200);
+      return;
+    }
+  }
+}
+
 async function loadDocument() {
   const response = await fetch("/api/document");
   const payload = await response.json();
-  editor.value = payload.text;
+  setDocumentText(payload.text);
   if (payload.text.trim()) applyDocument();
 }
 
@@ -473,7 +749,7 @@ async function applyDocument() {
   const response = await fetch("/api/document", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: editor.value }),
+    body: JSON.stringify({ text: cm.getValue() }),
   });
   const payload = await response.json();
   if (payload.error) {
@@ -484,6 +760,26 @@ async function applyDocument() {
   docStatus.textContent = "scene ok";
   docStatus.className = "";
   renderScene(payload.scene);
+  return true;
+}
+
+async function patch(operation) {
+  const response = await fetch("/api/patch", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(operation),
+  });
+  const payload = await response.json();
+  if (payload.error) {
+    docStatus.textContent = payload.error;
+    docStatus.className = "err";
+    return false;
+  }
+  docStatus.textContent = "scene ok";
+  docStatus.className = "";
+  setDocumentText(payload.text);
+  renderScene(payload.scene);
+  if (reactive.checked) startRun();
   return true;
 }
 
@@ -498,8 +794,8 @@ document.getElementById("save").addEventListener("click", async () => {
 });
 
 let debounce = null;
-editor.addEventListener("input", () => {
-  if (!reactive.checked) return;
+cm.on("change", () => {
+  if (settingText || !reactive.checked) return;
   clearTimeout(debounce);
   debounce = setTimeout(async () => {
     if (await applyDocument()) startRun();
@@ -558,5 +854,6 @@ document.getElementById("stop").addEventListener("click", () => {
   socket.send(JSON.stringify({ cmd: "stop" }));
 });
 
+buildViewInspector();
 connect();
 loadDocument();

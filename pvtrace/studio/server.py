@@ -33,6 +33,7 @@ class Studio:
     def __init__(self, document=""):
         self.document = document
         self.scene = None
+        self.spec = None
 
     def apply(self, text):
         """Validate and parse a new document; returns the scene payload."""
@@ -55,12 +56,14 @@ class Studio:
 
         self.document = text
         self.scene = scene
+        self.spec = spec
         return self.scene_payload(compiled)
 
     def scene_payload(self, compiled):
         """Geometry description for the three.js viewport."""
         from anytree import PreOrderIter
 
+        node_specs = self.spec.get("nodes", {}) if self.spec else {}
         nodes = []
         for i, name in enumerate(compiled.node_names):
             nodes.append(
@@ -72,18 +75,40 @@ class Studio:
                     "matrix": compiled.local_to_world[i].T.ravel().tolist(),
                     "root": i == compiled.root_id,
                     "refractive_index": float(compiled.refractive_index[i]),
+                    "spec": node_specs.get(name, {}),
                 }
             )
         lights = []
         for node in PreOrderIter(self.scene.root):
             if node.light is not None:
                 matrix = np.asarray(node.transformation_to(self.scene.root))
-                lights.append({"name": node.name, "matrix": matrix.T.ravel().tolist()})
+                lights.append({"name": node.name,
+                               "matrix": matrix.T.ravel().tolist(),
+                               "spec": node_specs.get(node.name, {})})
         recorders = []
         for node in PreOrderIter(self.scene.root):
             for recorder in getattr(node, "recorders", []):
-                recorders.append({"name": recorder.name, "node": node.name,
-                                  "event": recorder.event})
+                histograms = []
+                for hist in recorder.histograms:
+                    if isinstance(hist, Heatmap):
+                        histograms.append({
+                            "kind": "heatmap",
+                            "prop_a": hist.a.prop, "prop_b": hist.b.prop,
+                            "range_a": [hist.a.start, hist.a.stop, hist.a.bins],
+                            "range_b": [hist.b.start, hist.b.stop, hist.b.bins],
+                        })
+                    else:
+                        histograms.append({
+                            "kind": "hist", "prop": hist.prop,
+                            "range": [hist.start, hist.stop, hist.bins],
+                        })
+                recorders.append({
+                    "name": recorder.name,
+                    "node": node.name,
+                    "event": recorder.event,
+                    "facet": list(recorder.facet) if recorder.facet else None,
+                    "histograms": histograms,
+                })
         return {"nodes": nodes, "lights": lights, "recorders": recorders}
 
 
