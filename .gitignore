@@ -115,3 +115,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+
+# Simulation output databases
+*.sqlite3
