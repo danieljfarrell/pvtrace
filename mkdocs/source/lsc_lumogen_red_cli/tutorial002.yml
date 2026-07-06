@@ -1,0 +1,15 @@
+version: "1.0"
+
+nodes:
+  world:
+    sphere:
+      radius: 100.0
+      material:
+        refractive-index: 1.0
+
+  lsc:
+    location: [0, 0, 0.5]
+    box:
+      size: [5, 5, 1]
+      material:
+        refractive-index: 1.5

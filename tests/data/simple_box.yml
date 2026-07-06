@@ -1,0 +1,48 @@
+version: "1.0"
+
+nodes:
+  world:
+    sphere:
+      radius: 100.0
+      material:
+        refractive-index: 1.0
+
+  my-simple-box:
+    location: [0, 0, 2]
+    direction: [0.57735027, 0.57735027, 0.57735027]
+    box:
+      size: [4, 4, 1]
+      material:
+        refractive-index: 1.5
+        components:
+          - my-lumogen-dye
+
+  green-laser:
+    location: [0, 0, -10]
+    light:
+      mask:
+        direction:
+          cone:
+            half-angle: 22.5
+
+components:
+  my-lumogen-dye:
+    luminophore:
+      absorption:
+        coefficient: 1
+        hist: true
+        spectrum:
+          name: lumogen-f-red-305
+          range:
+            min: 400
+            max: 800
+            spacing: 2
+      emission:
+        quantum-yield: 0.8
+        phase-function: "isotropic"
+        spectrum:
+          name: lumogen-f-red-305
+          range:
+            min: 400
+            max: 800
+            spacing: 2

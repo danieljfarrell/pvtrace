@@ -1,0 +1,188 @@
+version: "1.0"
+
+nodes:
+  world:
+    box:
+      size: [100, 100, 100]
+      material:
+        refractive-index: 1.0
+
+  ball:
+    parent: world
+    location: [10, 10, 10]
+    direction: [1, 0, 0]
+    sphere:
+      radius: 10.0
+      material:
+        refractive-index: 1.5
+        components:
+          - my-background-absorber
+          - myscatterer1
+          - myscatterer2
+          - myscatterer3
+          - myscatterer4
+
+  rod:
+    parent: world
+    location: [0, 0, 5]
+    direction: [1, 0, 0]
+    cylinder:
+      radius: 1.0
+      length: 10.0
+      material:
+        refractive-index: 2.0
+        components:
+          - my-background-absorber
+          - myscatterer1
+          - myscatterer2
+          - myscatterer3
+          - myscatterer4
+
+  xyz-cube:
+    parent: world
+    mesh:
+      file: ./20mm-xyz-cube.stl
+      material:
+        refractive-index: 1.5
+
+  light1:
+    parent: world
+    location: [0, 0, 20]
+    direction: [0, 0, -1]
+    light:
+      wavelength: 555
+
+  light2:
+    parent: world
+    light:
+      mask:
+        position:
+          rect: [5, 5]
+
+  light3:
+    parent: world
+    light:
+      mask:
+        position:
+          cube: [5, 5, 5]
+
+  light4:
+    parent: world
+    light:
+      mask:
+        position:
+          circle: 1.0
+
+  light5:
+    parent: world
+    light:
+      mask:
+        direction:
+          isotropic:
+
+  light6:
+    parent: world
+    light:
+      mask:
+        direction:
+          lambertian:
+
+  light7:
+    parent: world
+    light:
+      mask:
+        direction:
+          cone:
+            half-angle: 45
+
+  light8:
+    parent: world
+    light:
+      mask:
+        wavelength:
+          spectrum:
+            file: ./subfolder/mock-spectrum.csv
+
+components:
+  my-QDs:
+    luminophore:
+      absorption:
+        coefficient: 100
+        hist: true
+        spectrum:
+          file: ./subfolder/mock-spectrum.csv
+      emission:
+        quantum-yield: 0.9
+        phase-function: "isotropic"
+        spectrum:
+          file: ./subfolder/mock-spectrum.csv
+
+  my-lumogen-absorber:
+    luminophore:
+      absorption:
+        coefficient: 100
+        hist: true
+        spectrum:
+          name: lumogen-f-red-305
+          range:
+            min: 400
+            max: 800
+            spacing: 2
+      emission:
+        quantum-yield: 0.9
+        phase-function: "isotropic"
+        spectrum:
+          name: lumogen-f-red-305
+          range:
+            min: 400
+            max: 800
+            spacing: 2
+
+  myscatterer1:
+    scatterer:
+      coefficient: 1
+      hist: false
+      spectrum:
+        file: ./subfolder/mock-spectrum.csv
+      quantum-yield: 0.9
+      phase-function:
+        isotropic:
+
+  myscatterer2:
+    scatterer:
+      coefficient: 1
+      hist: false
+      spectrum:
+        file: ./subfolder/mock-spectrum.csv
+      quantum-yield: 0.9
+      phase-function:
+        lambertian:
+
+  myscatterer3:
+    scatterer:
+      coefficient: 1
+      hist: false
+      spectrum:
+        file: ./subfolder/mock-spectrum.csv
+      quantum-yield: 0.9
+      phase-function:
+        cone:
+          half-angle: 45
+
+  myscatterer4:
+    scatterer:
+      coefficient: 1
+      hist: false
+      spectrum:
+        file: ./subfolder/mock-spectrum.csv
+      quantum-yield: 0.9
+      phase-function:
+        henyey-greenstein:
+          g: 0.1
+
+  my-background-absorber:
+    absorber:
+      coefficient: 0.1
+      hist: false
+      spectrum:
+        file: ./subfolder/mock-spectrum.csv

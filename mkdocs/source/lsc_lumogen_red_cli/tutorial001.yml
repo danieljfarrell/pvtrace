@@ -1,0 +1,8 @@
+version: "1.0"
+
+nodes:
+  world:
+    sphere:
+      radius: 100.0
+      material:
+        refractive-index: 1.0

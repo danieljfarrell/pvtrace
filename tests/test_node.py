@@ -1,3 +1,4 @@
+from pvtrace.geometry.transformations import rotation_matrix
 import pytest
 import sys
 import os
@@ -20,14 +21,14 @@ def node_tree():
     c.location = c_pos
     return a, b, c
 
+
 class TestNode:
-    
     def test_init(self):
         assert type(Node()) == Node
-    
+
     def test_name(self):
-        assert Node(name="a").name == 'a'
-    
+        assert Node(name="a").name == "a"
+
     def test_parent(self):
         a = Node()
         b = Node(parent=a)
@@ -35,12 +36,12 @@ class TestNode:
         assert b.parent == a
 
     def test_coodinate_system_conversions(self):
-        a = Node(name='a')
-        b = Node(name='b', parent=a)
-        c = Node(name='c', parent=b)
-        d = Node(name='d', parent=a)
-        b.translate((1,1,1))
-        c.translate((0,1,1))
+        a = Node(name="a")
+        b = Node(name="b", parent=a)
+        c = Node(name="c", parent=b)
+        d = Node(name="d", parent=a)
+        b.translate((1, 1, 1))
+        c.translate((0, 1, 1))
         d.translate((-1, -1, -1))
         theta = 0.5 * np.pi
         b.rotate(theta, (0, 0, 1))
@@ -72,8 +73,7 @@ class TestNode:
         assert np.allclose(points, ((-1.0, 0.0, 0.0), (1.0, 0.0, 0.0)))
 
     def test_intersection_when_on_surface(self):
-        """ Make sure we return intersection points even with zero distance from ray.
-        """
+        """Make sure we return intersection points even with zero distance from ray."""
         a = Node(name="A", parent=None)
         a.geometry = Sphere(radius=1.0)
         loc = (-1.0, 0.0, 0.0)
@@ -82,7 +82,7 @@ class TestNode:
         points = np.array([x.point for x in intersections])
         expected = np.array([(-1.0, 0.0, 0.0), (1.0, 0.0, 0.0)])
         assert np.allclose(points, expected)
-    
+
     def test_intersection_with_translation(self):
         a = Node(name="A", parent=None)
         b = Node(name="B", parent=a)
@@ -101,7 +101,7 @@ class TestNode:
         expected = np.array(((0.0, 0.0, 0.0), (2.0, 0.0, 0.0)))
         # In frame of a everything is shifed 1 along x
         assert np.allclose(points, expected)
-    
+
     def test_is_entering_true(self):
         a = Node(name="A", parent=None)
         b = Node(name="B", parent=a)
@@ -118,5 +118,18 @@ class TestNode:
         entering_direction = (-1.0, 0.0, 0.0)
         assert b.geometry.is_entering(surface_point, entering_direction) == False
 
-if __name__ == '__main__':
+    def test_look_at(self):
+        a = Node(name="A", parent=None)  # looking at [0, 0, 1] by definition
+        a.look_at([1, 0, 0])
+        expected = rotation_matrix(np.pi / 2, [0, 1, 0])
+        assert np.allclose(expected, a._pose)
+
+    def test_look_at_anti_parallel(self):
+        a = Node(name="A", parent=None)  # looking at [0, 0, 1] by definition
+        a.look_at([0, 0, -1])
+        expected = rotation_matrix(np.pi, [0, 1, 0])
+        assert np.allclose(expected, a._pose)
+
+
+if __name__ == "__main__":
     pass

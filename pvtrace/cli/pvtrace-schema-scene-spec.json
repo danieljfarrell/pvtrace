@@ -1,0 +1,601 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "id": "pvtrace-schema-scene-spec.json",
+    "type": "object",
+    "title": "pvtrace scene specification",
+    "description": "Defines a scene for ray-tracing software pvtrace.",
+    "properties": {
+        "version": {
+            "type": "string",
+            "description": "Version of the scene file; pvtrace will reject versions it does not understand."
+        },
+        "nodes": {
+            "id": "#/properties/nodes",
+            "type": "object",
+            "description": "Scene graph of nodes",
+            "uniqueItems": true,
+            "patternProperties": {
+                "^[a-zA-Z0-9._-]+$": {
+                    "$ref": "#/definitions/node"
+                }
+            },
+            "properties": {
+                "world": {
+                    "$ref": "#/definitions/node"
+                }
+            },
+            "required": [
+                "world"
+            ],
+            "additionalProperties": false
+        },
+        "components": {
+            "id": "#/properties/components",
+            "type": "object",
+            "description": "Scene graph of nodes",
+            "uniqueItems": true,
+            "properties": {
+                "builtin": {
+                    "type": "boolean"
+                }
+            },
+            "patternProperties": {
+                "^[a-zA-Z0-9._-]+$": {
+                    "$ref": "#/definitions/component"
+                }
+            },
+            "additionalProperties": false
+        },
+        "additionalProperties": false
+    },
+    "definitions": {
+        "node": {
+            "id": "#/definitions/node",
+            "type": "object",
+            "properties": {
+                "parent": {
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "box": {
+                    "$ref": "#/definitions/box"
+                },
+                "cylinder": {
+                    "$ref": "#/definitions/cylinder"
+                },
+                "sphere": {
+                    "$ref": "#/definitions/sphere"
+                },
+                "mesh": {
+                    "$ref": "#/definitions/mesh"
+                },
+                "light": {
+                    "$ref": "#/definitions/light"
+                },
+                "location": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "direction": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            },
+            "oneOf": [
+                {
+                    "required": [
+                        "box"
+                    ]
+                },
+                {
+                    "required": [
+                        "cylinder"
+                    ]
+                },
+                {
+                    "required": [
+                        "sphere"
+                    ]
+                },
+                {
+                    "required": [
+                        "mesh"
+                    ]
+                },
+                {
+                    "required": [
+                        "light"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "box": {
+            "id": "#/definitions/box",
+            "type": "object",
+            "properties": {
+                "size": {
+                    "$ref": "#/definitions/point-like"
+                },
+                "material": {
+                    "$ref": "#/definitions/material"
+                }
+            },
+            "required": [
+                "size",
+                "material"
+            ]
+        },
+        "cylinder": {
+            "id": "#/definitions/cylinder",
+            "type": "object",
+            "properties": {
+                "length": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "radius": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "material": {
+                    "$ref": "#/definitions/material"
+                }
+            },
+            "required": [
+                "length",
+                "radius",
+                "material"
+            ]
+        },
+        "sphere": {
+            "id": "#/definitions/sphere",
+            "type": "object",
+            "properties": {
+                "radius": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "material": {
+                    "$ref": "#/definitions/material"
+                }
+            },
+            "required": [
+                "radius",
+                "material"
+            ]
+        },
+        "mesh": {
+            "id": "#/definitions/mesh",
+            "type": "object",
+            "properties": {
+                "file": {
+                    "type": "string"
+                },
+                "material": {
+                    "$ref": "#/definitions/material"
+                }
+            },
+            "required": [
+                "file",
+                "material"
+            ]
+        },
+        "light": {
+            "id": "#/definitions/light",
+            "type": "object",
+            "properties": {
+                "wavelength": {
+                    "type": "number"
+                },
+                "mask": {
+                    "$ref": "#/definitions/mask"
+                }
+            }
+        },
+        "mask": {
+            "id": "#/definitions/mask",
+            "type": "object",
+            "properties": {
+                "position": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/point-like"
+                        },
+                        {
+                            "$ref": "#/definitions/position-mask"
+                        }
+                    ]
+                },
+                "direction": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/definitions/point-like"
+                        },
+                        {
+                            "$ref": "#/definitions/direction-mask"
+                        }
+                    ]
+                },
+                "wavelength": {
+                    "oneOf": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "$ref": "#/definitions/wavelength-mask"
+                        }
+                    ]
+                }
+            }
+        },
+        "position-mask": {
+            "id": "#/definitions/position-mask",
+            "type": "object",
+            "properties": {
+                "rect": {
+                    "type": "array",
+                    "items": {
+                        "type": "number",
+                        "minItems": 2,
+                        "maxItems": 2
+                    }
+                },
+                "cube": {
+                    "type": "array",
+                    "items": {
+                        "type": "number",
+                        "minItems": 3,
+                        "maxItems": 3
+                    }
+                },
+                "circle": {
+                    "type": "number"
+                }
+            },
+            "oneOf": [
+                {
+                    "required": [
+                        "rect"
+                    ]
+                },
+                {
+                    "required": [
+                        "cube"
+                    ]
+                },
+                {
+                    "required": [
+                        "circle"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "direction-mask": {
+            "id": "#/definitions/direction-mask",
+            "type": "object",
+            "properties": {
+                "isotropic": {
+                    "type": "null"
+                },
+                "lambertian": {
+                    "type": "null"
+                },
+                "henyey-greenstein": {
+                    "type": "object",
+                    "properties": {
+                        "g": {
+                            "type": "number",
+                            "minimum": -1.0,
+                            "maximum": 1.0
+                        }
+                    },
+                    "required": [
+                        "g"
+                    ],
+                    "additionalProperties": false
+                },
+                "cone": {
+                    "type": "object",
+                    "properties": {
+                        "half-angle": {
+                            "oneOf": [
+                                {
+                                    "type": "number"
+                                },
+                                {
+                                    "type": "string"
+                                }
+                            ]
+                        }
+                    },
+                    "required": [
+                        "half-angle"
+                    ],
+                    "additionalProperties": false
+                },
+                "additionalProperties": false
+            },
+            "oneOf": [
+                {
+                    "required": [
+                        "isotropic"
+                    ]
+                },
+                {
+                    "required": [
+                        "lambertian"
+                    ]
+                },
+                {
+                    "required": [
+                        "cone"
+                    ]
+                },
+                {
+                    "required": [
+                        "henyey-greenstein"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "wavelength-mask": {
+            "id": "#/definitions/wavelength-mask",
+            "type": "object",
+            "properties": {
+                "nanometers": {
+                    "type": "number"
+                },
+                "spectrum": {
+                    "$ref": "#/definitions/spectrum"
+                }
+            },
+            "oneOf": [
+                {
+                    "required": [
+                        "nanometers"
+                    ]
+                },
+                {
+                    "required": [
+                        "spectrum"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "point-like": {
+            "id": "#/definitions/point-like",
+            "type": "array",
+            "items": {
+                "type": "number",
+                "minItems": 3,
+                "maxItems": 3
+            }
+        },
+        "material": {
+            "id": "#/definitions/material",
+            "type": "object",
+            "properties": {
+                "refractive-index": {
+                    "type": "number",
+                    "minimum": 1
+                },
+                "components": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "refractive-index"
+            ]
+        },
+        "component": {
+            "id": "#/definitions/component",
+            "type": "object",
+            "uniqueItems": true,
+            "properties": {
+                "luminophore": {
+                    "$ref": "#/definitions/luminophore"
+                },
+                "scatterer": {
+                    "$ref": "#/definitions/scatterer"
+                },
+                "absorber": {
+                    "$ref": "#/definitions/absorber"
+                },
+                "builtin": {
+                    "description": "Name of build in component",
+                    "type": "string"
+                }
+            },
+            "oneOf": [
+                {
+                    "required": [
+                        "luminophore"
+                    ]
+                },
+                {
+                    "required": [
+                        "scatterer"
+                    ]
+                },
+                {
+                    "required": [
+                        "absorber"
+                    ]
+                }
+            ],
+            "additionalProperties": false
+        },
+        "luminophore": {
+            "type": "object",
+            "properties": {
+                "hist": {
+                    "type": "boolean"
+                },
+                "absorption": {
+                    "type": "object",
+                    "properties": {
+                        "coefficient": {
+                            "type": "number",
+                            "minimum": 0
+                        },
+                        "spectrum": {
+                            "$ref": "#/definitions/spectrum"
+                        }
+                    }
+                },
+                "emission": {
+                    "type": "object",
+                    "properties": {
+                        "quantum-yield": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                        },
+                        "spectrum": {
+                            "$ref": "#/definitions/spectrum"
+                        }
+                    }
+                }
+            }
+        },
+        "scatterer": {
+            "type": "object",
+            "properties": {
+                "coefficient": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "hist": {
+                    "type": "boolean"
+                },
+                "spectrum": {
+                    "$ref": "#/definitions/spectrum"
+                },
+                "quantum-yield": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                },
+                "phase-function": {
+                    "$ref": "#/definitions/direction-mask"
+                }
+            },
+            "additionalProperties": false,
+            "anyOf": [
+                {
+                    "required": [
+                        "coefficient"
+                    ]
+                },
+                {
+                    "required": [
+                        "spectrum"
+                    ]
+                },
+                {
+                    "required": [
+                        "coefficient",
+                        "spectrum"
+                    ]
+                }
+            ]
+        },
+        "absorber": {
+            "type": "object",
+            "properties": {
+                "coefficient": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "hist": {
+                    "type": "boolean"
+                },
+                "spectrum": {
+                    "$ref": "#/definitions/spectrum"
+                }
+            },
+            "additionalProperties": false,
+            "anyOf": [
+                {
+                    "required": [
+                        "coefficient"
+                    ]
+                },
+                {
+                    "required": [
+                        "spectrum"
+                    ]
+                },
+                {
+                    "required": [
+                        "coefficient",
+                        "spectrum"
+                    ]
+                }
+            ]
+        },
+        "spectrum": {
+            "id": "#/definitions/spectrum",
+            "type": "object",
+            "properties": {
+                "file": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "range": {
+                    "type": "object",
+                    "properties": {
+                        "min": {
+                            "type": "number"
+                        },
+                        "max": {
+                            "type": "number"
+                        },
+                        "spacing": {
+                            "type": "number"
+                        }
+                    },
+                    "required": [
+                        "min",
+                        "max",
+                        "spacing"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            "additionalProperties": false,
+            "oneOf": [
+                {
+                    "required": [
+                        "file"
+                    ]
+                },
+                {
+                    "required": [
+                        "name",
+                        "range"
+                    ]
+                }
+            ]
+        }
+    }
+}

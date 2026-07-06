@@ -24,22 +24,22 @@ logger = logging.getLogger(__name__)
 
 
 def find_container(intersections):
-    """ Returns the container node.
-    
-        Parameters
-        ----------
-        intersections: List[Intersection]
-            Full list of intersections of ray with a scene.
-    
-        Returns
-        -------
-        Node
-            The container node
+    """Returns the container node.
 
-        Example
-        -------
-        >>> intersections = scene.intersections(ray.position, ray.directions)
-        >>> container = find_container(intersections)
+    Parameters
+    ----------
+    intersections: List[Intersection]
+        Full list of intersections of ray with a scene.
+
+    Returns
+    -------
+    Node
+        The container node
+
+    Example
+    -------
+    >>> intersections = scene.intersections(ray.position, ray.directions)
+    >>> container = find_container(intersections)
     """
     if len(intersections) == 1:
         return intersections[0].hit
@@ -58,24 +58,24 @@ def find_container(intersections):
 
 
 def next_hit(scene, ray):
-    """ Returns information about the next interface the ray makes with the scene.
-    
-        Parameters
-        ----------
-        scene : Scene
-        ray : Ray
-    
-        Returns
-        -------
-        hit_node : Node
-            The node corresponding to the geometry object that was hit.
-        interface : tuple of Node
-            Two node: the `container` and the `adjacent` which correspond to the
-            materials either side of the interface.
-        point: tuple of float
-            The intersection point.
-        distance: float
-            Distance to the intersection point.
+    """Returns information about the next interface the ray makes with the scene.
+
+    Parameters
+    ----------
+    scene : Scene
+    ray : Ray
+
+    Returns
+    -------
+    hit_node : Node
+        The node corresponding to the geometry object that was hit.
+    interface : tuple of Node
+        Two node: the `container` and the `adjacent` which correspond to the
+        materials either side of the interface.
+    point: tuple of float
+        The intersection point.
+    distance: float
+        Distance to the intersection point.
     """
     # Intersections are in the local node's coordinate system
     intersections = scene.intersections(ray.position, ray.direction)
@@ -109,103 +109,220 @@ def next_hit(scene, ray):
     return hit_node, (container, adjacent), point, distance
 
 
-def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
-    """ The main ray-tracing function. Provide a scene and a ray and get a full photon
-        path history and list of events.
-    
-        Parameters
-        ----------
-        scene: Scene
-            The `Scene` to trace.
-        ray: Ray
-            The `Ray` to trace through the scene.
-        maxsteps: int
-            Abort ray tracing after this number of steps. Default is 1000.
-        maxpathlength: float
-            Abort ray tracing after ray has travelled more than this distance. Default
-            is infinity.
-        emit_method: str
-            Either `'kT'`, `'redshift'` or `'full'`.
+def step_forward(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
+    """The main ray-tracing algorithm. Provide a scene and a ray and this generates
+     a full photon path history, events and metadata.
 
-            `'kT'` option allowed emitted rays to have a wavelength
-            within 3kT of the absorbed value.
+    Parameters
+    ----------
+    scene: Scene
+        The `Scene` to trace.
+    ray: Ray
+        The `Ray` to trace through the scene.
+    maxsteps: int
+        Abort ray tracing after this number of steps. Default is 1000.
+    maxpathlength: float
+        Abort ray tracing after ray has travelled more than this distance. Default
+        is infinity.
+    emit_method: str
+        Either `'kT'`, `'redshift'` or `'full'`.
 
-            `'redshift'` option ensures the emitted ray has a longer of equal
-            wavelength.
+        `'kT'` option allowed emitted rays to have a wavelength
+        within 3kT of the absorbed value.
 
-            `'full'` option samples the full emission spectrum allowing the emitted
-            ray to take any value.
-    
-        Returns
-        -------
-        history: tuple
-            Elements are 2-tuples (Ray, Event)
-    
-        Example
-        -------
-    
-        Trace a scene with 10 rays::
+        `'redshift'` option ensures the emitted ray has a longer of equal
+        wavelength.
 
-            for ray in scene.emit(10):
-                history = photon_tracer.follow(ray, scene)
-                rays, events = zip(*history)
+        `'full'` option samples the full emission spectrum allowing the emitted
+        ray to take any value.
+
+    Returns
+    -------
+    history: tuple
+        Elements are 2-tuples (Ray, Event)
+
+    Example
+    -------
+
+    Trace a scene with 10 rays::
+
+        for ray in scene.emit(10):
+            history = photon_tracer.follow(ray, scene)
+            rays, events = zip(*history)
     """
     count = 0
-    history = [(ray, Event.GENERATE)]
+    yield (ray, Event.GENERATE, None)
     while True:
         count += 1
-        if count > maxsteps or ray.travelled > maxpathlength:
-            history.append([ray, Event.KILL])
-            break
-
         info = next_hit(scene, ray)
         if info is None:
             break
 
         hit, (container, adjacent), point, full_distance = info
+
+        if count > maxsteps or ray.travelled > maxpathlength:
+            yield (
+                ray,
+                Event.KILL,
+                {
+                    "maxsteps": count,
+                    "maxpathlength": ray.travelled,
+                    "container": container.name,
+                },
+            )
+            break
+
+        refractive_index = container.geometry.material.refractive_index
         if hit is scene.root:
-            history.append((ray.propagate(full_distance), Event.EXIT))
+            yield (
+                ray.propagate(full_distance, refractive_index),
+                Event.EXIT,
+                {
+                    "hit": hit.name,
+                    "container": container.name,
+                    "adjacent": None if adjacent is None else adjacent.name,
+                },
+            )
             break
 
         material = container.geometry.material
         absorbed, at_distance = material.is_absorbed(ray, full_distance)
         if absorbed:
-            ray = ray.propagate(at_distance)
+            ray = ray.propagate(at_distance, refractive_index)
             component = material.component(ray.wavelength)
+            yield (
+                ray,
+                Event.ABSORB,
+                {"component": component.name, "container": container.name},
+            )
+
             if component.is_radiative(ray):
                 ray = component.emit(
                     ray.representation(scene.root, container), method=emit_method
-                )
-                ray = ray.representation(container, scene.root)
+                ).representation(container, scene.root)
                 if isinstance(component, Luminophore):
                     event = Event.EMIT
                 elif isinstance(component, Scatterer):
                     event = Event.SCATTER
-                history.append((ray, event))
+                else:
+                    raise ValueError("Unknown component")
+                yield (
+                    ray,
+                    event,
+                    {
+                        "component": component.name,
+                        "emit_method": emit_method,
+                        "container": container.name,
+                    },
+                )
                 continue
             else:
+                ray = component.nonradiative_absorb(ray)
                 if isinstance(component, Reactor):
-                    history.append((ray, Event.REACT))
+                    yield (
+                        ray,
+                        Event.REACT,
+                        {"component": component.name, "container": container.name},
+                    )
                 else:
-                    history.append((ray, Event.ABSORB))
+                    yield (
+                        ray,
+                        Event.NONRADIATIVE,
+                        {"component": component.name, "container": container.name},
+                    )
                 break
         else:
-            ray = ray.propagate(full_distance)
+            ray = ray.propagate(full_distance, refractive_index)
             surface = hit.geometry.material.surface
-            ray = ray.representation(scene.root, hit)
-            if surface.is_reflected(ray, hit.geometry, container, adjacent):
-                ray = surface.reflect(ray, hit.geometry, container, adjacent)
-                ray = ray.representation(hit, scene.root)
-                history.append((ray, Event.REFLECT))
-                # print("REFLECT", ray)
+
+            # Need the ray in the frame of the hit object to compute normal
+            # and to perform relfections and refractions.
+            local_ray = ray.representation(scene.root, hit)
+            normal = hit.vector_to_node(
+                hit.geometry.normal(local_ray.position), scene.root
+            )
+            if surface.is_reflected(local_ray, hit.geometry, container, adjacent):
+                ray = surface.reflect(
+                    local_ray, hit.geometry, container, adjacent
+                ).representation(hit, scene.root)
+                yield (
+                    ray,
+                    Event.REFLECT,
+                    {
+                        "hit": hit.name,
+                        "container": container.name,
+                        "adjacent": None if adjacent is None else adjacent.name,
+                        "normal": normal,
+                    },
+                )
                 continue
             else:
-                ref_ray = surface.transmit(ray, hit.geometry, container, adjacent)
-                # if points_equal(ref_ray.direction, ray.direction):
-                #    raise ValueError("Ray did not refract.")
-                ray = ref_ray
-                ray = ray.representation(hit, scene.root)
-                history.append((ray, Event.TRANSMIT))
-                # print("TRANSMIT", ray)
+                ray = surface.transmit(
+                    local_ray, hit.geometry, container, adjacent
+                ).representation(hit, scene.root)
+                yield (
+                    ray,
+                    Event.TRANSMIT,
+                    {
+                        "hit": hit.name,
+                        "container": container.name,
+                        "adjacent": adjacent.name,
+                        "normal": normal,
+                    },
+                )
                 continue
-    return history
+
+
+def follow(scene, ray, maxsteps=1000, maxpathlength=np.inf, emit_method="kT"):
+    """The main ray-tracing function. Provide a scene and a ray and get a full photon
+    path history and list of events.
+
+    Parameters
+    ----------
+    scene: Scene
+        The `Scene` to trace.
+    ray: Ray
+        The `Ray` to trace through the scene.
+    maxsteps: int
+        Abort ray tracing after this number of steps. Default is 1000.
+    maxpathlength: float
+        Abort ray tracing after ray has travelled more than this distance. Default
+        is infinity.
+    emit_method: str
+        Either `'kT'`, `'redshift'` or `'full'`.
+
+        `'kT'` option allowed emitted rays to have a wavelength
+        within 3kT of the absorbed value.
+
+        `'redshift'` option ensures the emitted ray has a longer of equal
+        wavelength.
+
+        `'full'` option samples the full emission spectrum allowing the emitted
+        ray to take any value.
+
+    Returns
+    -------
+    history: tuple
+        Elements are 2-tuples (Ray, Event)
+
+    Example
+    -------
+
+    Trace a scene with 10 rays::
+
+        for ray in scene.emit(10):
+            history = photon_tracer.follow(ray, scene)
+            rays, events = zip(*history)
+    """
+    history = list(
+        step_forward(
+            scene,
+            ray,
+            maxsteps=maxsteps,
+            maxpathlength=maxpathlength,
+            emit_method=emit_method,
+        )
+    )
+    # Remove metadata for backward compatability
+    ray, events, _ = zip(*history)
+    return list(zip(ray, events))

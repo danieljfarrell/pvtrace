@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+      - develop
+      - feature/*
   pull_request:
     branches:
       - "*"
@@ -11,7 +13,6 @@ on:
 jobs:
   conda-build:
     name: Conda ${{ matrix.python-version }} - ${{ matrix.os }}
-
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true

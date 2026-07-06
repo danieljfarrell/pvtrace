@@ -1,5 +1,6 @@
 import numpy as np
-from pvtrace.geometry.utils import flip
+import numpy
+from pvtrace.geometry.utils import flip, close_to_zero
 
 # Fresnel
 
@@ -56,8 +57,7 @@ def bandgap(x, cutoff, alpha):
 
 
 def simple_convert_spectum(spec):
-    """ Change spectrum x-axis only.
-    """
+    """Change spectrum x-axis only."""
     h = 6.62607015e-34  # J s
     c = 299792458.0  # m s-1
     q = 1.60217662e-19  # C
@@ -88,7 +88,7 @@ def thermodynamic_emission(abs_spec, T=300, mu=0.5):
 # Coordinates
 
 
-def spherical_to_cart(theta, phi, r=1):
+def spherical_to_cart(theta, phi, r=1) -> numpy.ndarray:
     x = r * np.sin(theta) * np.cos(phi)
     y = r * np.sin(theta) * np.sin(phi)
     z = r * np.cos(theta)
@@ -101,9 +101,8 @@ def spherical_to_cart(theta, phi, r=1):
 #  Volume scattering
 
 
-def isotropic():
-    """ Isotropic phase function.
-    """
+def isotropic() -> numpy.ndarray:
+    """Isotropic phase function."""
     g1, g2 = np.random.uniform(0, 1, 2)
     phi = 2 * np.pi * g1
     mu = 2 * g2 - 1  # mu = cos(theta)
@@ -112,9 +111,8 @@ def isotropic():
     return coords
 
 
-def henyey_greenstein(g=0.0):
-    """ Henyey-Greenstein phase function.
-    """
+def henyey_greenstein(g=0.0) -> numpy.ndarray:
+    """Henyey-Greenstein phase function."""
     # https://www.astro.umd.edu/~jph/HG_note.pdf
     p = np.random.uniform(0, 1)
     s = 2 * p - 1
@@ -129,22 +127,32 @@ def henyey_greenstein(g=0.0):
     return coords
 
 
+class HenyeyGreenstein(object):
+    """Helper object which generates rays uniformally on an xy-plane."""
+
+    def __init__(self, g: float):
+        self.g = float(g)
+
+    def __call__(self):
+        return henyey_greenstein(self.g)
+
+
 # Light source /surface scattering
 
 
-def cone(theta_max):
-    """ Samples directions within a cone of solid angle defined by `theta_max`.
-    
-        Notes
-        -----
-        Derived as follows using sympy::
-    
-            from sympy import *
-            theta, theta_max, p = symbols('theta theta_max p')
-            f = cos(theta) * sin(theta)
-            cdf = integrate(f, (theta, 0, theta))
-            pdf = cdf / cdf.subs({theta: theta_max})
-            inv_pdf = solve(Eq(pdf, p), theta)[-1]
+def cone(theta_max: float) -> numpy.ndarray:
+    """Samples directions within a cone of solid angle defined by `theta_max`.
+
+    Notes
+    -----
+    Derived as follows using sympy::
+
+        from sympy import *
+        theta, theta_max, p = symbols('theta theta_max p')
+        f = cos(theta) * sin(theta)
+        cdf = integrate(f, (theta, 0, theta))
+        pdf = cdf / cdf.subs({theta: theta_max})
+        inv_pdf = solve(Eq(pdf, p), theta)[-1]
     """
     if np.isclose(theta_max, 0.0) or theta_max > np.pi / 2:
         raise ValueError("Expected 0 < theta_max <= pi/2")
@@ -155,11 +163,21 @@ def cone(theta_max):
     return coords
 
 
-def lambertian():
-    """ Samples the Lambertian directions emitted from a surface with normal
-        pointing along the positive z-direction.
-        
-        This never produces directions in the negative z-direction.
+class Cone(object):
+    """Helper object which generates rays uniformally on an xy-plane."""
+
+    def __init__(self, theta_max: float):
+        self.theta_max = float(theta_max)
+
+    def __call__(self):
+        return cone(self.theta_max)
+
+
+def lambertian() -> numpy.ndarray:
+    """Samples the Lambertian directions emitted from a surface with normal
+    pointing along the positive z-direction.
+
+    This never produces directions in the negative z-direction.
     """
     p1, p2 = np.random.uniform(0, 1, 2)
     theta = np.arcsin(np.sqrt(p1))
