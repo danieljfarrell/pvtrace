@@ -22,10 +22,24 @@ setup(
         __version__
     ),
     entry_points={"console_scripts": ["pvtrace-cli=pvtrace.cli.main:main"]},
-    python_requires=">=3.7.2,<3.8",
+    python_requires=">=3.10",
     packages=find_packages(),
+    package_data={
+        "pvtrace": ["data/schema.sql", "cli/pvtrace-schema-scene-spec.json"]
+    },
     keywords=["optics", "raytracing", "photovoltaics", "energy"],
-    install_requires=["numpy", "pandas", "anytree", "meshcat>=0.0.16", "trimesh[easy]"],
+    install_requires=[
+        "numpy",
+        "pandas",
+        "anytree",
+        "meshcat>=0.1.1",
+        "trimesh[easy]",
+        "typer",
+        "pyyaml",
+        "jsonschema",
+        "scipy",
+        "termplotlib",
+    ],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
@@ -34,6 +48,9 @@ setup(
         "Topic :: Scientific/Engineering :: Chemistry",
         "Topic :: Scientific/Engineering :: Visualization",
         "License :: OSI Approved :: BSD License",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
 )

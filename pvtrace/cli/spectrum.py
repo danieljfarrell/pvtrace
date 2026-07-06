@@ -4,7 +4,7 @@ import numpy
 import pandas
 import enum
 import io
-import asciiplotlib as apl
+import termplotlib as apl
 from typing import Optional
 from pathlib import Path
 from pvtrace.cli.db import (

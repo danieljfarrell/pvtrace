@@ -12,6 +12,7 @@ from pvtrace.geometry.mesh import Mesh
 from pvtrace.light.ray import Ray
 from pvtrace.light.utils import wavelength_to_rgb, rgb_to_hex_int, wavelength_to_hex_int
 from pvtrace.light.event import Event
+from pvtrace.common.errors import AppError
 import trimesh
 import meshcat
 import meshcat.geometry as g
