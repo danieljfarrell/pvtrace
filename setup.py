@@ -41,7 +41,7 @@ setup(
         "termplotlib",
     ],
     extras_require={
-        "studio": ["fastapi", "uvicorn"],
+        "studio": ["fastapi", "uvicorn", "websockets"],
         "engine": ["cython", "setuptools"],
     },
     classifiers=[
