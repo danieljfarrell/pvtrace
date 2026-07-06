@@ -42,6 +42,7 @@ setup(
     ],
     extras_require={
         "studio": ["fastapi", "uvicorn"],
+        "engine": ["cython", "setuptools"],
     },
     classifiers=[
         "Development Status :: 4 - Beta",
