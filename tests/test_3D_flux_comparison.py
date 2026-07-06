@@ -19,7 +19,7 @@ def lsc():
         - escape = 0.66
         - loss = 0.09
     """
-    x = np.arange(400, 801, dtype=np.float)
+    x = np.arange(400, 801, dtype=float)
     size = (l, w, d) = (4.8, 1.8, 0.250)  # cm-1
     lsc = LSC(size, wavelength_range=x)
 

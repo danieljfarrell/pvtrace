@@ -46,7 +46,7 @@ class Transformable(object):
         """
         super(Transformable, self).__init__()
         self._location = (
-            np.zeros(3, dtype=np.float) if location is None else np.array(location)
+            np.zeros(3, dtype=float) if location is None else np.array(location)
         )
         self._pose = translation_matrix(self._location)
 
