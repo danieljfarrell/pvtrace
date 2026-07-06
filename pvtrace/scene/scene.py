@@ -209,7 +209,8 @@ class Scene(object):
         num_rays: int
             The total number of rays to throw
         workers: (Optional) int
-            The number of sub-processes to use for raytracing. None will set to maximum value.
+            The number of sub-processes to use for raytracing. None will set
+            to half the number of available CPUs.
         seed: (Optional) int
             Only to be used for debugging to get reproducible ray sequence.
         queue: (Optional) multiprocessing.Queue
@@ -234,9 +235,28 @@ class Scene(object):
             scene.simulate(100, workers=1, seed=0)
 
         You must also set workers to one during debugging.
+
+        Notes
+        -----
+        Scaling with multiple processes can vary a lot depending on the
+        settings in the environment. For full discussion see,
+
+            https://github.com/danieljfarrell/pvtrace/pull/48
+
+        If you are experiencing very poor scaling when using multiple
+        workers you may need to reduce the number of NumPy threads using
+        the instructions in the link above; NumPy's internal threads
+        contend with the worker processes.
+
+        Rule of thumb: scaling is linear up to around cpu_count/4 workers
+        and then drops to roughly 0.3-0.5 efficiency as more workers are
+        added. The total computation time should always reduce as workers
+        are added, up to the limit of cores available on the system.
         """
         if workers is None:
-            workers = max(1, multiprocessing.cpu_count() - 1)
+            # Testing has shown that using half the CPUs scales better
+            # than using all of them, see the notes above.
+            workers = max(1, multiprocessing.cpu_count() // 2)
 
         if workers == 1:
             if queue:

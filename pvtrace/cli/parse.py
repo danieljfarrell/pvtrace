@@ -56,7 +56,6 @@ SPECTRUM_MODULES = {"lumogen-f-red-305": lumogen_f_red_305, "fluro-red": fluro_r
 
 
 def load_schema():
-    print(SCHEMA)
     with open(SCHEMA, "r") as fp:
         schema = json.load(fp)
         jsonschema.Draft7Validator.check_schema(schema)
@@ -386,7 +385,6 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         raise ValueError("Unexpected luminophore format.")
 
     def parse_component(spec, name):
-        print(spec)
         if "absorber" in spec:
             return parse_absorber(spec["absorber"], name)
         elif "scatterer" in spec:
@@ -421,7 +419,6 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
     component_specs = spec.get("components", None)
     if "components" in spec:
         for k, v in component_specs.items():
-            print(f"component: {k}")
             component_map[k] = parse_component(component_specs[k], k)
 
     coordinate_systems = dict()
@@ -430,7 +427,6 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
     for k, v in node_specs.items():
 
         # YAML to node
-        print(f"node: {k}")
         nodes[k] = parse_node(v, k, component_map=component_map)
 
         # Capture additional information which can apply later
@@ -458,7 +454,6 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
 
         direction = coordsys.get("direction", None)
         if direction:
-            print(f"Using direction {direction} for node {node}")
             node.look_at(direction)
 
     return Scene(nodes["world"])
