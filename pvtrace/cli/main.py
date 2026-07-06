@@ -241,6 +241,39 @@ def simulate(
     print("OK")
 
 
+@app.command(short_help="Open pvtrace studio in the browser")
+def studio(
+    scene: Optional[Path] = typer.Argument(
+        None,
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        resolve_path=True,
+        help="Scene yml file to open",
+    ),
+    port: int = typer.Option(8567, help="Port for the local server"),
+    no_browser: bool = typer.Option(False, help="Do not open a browser window"),
+):
+    try:
+        from pvtrace.studio.server import main as studio_main
+    except ImportError:
+        print("pvtrace studio requires extra packages: pip install fastapi uvicorn")
+        raise typer.Exit(code=1)
+
+    import pvtrace.engine as engine
+
+    if not engine.is_available():
+        print("The engine kernel is not built. Run: python -m pvtrace.engine.build")
+        raise typer.Exit(code=1)
+
+    studio_main(
+        document_path=str(scene) if scene else None,
+        port=port,
+        open_browser=not no_browser,
+    )
+
+
 @app.command(short_help="View scene file in browser")
 def show(
     zmq: str = typer.Argument(..., help="ZMQ URL of meshcat-server"),

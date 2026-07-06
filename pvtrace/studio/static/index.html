@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>pvtrace studio</title>
+<link rel="stylesheet" href="/static/app.css">
+<script type="importmap">
+{ "imports": { "three": "/static/vendor/three.module.js" } }
+</script>
+</head>
+<body>
+<header>
+  <h1>pvtrace <span>studio</span></h1>
+  <div id="status" class="ok">ready</div>
+</header>
+<main>
+  <section id="editor-pane">
+    <div class="pane-title">Scene document
+      <label class="toggle"><input type="checkbox" id="reactive"> reactive</label>
+    </div>
+    <textarea id="editor" spellcheck="false"></textarea>
+    <div class="row">
+      <button id="apply">Apply</button>
+      <div id="doc-status"></div>
+    </div>
+  </section>
+
+  <section id="view-pane">
+    <div id="viewport"></div>
+    <div class="run-bar">
+      <label>rays <input type="text" id="rays" value="500000" size="8"></label>
+      <label>paths <input type="text" id="record-every" value="500" size="5" title="keep one full path every n rays"></label>
+      <button id="run" class="primary">Run</button>
+      <button id="stop">Stop</button>
+      <div class="progress"><div id="progress-fill"></div></div>
+      <div id="run-status"></div>
+    </div>
+  </section>
+
+  <section id="results-pane">
+    <div class="pane-title">Recorders</div>
+    <div id="recorders"></div>
+    <div id="bin-info" hidden></div>
+  </section>
+</main>
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>

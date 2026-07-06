@@ -40,6 +40,9 @@ setup(
         "scipy",
         "termplotlib",
     ],
+    extras_require={
+        "studio": ["fastapi", "uvicorn"],
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",

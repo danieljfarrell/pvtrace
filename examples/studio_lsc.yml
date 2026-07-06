@@ -1,0 +1,78 @@
+version: "1.0"
+
+nodes:
+  world:
+    sphere:
+      radius: 12.0
+      material:
+        refractive-index: 1.0
+
+  lsc:
+    parent: world
+    location: [0, 0, 0.5]
+    box:
+      size: [5, 5, 1]
+      material:
+        refractive-index: 1.5
+        components:
+          - my-lumogen-dye
+          - background
+
+  green-laser:
+    parent: world
+    location: [0, 0, 3.0]
+    direction: [0, 0, -1]
+    light:
+      wavelength: 555
+      mask:
+        direction:
+          cone:
+            half-angle: 22.5
+
+components:
+  my-lumogen-dye:
+    luminophore:
+      absorption:
+        coefficient: 5
+        spectrum:
+          name: lumogen-f-red-305
+          range:
+            min: 500
+            max: 1000
+            spacing: 2
+      emission:
+        quantum-yield: 0.95
+        phase-function: "isotropic"
+        spectrum:
+          name: lumogen-f-red-305
+          range:
+            min: 500
+            max: 1000
+            spacing: 2
+
+  background:
+    absorber:
+      coefficient: 0.05
+
+recorders:
+  edge-escape:
+    node: lsc
+    event: escaping
+    facet: [1, 0, 0]
+    histograms:
+      wavelength: [500, 900, 80]
+      angle: [0, 1.5708, 18]
+
+  top-escape:
+    node: lsc
+    event: escaping
+    facet: [0, 0, 1]
+    histograms:
+      wavelength: [500, 900, 80]
+      position: [x, y, [-2.5, 2.5, 50], [-2.5, 2.5, 50]]
+
+  lost-in-lsc:
+    node: lsc
+    event: lost
+    histograms:
+      wavelength: [500, 900, 80]

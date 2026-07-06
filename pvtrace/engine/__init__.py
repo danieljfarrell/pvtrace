@@ -19,7 +19,13 @@ from pvtrace.engine.compiler import (
     compile_scene,
 )
 from pvtrace.engine.recorder import Heatmap, Histogram, Recorder
-from pvtrace.engine.api import EngineResult, RecorderResult, is_available, simulate
+from pvtrace.engine.api import (
+    EngineResult,
+    RecorderResult,
+    is_available,
+    simulate,
+    simulate_stream,
+)
 
 __all__ = [
     "CompiledScene",
@@ -32,4 +38,5 @@ __all__ = [
     "RecorderResult",
     "is_available",
     "simulate",
+    "simulate_stream",
 ]

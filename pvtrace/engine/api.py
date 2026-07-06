@@ -250,3 +250,21 @@ def simulate(
     )
     elapsed = time.perf_counter() - tic
     return EngineResult(compiled, data, sources, max_events, record_every, elapsed)
+
+
+def simulate_stream(scene, num_rays, bundle=50000, seed=None, **kwargs):
+    """Trace in bundles, yielding (EngineResult, rays_traced_so_far).
+
+    Bundles use consecutive per-ray seed offsets, so the union of the
+    streamed results is identical to a single `simulate` call with the
+    same seed. Accumulate recorder tallies across bundles by summing
+    the `rec_*` arrays.
+    """
+    if seed is None:
+        seed = np.random.randint(0, 2 ** 31 - 1)
+    traced = 0
+    while traced < num_rays:
+        n = min(bundle, num_rays - traced)
+        result = simulate(scene, n, seed=int(seed) + traced, **kwargs)
+        traced += n
+        yield result, traced
