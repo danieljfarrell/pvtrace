@@ -43,14 +43,14 @@ def handle_output(result, output, vertical=None):
     if output == OutputChoice.csv:
         buffer = io.StringIO()
         pandas.DataFrame(
-            result[:, 1], columns=["nanometers"], index=result[:, 0].astype(int)
+            result[:, 1], columns=["seconds"], index=result[:, 0].astype(int)
         ).to_csv(buffer)
         print(buffer.getvalue())
 
     if output == OutputChoice.json:
         buffer = io.StringIO()
         pandas.DataFrame(
-            result[:, 1], columns=["nanometers"], index=result[:, 0].astype(int)
+            result[:, 1], columns=["seconds"], index=result[:, 0].astype(int)
         ).to_json(buffer)
         print(buffer.getvalue())
 
@@ -99,7 +99,7 @@ def reflected(
     )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    result = cur.execute(sql).fetchall()
+    result = cur.execute(*sql).fetchall()
     if len(result) > 0:
         handle_output(result, output, vertical=vertical)
 
@@ -148,7 +148,7 @@ def entering(
     )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    result = cur.execute(sql).fetchall()
+    result = cur.execute(*sql).fetchall()
     if len(result) > 0:
         handle_output(result, output, vertical=vertical)
 
@@ -197,7 +197,7 @@ def escaping(
     )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    result = cur.execute(sql).fetchall()
+    result = cur.execute(*sql).fetchall()
     if len(result) > 0:
         handle_output(result, output, vertical=vertical)
 
@@ -232,7 +232,7 @@ def lost(
     sql = sql_time_nonradiative_loss_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    result = cur.execute(sql).fetchall()
+    result = cur.execute(*sql).fetchall()
     if len(result) > 0:
         _, samples = zip(*result)
         handle_output(samples, output, vertical=vertical)
@@ -268,7 +268,7 @@ def reacted(
     sql = sql_time_reacted_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    result = cur.execute(sql).fetchall()
+    result = cur.execute(*sql).fetchall()
     if len(result) > 0:
         _, samples = zip(*result)
         handle_output(samples, output, vertical=vertical)
@@ -304,7 +304,7 @@ def killed(
     sql = sql_time_killed_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    result = cur.execute(sql).fetchall()
+    result = cur.execute(*sql).fetchall()
     if len(result) > 0:
         _, samples = zip(*result)
         handle_output(samples, output, vertical=vertical)

@@ -129,7 +129,7 @@ def aabb_intersection(min_point, max_point, ray_position, ray_direction):
 
 
 def ray_z_cylinder(length, radius, ray_origin, ray_direction):
-    """ Returns ray-cylinder intersection points for a cylinder aligned
+    r""" Returns ray-cylinder intersection points for a cylinder aligned
         along the z-axis with centre at (0, 0, 0).
         
         Parameters

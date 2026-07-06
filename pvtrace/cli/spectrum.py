@@ -99,7 +99,7 @@ def reflected(
     )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    result = cur.execute(sql).fetchall()
+    result = cur.execute(*sql).fetchall()
     if len(result) > 0:
         handle_output(result, output, vertical=vertical)
 
@@ -148,7 +148,7 @@ def entering(
     )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    result = cur.execute(sql).fetchall()
+    result = cur.execute(*sql).fetchall()
     if len(result) > 0:
         handle_output(result, output, vertical=vertical)
 
@@ -197,7 +197,7 @@ def escaping(
     )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    result = cur.execute(sql).fetchall()
+    result = cur.execute(*sql).fetchall()
     if len(result) > 0:
         handle_output(result, output, vertical=vertical)
 
@@ -232,7 +232,7 @@ def lost(
     sql = sql_spectrum_nonradiative_loss_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    result = cur.execute(sql).fetchall()
+    result = cur.execute(*sql).fetchall()
     if len(result) > 0:
         handle_output(result, output, vertical=vertical)
 
@@ -267,7 +267,7 @@ def reacted(
     sql = sql_spectrum_reacted_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    result = cur.execute(sql).fetchall()
+    result = cur.execute(*sql).fetchall()
     if len(result) > 0:
         handle_output(result, output, vertical=vertical)
 
@@ -302,7 +302,7 @@ def killed(
     sql = sql_spectrum_killed_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    result = cur.execute(sql).fetchall()
+    result = cur.execute(*sql).fetchall()
     if len(result) > 0:
         handle_output(result, output, vertical=vertical)
 

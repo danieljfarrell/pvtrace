@@ -87,7 +87,6 @@ def monitor_queue(
     queue,
     stop,
     progress,
-    evertything,
     scene_obj,
     zmq,
     wireframe,
@@ -95,7 +94,6 @@ def monitor_queue(
     max_histories,
 ):
 
-    print(f"Opening connection {dbfilepath}")
     connection = sqlite3.connect(dbfilepath)
 
     renderer = None
@@ -153,15 +151,11 @@ def monitor_queue(
             if pid in history:
                 history[pid].append((ray, event))
 
-            if evertything:
-                # Write all rays to database, not just the initial and final
-                cur = connection.cursor()
-                metadata = info[4]
-                ray_db_id = write_ray(cur, ray, global_ids[(pid, throw_idx)])
-                write_event(cur, event, metadata, ray_db_id)
-                connection.commit()
-            else:
-                raise NotImplementedError("Database must store all events")
+            cur = connection.cursor()
+            metadata = info[4]
+            ray_db_id = write_ray(cur, ray, global_ids[(pid, throw_idx)])
+            write_event(cur, event, metadata, ray_db_id)
+            connection.commit()
 
         except Empty:
             pass
@@ -187,7 +181,7 @@ def simulate(
         False, "--end-rays", help="Only store end rays in database"
     ),
     seed: Optional[int] = typer.Option(None, "--seed", help="Debugging set RNG seed"),
-    overwite: Optional[bool] = typer.Option(
+    overwrite: Optional[bool] = typer.Option(
         False,
         "--overwrite",
         help="Overwrite old database file",
@@ -200,7 +194,6 @@ def simulate(
     ),
 ):
 
-    print("WARNING: pvtrace-cli is still in development.")
     print(f"Reading {os.path.relpath(scene)}")
     scene_obj = parse(scene)
 
@@ -208,9 +201,9 @@ def simulate(
     # but with the .sqlite3 extension
     dbfilepath = os.path.abspath(os.path.splitext(scene)[0]) + ".sqlite3"
     if os.path.exists(dbfilepath):
-        if not overwite:
-            overwite = typer.confirm("Overwrite existing database file?", abort=True)
-        if overwite:
+        if not overwrite:
+            overwrite = typer.confirm("Overwrite existing database file?", abort=True)
+        if overwrite:
             os.remove(dbfilepath)
     prepare_database(dbfilepath)
 
@@ -226,7 +219,6 @@ def simulate(
                 queue,
                 stop,
                 progress,
-                True,
                 scene_obj,
                 zmq,
                 wireframe,

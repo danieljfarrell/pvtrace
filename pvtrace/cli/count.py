@@ -51,7 +51,7 @@ def reflected(
     )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    print(cur.execute(sql).fetchone()[0])
+    print(cur.execute(*sql).fetchone()[0])
 
 
 @app.command(short_help="Number of rays entering node")
@@ -91,7 +91,7 @@ def entering(
     )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    print(cur.execute(sql).fetchone()[0])
+    print(cur.execute(*sql).fetchone()[0])
 
 
 @app.command(short_help="Number of rays escaping node")
@@ -131,7 +131,7 @@ def escaping(
     )
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    print(cur.execute(sql).fetchone()[0])
+    print(cur.execute(*sql).fetchone()[0])
 
 
 @app.command(short_help="Number of rays non-radiatively lost in node")
@@ -157,7 +157,7 @@ def lost(
     sql = sql_count_nonradiative_loss_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    print(cur.execute(sql).fetchone()[0])
+    print(cur.execute(*sql).fetchone()[0])
 
 
 @app.command(short_help="Number of rays reacted in node")
@@ -180,7 +180,7 @@ def reacted(
     sql = sql_count_reacted_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    print(cur.execute(sql).fetchone()[0])
+    print(cur.execute(*sql).fetchone()[0])
 
 
 @app.command(short_help="Number of rays killed in node")
@@ -203,7 +203,7 @@ def killed(
     sql = sql_count_killed_in_node(node, source)
     conn = sqlite3.connect(database)
     cur = conn.cursor()
-    print(cur.execute(sql).fetchone()[0])
+    print(cur.execute(*sql).fetchone()[0])
 
 
 def main():
