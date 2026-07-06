@@ -109,37 +109,60 @@ function buildGeometry(node) {
 
 const pickable = [];
 const recorderOverlays = {};
+let overlayStacks = {};
 let rootMesh = null;
 
-// Rotations that turn a +z facing plane into a face overlay for an
-// axis-aligned facet direction.
-const FACET_ROTATIONS = {
-  "1,0,0": [0, Math.PI / 2, 0],
-  "-1,0,0": [0, -Math.PI / 2, 0],
-  "0,1,0": [-Math.PI / 2, 0, 0],
-  "0,-1,0": [Math.PI / 2, 0, 0],
-  "0,0,1": [0, 0, 0],
-  "0,0,-1": [Math.PI, 0, 0],
-};
+const AXIS_INDEX = { x: 0, y: 1, z: 2 };
 
 function buildRecorderOverlay(recorder, nodePayload) {
   // Facet recorders on boxes render as a clickable face overlay which
-  // becomes a live heatmap texture during a run.
+  // becomes a live heatmap texture during a run. The quad is built from
+  // explicit node-local vertices so the axis mapping matches the
+  // heatmap properties exactly.
   if (!recorder.facet || nodePayload.type !== "box") return null;
-  const key = recorder.facet.map((v) => Math.round(v)).join(",");
-  const rotation = FACET_ROTATIONS[key];
-  if (!rotation) return null;
   const axis = recorder.facet.findIndex((v) => Math.abs(v) > 0.5);
-  const dims = nodePayload.params.filter((_, i) => i !== axis);
-  const geometry = new THREE.PlaneGeometry(dims[0], dims[1]);
-  geometry.rotateX(rotation[0]);
-  geometry.rotateY(rotation[1]);
-  geometry.rotateZ(rotation[2]);
-  const offset = recorder.facet.map(
-    (v, i) => v * (nodePayload.params[i] / 2 + 0.004));
-  geometry.translate(offset[0], offset[1], offset[2]);
+  if (axis < 0) return null;
+  const sign = Math.sign(recorder.facet[axis]);
+  const size = nodePayload.params;
 
+  // U axis maps to the heatmap's first property, V to the second;
+  // without a heatmap use the remaining axes in x < y < z order.
   const heatIndex = recorder.histograms.findIndex((h) => h.kind === "heatmap");
+  let uAxis, vAxis;
+  if (heatIndex >= 0) {
+    const heat = recorder.histograms[heatIndex];
+    uAxis = AXIS_INDEX[heat.prop_a];
+    vAxis = AXIS_INDEX[heat.prop_b];
+  }
+  if (uAxis === undefined || vAxis === undefined
+      || uAxis === axis || vAxis === axis) {
+    [uAxis, vAxis] = [0, 1, 2].filter((i) => i !== axis);
+  }
+
+  // Stack multiple recorders on the same face at increasing offsets
+  const stackKey = `${recorder.node}:${axis}:${sign}`;
+  overlayStacks[stackKey] = (overlayStacks[stackKey] || 0) + 1;
+  const level = overlayStacks[stackKey];
+  const normalOffset = sign * (size[axis] / 2 + 0.004 * level);
+
+  const positions = [];
+  const uvs = [];
+  for (const [su, sv] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+    const point = [0, 0, 0];
+    point[axis] = normalOffset;
+    point[uAxis] = su * size[uAxis] / 2;
+    point[vAxis] = sv * size[vAxis] / 2;
+    positions.push(...point);
+    uvs.push((su + 1) / 2, (sv + 1) / 2);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position",
+    new THREE.BufferAttribute(new Float32Array(positions), 3));
+  geometry.setAttribute("uv",
+    new THREE.BufferAttribute(new Float32Array(uvs), 2));
+  geometry.setIndex([0, 1, 2, 0, 2, 3]);
+  geometry.computeVertexNormals();
+
   let material, canvas = null, texture = null;
   if (heatIndex >= 0) {
     canvas = document.createElement("canvas");
@@ -162,6 +185,7 @@ function buildRecorderOverlay(recorder, nodePayload) {
   new THREE.Matrix4().fromArray(nodePayload.matrix)
     .decompose(mesh.position, mesh.quaternion, mesh.scale);
   mesh.userData = { kind: "recorder", ...recorder };
+  mesh.visible = !(view.hiddenOverlays || []).includes(recorder.name);
   recorderOverlays[recorder.name] = { mesh, canvas, texture, heatIndex };
   return mesh;
 }
@@ -171,6 +195,7 @@ function renderScene(payload) {
   geometryGroup.clear();
   pickable.length = 0;
   Object.keys(recorderOverlays).forEach((k) => delete recorderOverlays[k]);
+  overlayStacks = {};
   rootMesh = null;
   lastScene = payload;
 
@@ -409,6 +434,10 @@ function buildNodeInspector(node) {
 
   actionButton("+ recorder", () =>
     patch({ op: "add-recorder", node: node.name }));
+  if (node.type === "box") {
+    actionButton("+ face recorders", () =>
+      patch({ op: "add-face-recorders", node: node.name }));
+  }
   actionButton("delete", () => {
     const name = node.name;
     deselect();
@@ -467,6 +496,17 @@ function buildRecorderInspector(recorder) {
       patch({ op: "set", path: ["recorders", recorder.name, "facet"], value: v }),
       { step: 1 });
   }
+  const overlay = recorderOverlays[recorder.name];
+  if (overlay) {
+    toggleField("on face", overlay.mesh.visible, (checked) => {
+      overlay.mesh.visible = checked;
+      view.hiddenOverlays = (view.hiddenOverlays || []).filter(
+        (n) => n !== recorder.name);
+      if (!checked) view.hiddenOverlays.push(recorder.name);
+      saveView();
+    });
+  }
+
   const stats = latest[recorder.name];
   const hint = document.createElement("div");
   hint.className = "hint";
@@ -476,6 +516,11 @@ function buildRecorderInspector(recorder) {
   inspectorFields.appendChild(hint);
 
   actionButton("owner: " + recorder.node, () => select("node", recorder.node));
+  actionButton("delete", () => {
+    const name = recorder.name;
+    deselect();
+    patch({ op: "delete-recorder", recorder: name });
+  }, true);
 }
 
 document.getElementById("inspector-close").addEventListener("click", deselect);
@@ -791,6 +836,31 @@ document.getElementById("save").addEventListener("click", async () => {
   const payload = await response.json();
   docStatus.textContent = payload.error ? payload.error : "saved";
   docStatus.className = payload.error ? "err" : "";
+});
+
+// Drop a CSV (e.g. absorption data) onto the editor to save it next to
+// the scene file, then reference it with `spectrum: file: <name>`.
+const editorPane = document.getElementById("editor-pane");
+editorPane.addEventListener("dragover", (event) => event.preventDefault());
+editorPane.addEventListener("drop", async (event) => {
+  event.preventDefault();
+  const file = event.dataTransfer.files[0];
+  if (!file) return;
+  const content = await file.text();
+  const response = await fetch("/api/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: file.name, content }),
+  });
+  const payload = await response.json();
+  if (payload.error) {
+    docStatus.textContent = payload.error;
+    docStatus.className = "err";
+  } else {
+    docStatus.textContent =
+      `saved ${payload.saved} — reference it with "spectrum: file: ${payload.saved}"`;
+    docStatus.className = "";
+  }
 });
 
 let debounce = null;

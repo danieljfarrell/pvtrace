@@ -135,6 +135,20 @@ def create_app(document_path=None):
             return JSONResponse({"error": str(exception)}, status_code=422)
         return {"scene": scene}
 
+    @app.post("/api/upload")
+    async def upload_file(payload: dict):
+        """Save a data file (e.g. an absorption spectrum CSV) next to the
+        scene document so the YAML can reference it by name."""
+        if not document_path:
+            return JSONResponse({"error": "No file was opened."}, status_code=422)
+        name = os.path.basename(payload["name"])
+        if not name or not name.lower().endswith((".csv", ".txt")):
+            return JSONResponse({"error": "Only .csv or .txt files."},
+                                status_code=422)
+        target = Path(document_path).parent / name
+        target.write_text(payload["content"])
+        return {"saved": name}
+
     @app.post("/api/save")
     async def save_document():
         if not document_path:
@@ -340,6 +354,45 @@ def _patch(studio, payload):
             "event": "escaping",
             "histograms": {"wavelength": [400, 900, 80]},
         }
+
+    elif operation == "add-face-recorders":
+        # One escaping recorder with a position heatmap per box face
+        node = payload["node"]
+        node_spec = data.get("nodes", {}).get(node)
+        if not node_spec or "box" not in node_spec:
+            raise ValueError("Face recorders require a box node.")
+        size = [float(v) for v in node_spec["box"]["size"]]
+        half = [s / 2.0 for s in size]
+        axes = "xyz"
+        faces = [
+            ("top", [0, 0, 1]), ("bottom", [0, 0, -1]),
+            ("east", [1, 0, 0]), ("west", [-1, 0, 0]),
+            ("north", [0, 1, 0]), ("south", [0, -1, 0]),
+        ]
+        recorders = data.setdefault("recorders", {})
+        for label, facet in faces:
+            name = f"{node}-{label}"
+            if name in recorders:
+                continue
+            axis = [i for i, v in enumerate(facet) if v != 0][0]
+            u_axis, v_axis = [i for i in range(3) if i != axis]
+            bins_u = max(10, min(60, int(size[u_axis] * 10)))
+            bins_v = max(10, min(60, int(size[v_axis] * 10)))
+            recorders[name] = {
+                "node": node,
+                "event": "escaping",
+                "facet": _flow(facet),
+                "histograms": {
+                    "position": _flow([
+                        axes[u_axis], axes[v_axis],
+                        _flow([-half[u_axis], half[u_axis], bins_u]),
+                        _flow([-half[v_axis], half[v_axis], bins_v]),
+                    ]),
+                },
+            }
+
+    elif operation == "delete-recorder":
+        del data["recorders"][payload["recorder"]]
 
     elif operation == "delete-node":
         name = payload["node"]

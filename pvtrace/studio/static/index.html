@@ -47,8 +47,8 @@
       <div class="inspector-actions" id="inspector-actions"></div>
     </div>
     <div class="run-bar">
-      <label>rays <input type="text" id="rays" value="500000" size="8"></label>
-      <label>paths <input type="text" id="record-every" value="500" size="5" title="keep one full path every n rays"></label>
+      <label title="Total number of rays to trace. Recorders tally every ray.">rays <input type="text" id="rays" value="500000" size="8" title="Total number of rays to trace. Recorders tally every ray."></label>
+      <label title="Keep one complete ray path (for the 3D view) every n rays. Higher = fewer paths drawn.">paths <input type="text" id="record-every" value="500" size="5" title="Keep one complete ray path (for the 3D view) every n rays. Higher = fewer paths drawn."></label>
       <button id="run" class="primary">Run</button>
       <button id="stop">Stop</button>
       <div class="progress"><div id="progress-fill"></div></div>
