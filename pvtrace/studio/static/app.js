@@ -496,6 +496,24 @@ function buildViewInspector() {
   row.appendChild(slider);
   inspectorFields.appendChild(row);
 
+  // Shared heatmap colour scale: how many decades below the global
+  // maximum remain visible (log scale, tunes contrast between surfaces)
+  const contrastRow = document.createElement("div");
+  contrastRow.className = "field";
+  contrastRow.innerHTML = `<label>contrast</label>`;
+  const contrast = document.createElement("input");
+  contrast.type = "range";
+  contrast.min = "0.5"; contrast.max = "6"; contrast.step = "0.25";
+  contrast.value = view.decades || 3;
+  contrast.title = "Heatmap dynamic range in decades below the global maximum";
+  contrast.addEventListener("input", () => {
+    view.decades = parseFloat(contrast.value);
+    saveView();
+    updateCards(latest);
+  });
+  contrastRow.appendChild(contrast);
+  inspectorFields.appendChild(contrastRow);
+
   toggleField("world", view.showWorld, (checked) => {
     view.showWorld = checked;
     saveView();
@@ -802,14 +820,24 @@ function drawPolar(canvas, edges, values) {
   ctx.stroke();
 }
 
+// All heatmaps share one colour scale so intensity is comparable
+// between surfaces: log-scaled over `view.decades` below the global
+// maximum of the current run.
+let heatmapMax = 1;
+
+function heatmapT(value) {
+  if (value <= 0) return 0;
+  const decades = view.decades || 3;
+  return Math.min(1, Math.max(0, 1 + Math.log10(value / heatmapMax) / decades));
+}
+
 function drawHeatmapInto(ctx, width, height, values, shape) {
   const [na, nb] = shape;
   const image = new ImageData(na, nb);
-  const max = Math.max(1, ...values);
   for (let ia = 0; ia < na; ia++) {
     for (let ib = 0; ib < nb; ib++) {
       const pixel = ((nb - 1 - ib) * na + ia) * 4;
-      const [r, g, b] = viridis(values[ia * nb + ib] / max);
+      const [r, g, b] = viridis(heatmapT(values[ia * nb + ib]));
       image.data[pixel] = r; image.data[pixel + 1] = g;
       image.data[pixel + 2] = b; image.data[pixel + 3] = 255;
     }
@@ -892,7 +920,15 @@ function renderCardPlots(card, nodeName) {
       ? `${hist.prop_a} × ${hist.prop_b}` : hist.prop;
     const canvas = document.createElement("canvas");
     canvas.width = 320;
-    canvas.height = hist.kind === "heatmap" ? 220 : 110;
+    if (hist.kind === "heatmap") {
+      // Preserve the physical aspect ratio of the recorded surface
+      const spanA = hist.edges_a[hist.edges_a.length - 1] - hist.edges_a[0];
+      const spanB = hist.edges_b[hist.edges_b.length - 1] - hist.edges_b[0];
+      canvas.height = Math.round(
+        Math.min(320, Math.max(28, 320 * Math.abs(spanB / spanA))));
+    } else {
+      canvas.height = 110;
+    }
     canvas.dataset.recorder = name;
     canvas.dataset.index = index;
     canvas.addEventListener("mousemove", (event) => inspectBin(event, name, index));
@@ -905,6 +941,18 @@ function cssId(s) { return s.replace(/[^a-z0-9]/gi, "-"); }
 
 function updateCards(recorders) {
   latest = recorders;
+
+  // Global colour scale: maximum bin count over every heatmap
+  heatmapMax = 1;
+  for (const data of Object.values(recorders)) {
+    for (const entry of data.histograms) {
+      if (!entry.shape) continue;
+      for (const value of entry.values) {
+        if (value > heatmapMax) heatmapMax = value;
+      }
+    }
+  }
+
   // Panel: refresh the active recorder of each card
   for (const card of recordersDiv.querySelectorAll(".recorder-card")) {
     const nodeName = card.dataset.node;
