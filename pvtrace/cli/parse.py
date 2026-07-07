@@ -456,9 +456,72 @@ def parse_v_1_0(spec: dict, working_directory: str) -> Scene:
         if direction:
             node.look_at(direction)
 
-    parse_recorders(spec.get("recorders", {}) or {}, nodes)
+    recorders_spec = dict(spec.get("recorders", {}) or {})
+    for node_name, node_spec in spec.get("nodes", {}).items():
+        if node_spec.get("record"):
+            for name, recorder in auto_recorders(node_name, node_spec).items():
+                recorders_spec.setdefault(name, recorder)
+    parse_recorders(recorders_spec, nodes)
 
     return Scene(nodes["world"])
+
+
+def auto_recorders(node_name: str, node_spec: dict) -> dict:
+    """Default instrumentation for `record: true` on a node.
+
+    Boxes get an escaping recorder with a position heatmap per face plus
+    a volume loss recorder; spheres and cylinders get whole-surface
+    escaping and loss recorders. The expansion produces ordinary entries
+    for the recorders section, so explicit recorders with the same names
+    take precedence.
+    """
+    wavelength = [300.0, 1000.0, 100]
+    angle = [0.0, 1.5708, 18]
+    recorders = {
+        f"{node_name}-lost": {
+            "node": node_name,
+            "event": "lost",
+            "histograms": {"wavelength": list(wavelength)},
+        },
+    }
+    if "box" in node_spec:
+        size = [float(v) for v in node_spec["box"]["size"]]
+        half = [s / 2.0 for s in size]
+        axes = "xyz"
+        faces = [
+            ("top", [0, 0, 1]), ("bottom", [0, 0, -1]),
+            ("east", [1, 0, 0]), ("west", [-1, 0, 0]),
+            ("north", [0, 1, 0]), ("south", [0, -1, 0]),
+        ]
+        for label, facet in faces:
+            axis = [i for i, v in enumerate(facet) if v != 0][0]
+            u_axis, v_axis = [i for i in range(3) if i != axis]
+            bins_u = max(10, min(60, int(size[u_axis] * 10)))
+            bins_v = max(10, min(60, int(size[v_axis] * 10)))
+            recorders[f"{node_name}-{label}"] = {
+                "node": node_name,
+                "event": "escaping",
+                "facet": facet,
+                "histograms": {
+                    "wavelength": list(wavelength),
+                    "position": [
+                        axes[u_axis], axes[v_axis],
+                        [-half[u_axis], half[u_axis], bins_u],
+                        [-half[v_axis], half[v_axis], bins_v],
+                    ],
+                },
+            }
+    else:
+        # Whole-surface recorder for spheres and cylinders
+        recorders[f"{node_name}-escaping"] = {
+            "node": node_name,
+            "event": "escaping",
+            "histograms": {
+                "wavelength": list(wavelength),
+                "angle": list(angle),
+            },
+        }
+    return recorders
 
 
 def parse_recorders(recorders_spec: dict, nodes: dict):

@@ -367,6 +367,50 @@ def test_yaml_recorders_parse():
     assert len(recorders["top-escape"].histograms) == 2
 
 
+def test_record_shorthand_instruments_node(tmp_path):
+    """record: true on a node desugars into default recorders."""
+    from anytree import PreOrderIter
+
+    from pvtrace.cli.parse import parse
+
+    text = """
+version: "1.0"
+nodes:
+  world:
+    sphere:
+      radius: 10.0
+      material:
+        refractive-index: 1.0
+  slab:
+    record: true
+    box:
+      size: [5, 5, 1]
+      material:
+        refractive-index: 1.5
+  laser:
+    location: [0, 0, 3]
+    direction: [0, 0, -1]
+    light:
+      wavelength: 555
+"""
+    path = tmp_path / "scene.yml"
+    path.write_text(text)
+    scene = parse(str(path))
+    recorders = {
+        recorder.name: recorder
+        for node in PreOrderIter(scene.root)
+        for recorder in node.recorders
+    }
+    # 6 faces + volume loss
+    assert len(recorders) == 7
+    assert "slab-top" in recorders and "slab-lost" in recorders
+    assert recorders["slab-top"].facet == (0.0, 0.0, 1.0)
+
+    result = engine.simulate(scene, 2000, seed=2, record_every=0)
+    top = result.recorders["slab-top"]
+    assert top.rays > 0
+
+
 def test_unsupported_scene_raises():
     import trimesh
 

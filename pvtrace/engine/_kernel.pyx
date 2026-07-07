@@ -64,6 +64,7 @@ cdef int EMIT_FULL = 2
 
 cdef enum:
     MAX_NODES = 128
+    MAX_RECORDERS = 256
     MAX_HITS = 512  # up to 4 intersections per node
 
 
@@ -498,7 +499,7 @@ cdef inline double prop_value(int prop, double wavelength, double angle,
 
 
 cdef inline void tally(SceneT* S, AccBase* AB, int tid, int sel, int node,
-                       unsigned long long* mask, double* wnormal,
+                       unsigned char* seen, double* wnormal,
                        double* lpos, double angle, double wavelength,
                        double travelled, double duration) noexcept nogil:
     """Accumulate this interaction into matching recorders.
@@ -526,9 +527,9 @@ cdef inline void tally(SceneT* S, AccBase* AB, int tid, int sel, int node,
             if fabs(S.rec_facet[r * 3 + 2] - wnormal[2]) > S.rec_atol[r]:
                 continue
         cross[r] += 1
-        if mask[0] & (<unsigned long long>1 << r):
+        if seen[r]:
             continue
-        mask[0] |= (<unsigned long long>1 << r)
+        seen[r] = 1
         distinct[r] += 1
         sums[r * 8 + 0] += wavelength
         sums[r * 8 + 1] += wavelength * wavelength
@@ -618,7 +619,9 @@ cdef int trace_one(
     cdef double travelled = 0.0
     cdef double duration = 0.0
     cdef int source = -1
-    cdef unsigned long long rmask = 0
+    cdef unsigned char rseen[MAX_RECORDERS]
+    for i in range(S.n_recorders):
+        rseen[i] = 0
     cdef int sel
 
     cdef double hit_t[MAX_HITS]
@@ -715,7 +718,7 @@ cdef int trace_one(
                    pos, direction, NULL, wavelength, travelled, duration)
             if S.n_recorders > 0:
                 transform_point(S.w2l + container * 16, pos, local_p)
-                tally(S, AB, tid, REC_KILLED, container, &rmask, NULL,
+                tally(S, AB, tid, REC_KILLED, container, rseen, NULL,
                       local_p, 0.0, wavelength, travelled, duration)
             break
 
@@ -736,7 +739,7 @@ cdef int trace_one(
                 ddot = fabs(dot3(nrm, direction))
                 if ddot > 1.0:
                     ddot = 1.0
-                tally(S, AB, tid, REC_EXIT, hit, &rmask, nrm,
+                tally(S, AB, tid, REC_EXIT, hit, rseen, nrm,
                       local_p, acos(ddot), wavelength, travelled, duration)
             break
 
@@ -824,7 +827,7 @@ cdef int trace_one(
                     sel = REC_LOST
                 if S.n_recorders > 0:
                     transform_point(S.w2l + container * 16, pos, local_p)
-                    tally(S, AB, tid, sel, container, &rmask, NULL,
+                    tally(S, AB, tid, sel, container, rseen, NULL,
                           local_p, 0.0, wavelength, travelled, duration)
                 break
 
@@ -875,7 +878,7 @@ cdef int trace_one(
             record(elog, base, &nevents, EV_REFLECT, hit, container, adjacent, -1, source,
                    pos, direction, nrm, wavelength, travelled, duration)
             if S.n_recorders > 0 and container != hit:
-                tally(S, AB, tid, REC_REFLECTED, hit, &rmask, nrm,
+                tally(S, AB, tid, REC_REFLECTED, hit, rseen, nrm,
                       local_p, angle, wavelength, travelled, duration)
             continue
         else:
@@ -887,7 +890,7 @@ cdef int trace_one(
                    pos, direction, nrm, wavelength, travelled, duration)
             if S.n_recorders > 0:
                 sel = REC_ESCAPING if container == hit else REC_ENTERING
-                tally(S, AB, tid, sel, hit, &rmask, nrm,
+                tally(S, AB, tid, sel, hit, rseen, nrm,
                       local_p, angle, wavelength, travelled, duration)
             continue
 

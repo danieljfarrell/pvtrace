@@ -145,6 +145,10 @@
                     "items": {
                         "type": "number"
                     }
+                },
+                "record": {
+                    "type": "boolean",
+                    "description": "Instrument this node with default recorders (per-face escaping heatmaps for boxes, whole-surface for spheres and cylinders, plus volume losses)"
                 }
             },
             "oneOf": [

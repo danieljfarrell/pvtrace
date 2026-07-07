@@ -20,7 +20,7 @@ from pvtrace.material.utils import Cone, HenyeyGreenstein, isotropic
 
 # Volume interaction selectors cannot be restricted by surface facet
 VOLUME_EVENTS = {"lost", "reacted", "killed"}
-MAX_RECORDERS = 64  # distinct-ray tracking uses a 64-bit mask per ray
+MAX_RECORDERS = 256  # per-ray distinct tracking array size in the kernel
 
 # Geometry type tags
 GEOM_BOX = 0
