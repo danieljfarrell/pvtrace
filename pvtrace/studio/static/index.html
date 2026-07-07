@@ -15,14 +15,14 @@
 <body>
 <header>
   <h1>pvtrace <span>studio</span></h1>
+  <button id="doc-toggle" title="Show or hide the scene document">document</button>
+  <label class="toggle"><input type="checkbox" id="reactive"> reactive</label>
+  <label class="toggle"><input type="checkbox" id="realtime"> real&nbsp;time</label>
   <div id="status" class="ok">ready</div>
 </header>
 <main>
   <section id="editor-pane">
-    <div class="pane-title">Scene document
-      <label class="toggle"><input type="checkbox" id="reactive"> reactive</label>
-      <label class="toggle"><input type="checkbox" id="realtime"> real&nbsp;time</label>
-    </div>
+    <div class="pane-title">Scene document</div>
     <textarea id="editor" spellcheck="false"></textarea>
     <div class="row">
       <button id="apply">Apply</button>
@@ -33,12 +33,6 @@
 
   <section id="view-pane">
     <div id="viewport"></div>
-    <div id="toolbar">
-      <button data-add="box" title="Add box">+ box</button>
-      <button data-add="sphere" title="Add sphere">+ sphere</button>
-      <button data-add="cylinder" title="Add cylinder">+ cylinder</button>
-      <button data-add="light" title="Add light">+ light</button>
-    </div>
     <div id="layerbar">
       <select id="layer-event" title="Which recorder layer is painted on the scene">
         <option value="all">all layers</option>
@@ -53,8 +47,8 @@
       <datalist id="node-list"></datalist>
     </div>
     <div class="run-bar">
-      <label title="Total number of rays to trace. Recorders tally every ray.">rays <input type="text" id="rays" value="500000" size="8" title="Total number of rays to trace. Recorders tally every ray."></label>
-      <label title="Keep one complete ray path (for the 3D view) every n rays. Higher = fewer paths drawn.">paths <input type="text" id="record-every" value="500" size="5" title="Keep one complete ray path (for the 3D view) every n rays. Higher = fewer paths drawn."></label>
+      <label title="Total number of rays to trace. Recorders tally every ray.">rays <input type="text" id="rays" value="500000" size="8"></label>
+      <label title="Keep one complete ray path (for the 3D view) every n rays.">paths <input type="text" id="record-every" value="500" size="5"></label>
       <button id="run" class="primary">Run</button>
       <button id="stop">Stop</button>
       <div class="progress"><div id="progress-fill"></div></div>
@@ -62,17 +56,19 @@
     </div>
   </section>
 
-  <section id="results-pane">
-    <div id="inspector">
-      <div class="inspector-head">
-        <b id="inspector-name">View</b>
-        <button id="inspector-close" title="Deselect">×</button>
-      </div>
-      <div id="inspector-fields"></div>
-      <div class="inspector-actions" id="inspector-actions"></div>
+  <section id="inspector-pane">
+    <div id="segments">
+      <button data-segment="nodes">Nodes</button>
+      <button data-segment="components">Components</button>
+      <button data-segment="recorders">Recorders</button>
+      <button data-segment="view">View</button>
     </div>
-    <div class="pane-title">Recorders</div>
-    <div id="recorders"></div>
+    <div id="item-row">
+      <select id="item-select"></select>
+      <button id="item-add" title="Add a new item to this section">+</button>
+    </div>
+    <div id="inspector-fields"></div>
+    <div class="inspector-actions" id="inspector-actions"></div>
     <div id="bin-info" hidden></div>
   </section>
 </main>

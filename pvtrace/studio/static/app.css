@@ -10,30 +10,34 @@ body {
   display: flex; flex-direction: column;
 }
 header {
-  display: flex; align-items: center; gap: 16px;
+  display: flex; align-items: center; gap: 14px;
   padding: 8px 14px; border-bottom: 1px solid var(--edge); background: var(--panel);
 }
-header h1 { font-size: 16px; font-weight: 600; }
+header h1 { font-size: 16px; font-weight: 600; margin-right: 8px; }
 header h1 span { color: var(--accent); font-weight: 400; }
+header .toggle { color: var(--dim); }
+#doc-toggle.active { background: var(--accent); color: #10131a; }
 #status { margin-left: auto; font-size: 12px; color: var(--dim); }
 #status.ok { color: var(--ok); }
 #status.err { color: var(--err); }
 
 main {
   flex: 1; display: grid; min-height: 0;
-  grid-template-columns: minmax(280px, 22%) 1fr minmax(300px, 26%);
+  grid-template-columns: minmax(280px, 22%) 1fr minmax(280px, 24%);
 }
+/* display:none removes the editor from the grid, so only two columns remain */
+main.no-document { grid-template-columns: 1fr minmax(280px, 24%); }
+main.no-document #editor-pane { display: none; }
 section { display: flex; flex-direction: column; min-height: 0; }
-#editor-pane, #results-pane { background: var(--panel); }
+#editor-pane, #inspector-pane { background: var(--panel); }
 #editor-pane { border-right: 1px solid var(--edge); }
-#results-pane { border-left: 1px solid var(--edge); overflow-y: auto; }
+#inspector-pane { border-left: 1px solid var(--edge); overflow-y: auto; }
 
 .pane-title {
   padding: 8px 12px; font-size: 11px; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--dim);
   display: flex; justify-content: space-between; align-items: center;
 }
-.toggle { text-transform: none; letter-spacing: 0; }
 #editor {
   flex: 1; resize: none; border: none; outline: none; padding: 10px 12px;
   background: var(--panel); color: var(--text); tab-size: 2;
@@ -70,28 +74,6 @@ button.primary { background: var(--accent); color: #10131a; font-weight: 600; }
 #progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.15s; }
 #run-status { color: var(--dim); min-width: 110px; text-align: right; font-variant-numeric: tabular-nums; }
 
-.recorder-card { border-bottom: 1px solid var(--edge); padding: 10px 12px; }
-.recorder-card h3 { font-size: 13px; margin-bottom: 2px; }
-.recorder-card .meta { color: var(--dim); font-size: 12px; margin-bottom: 8px; }
-.recorder-card canvas { width: 100%; border-radius: 4px; background: var(--bg); display: block; margin-bottom: 8px; cursor: crosshair; }
-.plot-label { font-size: 11px; color: var(--dim); margin-bottom: 3px; }
-
-#bin-info {
-  position: sticky; bottom: 0; background: #232733; border-top: 1px solid var(--edge);
-  padding: 10px 12px; font-size: 12px;
-}
-#bin-info b { color: var(--accent); }
-
-#toolbar {
-  position: absolute; top: 10px; left: 10px; display: flex; gap: 6px;
-}
-#toolbar button { background: #232733ee; border: 1px solid var(--edge); }
-
-#inspector {
-  background: #20242e; border-bottom: 1px solid var(--edge);
-  padding: 10px 12px;
-}
-
 #layerbar {
   position: absolute; top: 10px; right: 10px; display: flex; gap: 6px;
 }
@@ -101,28 +83,48 @@ button.primary { background: var(--accent); color: #10131a; font-weight: 600; }
 }
 #layerbar input { width: 130px; }
 
-.rec-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 8px; }
-.rec-chips button {
-  padding: 2px 9px; font-size: 11px; border-radius: 10px;
-  background: var(--bg); border: 1px solid var(--edge);
+/* Inspector: segmented control, item selector, fields */
+#segments {
+  display: flex; padding: 10px 12px 0; gap: 0;
 }
-.rec-chips button.active { background: var(--accent); color: #10131a; }
-.inspector-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.inspector-head button { padding: 0 8px; background: none; }
+#segments button {
+  flex: 1; border-radius: 0; font-size: 12px; padding: 6px 0;
+  background: var(--bg); border: 1px solid var(--edge); border-right: none;
+}
+#segments button:first-child { border-radius: 6px 0 0 6px; }
+#segments button:last-child { border-radius: 0 6px 6px 0; border-right: 1px solid var(--edge); }
+#segments button.active { background: var(--accent); color: #10131a; font-weight: 600; }
+
+#item-row { display: flex; gap: 6px; padding: 10px 12px; }
+#item-row select {
+  flex: 1; background: var(--bg); border: 1px solid var(--edge);
+  color: var(--text); border-radius: 5px; padding: 5px 8px; font: inherit;
+}
+#item-row button { padding: 5px 12px; }
+
+#inspector-fields { padding: 2px 12px 10px; }
 #inspector-fields .field { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-#inspector-fields .field label { color: var(--dim); width: 62px; font-size: 12px; flex-shrink: 0; }
-#inspector-fields .field input[type="number"] { width: 52px; padding: 3px 4px; font-size: 12px; }
+#inspector-fields .field label { color: var(--dim); width: 70px; font-size: 12px; flex-shrink: 0; }
+#inspector-fields .field input[type="number"] { width: 56px; padding: 3px 4px; font-size: 12px; }
 #inspector-fields .field input[type="range"] { flex: 1; }
 #inspector-fields .field select {
   flex: 1; background: var(--bg); border: 1px solid var(--edge);
   color: var(--text); border-radius: 4px; padding: 3px; font-size: 12px;
 }
-#inspector-fields .hint { color: var(--dim); font-size: 11px; margin: 4px 0 8px; }
-#inspector-fields .rec-link {
-  display: block; width: 100%; text-align: left; margin-bottom: 4px;
-  background: var(--bg); border: 1px solid var(--edge); font-size: 12px;
+#inspector-fields .hint { color: var(--dim); font-size: 11px; margin: 8px 0 4px; }
+#inspector-fields canvas { width: 100%; border-radius: 4px; background: var(--bg); display: block; margin-bottom: 8px; cursor: crosshair; }
+#inspector-fields .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 8px; }
+#inspector-fields .chips span {
+  padding: 2px 9px; font-size: 11px; border-radius: 10px;
+  background: var(--bg); border: 1px solid var(--edge);
 }
-#inspector-fields .rec-link span { color: var(--dim); }
-.inspector-actions { display: flex; gap: 6px; margin-top: 10px; }
+#inspector-fields .chips span b { color: var(--err); cursor: pointer; margin-left: 5px; font-weight: 400; }
+.inspector-actions { display: flex; gap: 6px; padding: 0 12px 12px; }
 .inspector-actions button { flex: 1; font-size: 12px; }
 button.danger { color: var(--err); }
+
+#bin-info {
+  position: sticky; bottom: 0; background: #232733; border-top: 1px solid var(--edge);
+  padding: 10px 12px; font-size: 12px;
+}
+#bin-info b { color: var(--accent); }

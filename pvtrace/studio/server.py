@@ -87,6 +87,13 @@ class Studio:
                                "spec": node_specs.get(node.name, {})})
         recorders = []
         for node in PreOrderIter(self.scene.root):
+            auto_names = set()
+            node_spec = node_specs.get(node.name, {})
+            if node_spec.get("record"):
+                from pvtrace.cli.parse import auto_recorders
+
+                auto_names = set(auto_recorders(node.name, node_spec))
+            explicit = set((self.spec.get("recorders") or {})) if self.spec else set()
             for recorder in getattr(node, "recorders", []):
                 histograms = []
                 for hist in recorder.histograms:
@@ -108,8 +115,11 @@ class Studio:
                     "event": recorder.event,
                     "facet": list(recorder.facet) if recorder.facet else None,
                     "histograms": histograms,
+                    "auto": recorder.name in auto_names
+                            and recorder.name not in explicit,
                 })
-        return {"nodes": nodes, "lights": lights, "recorders": recorders}
+        return {"nodes": nodes, "lights": lights, "recorders": recorders,
+                "spec": self.spec}
 
 
 def create_app(document_path=None):
@@ -390,6 +400,23 @@ def _patch(studio, payload):
                     ]),
                 },
             }
+
+    elif operation == "add-component":
+        components = data.setdefault("components", {})
+        name = _unique_name(components, "absorber")
+        components[name] = {"absorber": {"coefficient": 1.0}}
+
+    elif operation == "delete-component":
+        name = payload["component"]
+        del data["components"][name]
+        # Remove references from node materials
+        for node_spec in data.get("nodes", {}).values():
+            for geom in ("box", "sphere", "cylinder", "mesh"):
+                material = node_spec.get(geom, {}).get("material", {})
+                if name in (material.get("components") or []):
+                    material["components"] = [
+                        c for c in material["components"] if c != name
+                    ]
 
     elif operation == "update-recorder":
         # Edits to auto recorders (from record: true) materialise them

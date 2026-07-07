@@ -7,7 +7,8 @@ import { TransformControls } from "/static/vendor/TransformControls.js";
 // scene document)
 
 const view = Object.assign(
-  { opacity: 0.55, showWorld: false, showGrid: true },
+  { opacity: 0.55, decades: 3, showWorld: false, showGrid: true,
+    showDocument: true, hiddenOverlays: [] },
   JSON.parse(localStorage.getItem("pvtrace-view") || "{}"),
 );
 
@@ -16,12 +17,11 @@ function saveView() {
 }
 
 // ----------------------------------------------------------------------
-// Wavelength (nm) to RGB, rough visible-spectrum approximation.
+// Wavelength (nm) to RGB, same approximation as
+// pvtrace.light.utils.wavelength_to_rgb; the floor lifts colours so ray
+// paths stay visible on a dark background (floor = 0 for saturated bins).
 
 function wavelengthToColor(nm, floor = 0.15) {
-  // Same approximation as pvtrace.light.utils.wavelength_to_rgb; the
-  // floor lifts colours so ray paths stay visible on a dark background
-  // (use floor = 0 for saturated histogram bins).
   let r = 0, g = 0, b = 0;
   if (nm < 380) nm = 380;
   if (nm > 780) nm = 780;
@@ -64,7 +64,29 @@ const geometryGroup = new THREE.Group();
 const pathGroup = new THREE.Group();
 scene3.add(geometryGroup, pathGroup);
 
-// Translation gizmo for the selected object; writes back to the document
+const pickable = [];
+const recorderOverlays = {};
+let overlayStacks = {};
+let extrasByNode = {};
+let rootMesh = null;
+let lastScene = null;
+
+// Keep edges, light arrows and recorder overlays attached to a node
+// while the gizmo drags it (they are re-laid-out on the next render).
+function syncNodeVisuals(name, source) {
+  for (const extra of extrasByNode[name] || []) {
+    extra.object.position.copy(source.position);
+    if (extra.rotates) extra.object.quaternion.copy(source.quaternion);
+  }
+  for (const overlay of Object.values(recorderOverlays)) {
+    if (overlay.mesh.userData.node === name) {
+      overlay.mesh.position.copy(source.position);
+      overlay.mesh.quaternion.copy(source.quaternion);
+    }
+  }
+}
+
+// Translation gizmo; writes back to the document on drop
 const gizmo = new TransformControls(camera, renderer.domElement);
 gizmo.setMode("translate");
 let dragStart = null;
@@ -73,8 +95,6 @@ gizmo.addEventListener("dragging-changed", (event) => {
   if (event.value && gizmo.object) {
     dragStart = gizmo.object.position.clone();
   } else if (!event.value && gizmo.object && dragStart) {
-    // Only write back if the object actually moved; a click that lands
-    // on the gizmo must not dirty the document.
     if (gizmo.object.position.distanceTo(dragStart) > 1e-6) {
       patch({
         op: "move",
@@ -85,15 +105,12 @@ gizmo.addEventListener("dragging-changed", (event) => {
     dragStart = null;
   }
 });
-// Real-time mode: re-run the simulation while dragging, without
-// refreshing the editor/viewport (the final drop reconciles the text).
+// Real-time mode: re-run while dragging without refreshing the UI
 let lastRealtime = 0;
 gizmo.addEventListener("objectChange", async () => {
   if (!gizmo.object) return;
-  // Recorder overlays, edges and light arrows travel with the object
   syncNodeVisuals(gizmo.object.userData.name, gizmo.object);
-  const realtime = document.getElementById("realtime");
-  if (!realtime || !realtime.checked) return;
+  if (!document.getElementById("realtime").checked) return;
   const now = performance.now();
   if (now - lastRealtime < 150) return;
   lastRealtime = now;
@@ -134,27 +151,6 @@ function buildGeometry(node) {
   return geometry;
 }
 
-const pickable = [];
-const recorderOverlays = {};
-let overlayStacks = {};
-let extrasByNode = {};
-let rootMesh = null;
-
-// Keep edges, light arrows and recorder overlays attached to a node
-// while the gizmo drags it (they are re-laid-out on the next render).
-function syncNodeVisuals(name, source) {
-  for (const extra of extrasByNode[name] || []) {
-    extra.object.position.copy(source.position);
-    if (extra.rotates) extra.object.quaternion.copy(source.quaternion);
-  }
-  for (const overlay of Object.values(recorderOverlays)) {
-    if (overlay.mesh.userData.node === name) {
-      overlay.mesh.position.copy(source.position);
-      overlay.mesh.quaternion.copy(source.quaternion);
-    }
-  }
-}
-
 const AXIS_INDEX = { x: 0, y: 1, z: 2 };
 
 function buildRecorderOverlay(recorder, nodePayload) {
@@ -168,8 +164,6 @@ function buildRecorderOverlay(recorder, nodePayload) {
   const sign = Math.sign(recorder.facet[axis]);
   const size = nodePayload.params;
 
-  // U axis maps to the heatmap's first property, V to the second;
-  // without a heatmap use the remaining axes in x < y < z order.
   const heatIndex = recorder.histograms.findIndex((h) => h.kind === "heatmap");
   let uAxis, vAxis;
   if (heatIndex >= 0) {
@@ -182,7 +176,6 @@ function buildRecorderOverlay(recorder, nodePayload) {
     [uAxis, vAxis] = [0, 1, 2].filter((i) => i !== axis);
   }
 
-  // Stack multiple recorders on the same face at increasing offsets
   const stackKey = `${recorder.node}:${axis}:${sign}`;
   overlayStacks[stackKey] = (overlayStacks[stackKey] || 0) + 1;
   const level = overlayStacks[stackKey];
@@ -228,7 +221,6 @@ function buildRecorderOverlay(recorder, nodePayload) {
   new THREE.Matrix4().fromArray(nodePayload.matrix)
     .decompose(mesh.position, mesh.quaternion, mesh.scale);
   mesh.userData = { kind: "recorder", ...recorder };
-  mesh.visible = !(view.hiddenOverlays || []).includes(recorder.name);
   recorderOverlays[recorder.name] = { mesh, canvas, texture, heatIndex };
   return mesh;
 }
@@ -269,7 +261,6 @@ function renderScene(payload) {
         .push({ object: edges, rotates: true });
       pickable.push(mesh);
     }
-    // Decomposed transform (not a frozen matrix) so the gizmo can move it
     new THREE.Matrix4().fromArray(node.matrix)
       .decompose(mesh.position, mesh.quaternion, mesh.scale);
     mesh.userData = { kind: "node", ...node };
@@ -306,7 +297,6 @@ function renderScene(payload) {
     }
   }
 
-  // Keep the isolate datalist in sync with the scene's objects
   const datalist = document.getElementById("node-list");
   datalist.innerHTML = "";
   for (const node of payload.nodes) {
@@ -317,12 +307,11 @@ function renderScene(payload) {
   }
 
   applyLayer();
-  if (selected) reselect();
+  renderInspector();
 }
 
 // ----------------------------------------------------------------------
-// Information layers (weather-app style): one recorder layer is painted
-// on the scene at a time, and one object can be isolated.
+// Information layers (weather-app style)
 
 let isolateName = null;
 
@@ -330,7 +319,7 @@ function applyLayer() {
   const event = document.getElementById("layer-event").value;
   for (const overlay of Object.values(recorderOverlays)) {
     const recorder = overlay.mesh.userData;
-    const hiddenByUser = (view.hiddenOverlays || []).includes(recorder.name);
+    const hiddenByUser = view.hiddenOverlays.includes(recorder.name);
     const ghosted = isolateName && recorder.node !== isolateName;
     overlay.mesh.visible =
       !hiddenByUser && !ghosted && (event === "all" || recorder.event === event);
@@ -356,29 +345,34 @@ document.getElementById("isolate").addEventListener("input", (event) => {
 });
 
 // ----------------------------------------------------------------------
-// Selection and the context-aware inspector
+// Selection: one model for the whole app. The inspector shows the
+// selected item of the active segment; 3D clicks drive the same state.
 
-let selected = null; // {kind, name}
-let lastScene = null;
-const inspectorName = document.getElementById("inspector-name");
-const inspectorFields = document.getElementById("inspector-fields");
-const inspectorActions = document.getElementById("inspector-actions");
-const raycaster = new THREE.Raycaster();
-
-function findPickable(kind, name) {
-  return pickable.find(
-    (mesh) => mesh.userData.kind === kind && mesh.userData.name === name) || null;
-}
-
-function select(kind, name) {
-  selected = { kind, name };
-  reselect();
-  scrollEditorTo(name, kind === "recorder" ? "recorders" : "nodes");
-}
-
+const SEGMENTS = ["nodes", "components", "recorders", "view"];
+let selected = { segment: "nodes", name: null };
 let selectionOutline = null;
 
-function reselect() {
+function spec() { return lastScene?.spec || {}; }
+
+function itemsFor(segment) {
+  if (segment === "nodes") return Object.keys(spec().nodes || {});
+  if (segment === "components") return Object.keys(spec().components || {});
+  if (segment === "recorders") {
+    return (lastScene?.recorders || []).map((r) => r.name);
+  }
+  return [];
+}
+
+function select(segment, name) {
+  selected = { segment, name };
+  renderInspector();
+  if (name && view.showDocument) {
+    scrollEditorTo(name, segment === "nodes" ? "nodes"
+      : segment === "components" ? "components" : "recorders");
+  }
+}
+
+function syncViewportSelection() {
   for (const mesh of pickable) {
     if (mesh.material.emissive) mesh.material.emissive.setHex(0x000000);
   }
@@ -387,327 +381,30 @@ function reselect() {
     selectionOutline = null;
   }
   gizmo.detach();
-  if (!selected) { buildViewInspector(); return; }
-  const mesh = findPickable(selected.kind, selected.name);
-  if (!mesh) { selected = null; buildViewInspector(); return; }
-  const data = mesh.userData;
-  if (data.kind === "node") {
-    mesh.material.emissive.setHex(0x1a3f7a);
-    gizmo.attach(mesh);
-    buildNodeInspector(data);
-  } else if (data.kind === "light") {
-    gizmo.attach(mesh);
-    buildLightInspector(data);
-  } else {
-    // Yellow outline around the selected recorder face. The quad's four
-    // vertices are already in ring order; drop the triangle index so the
-    // loop follows them without diagonals.
-    const outlineGeometry = mesh.geometry.clone();
-    outlineGeometry.setIndex(null);
-    selectionOutline = new THREE.LineLoop(
-      outlineGeometry,
-      new THREE.LineBasicMaterial({ color: 0xffd54a, linewidth: 2 }),
-    );
-    selectionOutline.position.copy(mesh.position);
-    selectionOutline.quaternion.copy(mesh.quaternion);
-    selectionOutline.renderOrder = 10;
-    scene3.add(selectionOutline);
-    buildRecorderInspector(data);
-    // Mirror the selection into the results panel
-    const card = recordersDiv.querySelector(
-      `.recorder-card[data-node="${data.node}"]`);
-    if (card && activeByNode[data.node] !== data.name) {
-      activeByNode[data.node] = data.name;
-      renderCardPlots(card, data.node);
-      updateCards(latest);
+  if (!selected.name) return;
+  if (selected.segment === "nodes") {
+    const mesh = pickable.find((m) =>
+      (m.userData.kind === "node" || m.userData.kind === "light")
+      && m.userData.name === selected.name);
+    if (mesh) {
+      if (mesh.material.emissive) mesh.material.emissive.setHex(0x1a3f7a);
+      gizmo.attach(mesh);
+    }
+  } else if (selected.segment === "recorders") {
+    const overlay = recorderOverlays[selected.name];
+    if (overlay) {
+      const outlineGeometry = overlay.mesh.geometry.clone();
+      outlineGeometry.setIndex(null);
+      selectionOutline = new THREE.LineLoop(
+        outlineGeometry,
+        new THREE.LineBasicMaterial({ color: 0xffd54a }),
+      );
+      selectionOutline.position.copy(overlay.mesh.position);
+      selectionOutline.quaternion.copy(overlay.mesh.quaternion);
+      selectionOutline.renderOrder = 10;
+      scene3.add(selectionOutline);
     }
   }
-}
-
-function deselect() {
-  selected = null;
-  gizmo.detach();
-  reselect();
-}
-
-function clearInspector(title) {
-  inspectorName.textContent = title;
-  inspectorFields.innerHTML = "";
-  inspectorActions.innerHTML = "";
-}
-
-function field(label, value, onCommit, options = {}) {
-  const row = document.createElement("div");
-  row.className = "field";
-  const labelEl = document.createElement("label");
-  labelEl.textContent = label;
-  row.appendChild(labelEl);
-  const inputs = [];
-  const values = Array.isArray(value) ? value : [value];
-  for (const v of values) {
-    const input = document.createElement("input");
-    input.type = "number";
-    input.step = options.step || 0.1;
-    input.value = Number(v.toFixed ? v.toFixed(4) : v);
-    input.addEventListener("change", () => {
-      onCommit(inputs.map((i) => parseFloat(i.value) || 0));
-    });
-    inputs.push(input);
-    row.appendChild(input);
-  }
-  inspectorFields.appendChild(row);
-}
-
-function toggleField(label, value, onChange) {
-  const row = document.createElement("div");
-  row.className = "field";
-  row.innerHTML = `<label>${label}</label>`;
-  const input = document.createElement("input");
-  input.type = "checkbox";
-  input.checked = value;
-  input.addEventListener("change", () => onChange(input.checked));
-  row.appendChild(input);
-  inspectorFields.appendChild(row);
-}
-
-function actionButton(label, onClick, danger = false) {
-  const button = document.createElement("button");
-  button.textContent = label;
-  if (danger) button.className = "danger";
-  button.addEventListener("click", onClick);
-  inspectorActions.appendChild(button);
-}
-
-function buildViewInspector() {
-  clearInspector("View");
-  const row = document.createElement("div");
-  row.className = "field";
-  row.innerHTML = `<label>opacity</label>`;
-  const slider = document.createElement("input");
-  slider.type = "range";
-  slider.min = "0.05"; slider.max = "1"; slider.step = "0.05";
-  slider.value = view.opacity;
-  slider.addEventListener("input", () => {
-    view.opacity = parseFloat(slider.value);
-    saveView();
-    for (const mesh of pickable) {
-      if (mesh.userData.kind === "node") {
-        mesh.material.depthWrite = view.opacity > 0.8;
-      }
-    }
-    applyLayer();
-  });
-  row.appendChild(slider);
-  inspectorFields.appendChild(row);
-
-  // Shared heatmap colour scale: how many decades below the global
-  // maximum remain visible (log scale, tunes contrast between surfaces)
-  const contrastRow = document.createElement("div");
-  contrastRow.className = "field";
-  contrastRow.innerHTML = `<label>contrast</label>`;
-  const contrast = document.createElement("input");
-  contrast.type = "range";
-  contrast.min = "0.5"; contrast.max = "6"; contrast.step = "0.25";
-  contrast.value = view.decades || 3;
-  contrast.title = "Heatmap dynamic range in decades below the global maximum";
-  contrast.addEventListener("input", () => {
-    view.decades = parseFloat(contrast.value);
-    saveView();
-    updateCards(latest);
-  });
-  contrastRow.appendChild(contrast);
-  inspectorFields.appendChild(contrastRow);
-
-  toggleField("world", view.showWorld, (checked) => {
-    view.showWorld = checked;
-    saveView();
-    if (rootMesh) rootMesh.visible = checked;
-  });
-  toggleField("grid", view.showGrid, (checked) => {
-    view.showGrid = checked;
-    saveView();
-    grid.visible = checked;
-  });
-  const hint = document.createElement("div");
-  hint.className = "hint";
-  hint.textContent = "Click an object, light or recorder face for its settings.";
-  inspectorFields.appendChild(hint);
-}
-
-function buildNodeInspector(node) {
-  clearInspector(`${node.name} · ${node.type}`);
-  field("position", [node.matrix[12], node.matrix[13], node.matrix[14]],
-    (v) => patch({ op: "move", node: node.name, world_position: v }));
-
-  const base = ["nodes", node.name, node.type];
-  if (node.type === "box") {
-    field("size", node.params.slice(0, 3), (v) =>
-      patch({ op: "set", path: [...base, "size"], value: v }));
-  } else if (node.type === "sphere") {
-    field("radius", node.params[0], (v) =>
-      patch({ op: "set", path: [...base, "radius"], value: v[0] }));
-  } else {
-    field("length", node.params[0], (v) =>
-      patch({ op: "set", path: [...base, "length"], value: v[0] }));
-    field("radius", node.params[1], (v) =>
-      patch({ op: "set", path: [...base, "radius"], value: v[0] }));
-  }
-  field("refr. index", node.refractive_index, (v) =>
-    patch({ op: "set", path: [...base, "material", "refractive-index"], value: v[0] }),
-    { step: 0.01 });
-
-  // Recorders attached to this node
-  const recorders = (lastScene?.recorders || []).filter((r) => r.node === node.name);
-  if (recorders.length) {
-    const hint = document.createElement("div");
-    hint.className = "hint";
-    hint.textContent = "recorders";
-    inspectorFields.appendChild(hint);
-    for (const recorder of recorders) {
-      const link = document.createElement("button");
-      link.className = "rec-link";
-      link.innerHTML = `${recorder.name} <span>· ${recorder.event}</span>`;
-      link.addEventListener("click", () => select("recorder", recorder.name));
-      inspectorFields.appendChild(link);
-    }
-  }
-
-  actionButton("+ recorder", () =>
-    patch({ op: "add-recorder", node: node.name }));
-  if (node.type === "box") {
-    actionButton("+ face recorders", () =>
-      patch({ op: "add-face-recorders", node: node.name }));
-  }
-  actionButton("delete", () => {
-    const name = node.name;
-    deselect();
-    patch({ op: "delete-node", node: name });
-  }, true);
-}
-
-function buildLightInspector(light) {
-  clearInspector(`${light.name} · light`);
-  field("position", [light.matrix[12], light.matrix[13], light.matrix[14]],
-    (v) => patch({ op: "move", node: light.name, world_position: v }));
-
-  const spec = light.spec?.light || {};
-  const wavelength = typeof spec.wavelength === "number" ? spec.wavelength : 555;
-  field("λ (nm)", wavelength, (v) =>
-    patch({ op: "set", path: ["nodes", light.name, "light", "wavelength"], value: v[0] }),
-    { step: 1 });
-
-  const cone = spec.mask?.direction?.cone;
-  if (cone && typeof cone["half-angle"] === "number") {
-    field("cone (°)", cone["half-angle"], (v) =>
-      patch({
-        op: "set",
-        path: ["nodes", light.name, "light", "mask", "direction", "cone", "half-angle"],
-        value: v[0],
-      }), { step: 1 });
-  }
-
-  actionButton("delete", () => {
-    const name = light.name;
-    deselect();
-    patch({ op: "delete-node", node: name });
-  }, true);
-}
-
-function buildRecorderInspector(recorder) {
-  clearInspector(`${recorder.name} · recorder`);
-  const row = document.createElement("div");
-  row.className = "field";
-  row.innerHTML = `<label>event</label>`;
-  const selectEl = document.createElement("select");
-  for (const event of ["entering", "escaping", "reflected", "lost", "reacted", "killed", "exit"]) {
-    const option = document.createElement("option");
-    option.value = event;
-    option.textContent = event;
-    option.selected = event === recorder.event;
-    selectEl.appendChild(option);
-  }
-  selectEl.addEventListener("change", async () => {
-    // Materialises auto recorders into the document, then re-runs so
-    // the plots always show data for the selected event.
-    if (await patch({ op: "update-recorder", recorder: recorder.name,
-                      changes: { event: selectEl.value } })) {
-      startRun();
-    }
-  });
-  row.appendChild(selectEl);
-  inspectorFields.appendChild(row);
-
-  if (recorder.facet) {
-    field("facet", recorder.facet, async (v) => {
-      if (await patch({ op: "update-recorder", recorder: recorder.name,
-                        changes: { facet: v } })) {
-        startRun();
-      }
-    }, { step: 1 });
-  }
-  const overlay = recorderOverlays[recorder.name];
-  if (overlay) {
-    toggleField("on face", overlay.mesh.visible, (checked) => {
-      overlay.mesh.visible = checked;
-      view.hiddenOverlays = (view.hiddenOverlays || []).filter(
-        (n) => n !== recorder.name);
-      if (!checked) view.hiddenOverlays.push(recorder.name);
-      saveView();
-    });
-  }
-
-  const stats = latest[recorder.name];
-  const hint = document.createElement("div");
-  hint.className = "hint";
-  hint.textContent = stats
-    ? `${stats.rays.toLocaleString()} rays · ⟨λ⟩ ${stats.mean_wavelength.toFixed(1)} nm`
-    : "run the simulation to collect statistics";
-  inspectorFields.appendChild(hint);
-
-  const meta = histogramMeta[recorder.name];
-  if (stats && meta) {
-    // Spectrum with true wavelength colours per bin
-    const wavelengthIndex = meta.histograms.findIndex(
-      (h) => h.kind === "hist" && h.prop === "wavelength");
-    if (wavelengthIndex >= 0) {
-      const canvas = document.createElement("canvas");
-      canvas.width = 206; canvas.height = 80;
-      drawBars(canvas, meta.histograms[wavelengthIndex].edges,
-        stats.histograms[wavelengthIndex].values, true);
-      const label = document.createElement("div");
-      label.className = "hint";
-      label.textContent = "spectrum";
-      inspectorFields.append(label, canvas);
-    }
-
-    // Polar plot of the angle-to-normal distribution: the normal points
-    // up, and each bin's count sets the radius at that angle (mirrored).
-    const angleIndex = meta.histograms.findIndex(
-      (h) => h.kind === "hist" && h.prop === "angle");
-    if (angleIndex >= 0) {
-      const canvas = document.createElement("canvas");
-      canvas.width = 206; canvas.height = 120;
-      drawPolar(canvas, meta.histograms[angleIndex].edges,
-        stats.histograms[angleIndex].values);
-      const label = document.createElement("div");
-      label.className = "hint";
-      label.textContent = "angular distribution (normal up)";
-      inspectorFields.append(label, canvas);
-    }
-  }
-
-  actionButton("owner: " + recorder.node, () => select("node", recorder.node));
-  actionButton("delete", () => {
-    const name = recorder.name;
-    deselect();
-    patch({ op: "delete-recorder", recorder: name });
-  }, true);
-}
-
-document.getElementById("inspector-close").addEventListener("click", deselect);
-
-for (const button of document.querySelectorAll("#toolbar button")) {
-  button.addEventListener("click", () => patch({ op: "add-node", kind: button.dataset.add }));
 }
 
 // Click to pick (ignore drags used for orbiting)
@@ -725,24 +422,500 @@ renderer.domElement.addEventListener("pointerup", (event) => {
     ((event.clientX - rect.left) / rect.width) * 2 - 1,
     -((event.clientY - rect.top) / rect.height) * 2 + 1,
   );
+  const raycaster = new THREE.Raycaster();
   raycaster.setFromCamera(pointer, camera);
   const hits = raycaster.intersectObjects(pickable, false);
-  if (!hits.length) { deselect(); return; }
-  let data = hits[0].object.userData;
-  // A recorder face overlay can cover its whole node. The first click
-  // selects the node (so it can be moved); clicking again while its
-  // owner is selected drills into the recorder itself.
+  if (!hits.length) { select(selected.segment, selected.name ? null : selected.name); return; }
+  const data = hits[0].object.userData;
   if (data.kind === "recorder") {
-    const ownerSelected = selected
-      && ((selected.kind === "node" && selected.name === data.node)
-          || (selected.kind === "recorder" && selected.name === data.name));
+    // First click selects the owning node; a second click on the same
+    // face drills into the recorder.
+    const ownerSelected =
+      (selected.segment === "nodes" && selected.name === data.node)
+      || (selected.segment === "recorders" && selected.name === data.name);
     if (!ownerSelected) {
       const nodeHit = hits.find((h) => h.object.userData.kind === "node");
-      data = nodeHit ? nodeHit.object.userData : { kind: "node", name: data.node };
+      select("nodes", nodeHit ? nodeHit.object.userData.name : data.node);
+    } else if (selected.segment === "nodes") {
+      select("recorders", data.name);
+    } else {
+      select("recorders", data.name);
+    }
+  } else {
+    select("nodes", data.name);
+  }
+});
+
+// ----------------------------------------------------------------------
+// Inspector rendering
+
+const itemSelect = document.getElementById("item-select");
+const itemRow = document.getElementById("item-row");
+const fieldsDiv = document.getElementById("inspector-fields");
+const actionsDiv = document.getElementById("inspector-actions");
+const binInfo = document.getElementById("bin-info");
+let inspectorPlots = [];
+
+for (const button of document.querySelectorAll("#segments button")) {
+  button.addEventListener("click", () => {
+    const segment = button.dataset.segment;
+    const items = itemsFor(segment);
+    const keep = items.includes(selected.name) ? selected.name : items[0] || null;
+    select(segment, segment === "view" ? null : keep);
+  });
+}
+
+itemSelect.addEventListener("change", () => {
+  select(selected.segment, itemSelect.value || null);
+});
+
+document.getElementById("item-add").addEventListener("click", (event) => {
+  if (selected.segment === "nodes") {
+    popover(event.target, ["box", "sphere", "cylinder", "light"], (kind) =>
+      patch({ op: "add-node", kind }));
+  } else if (selected.segment === "components") {
+    patch({ op: "add-component" });
+  } else if (selected.segment === "recorders") {
+    const nodes = Object.keys(spec().nodes || {}).filter((n) => {
+      const s = spec().nodes[n];
+      return s.box || s.sphere || s.cylinder;
+    });
+    popover(event.target, nodes, (node) =>
+      patch({ op: "add-recorder", node }));
+  }
+});
+
+function popover(anchor, options, onPick) {
+  const existing = document.getElementById("popover");
+  if (existing) existing.remove();
+  const menu = document.createElement("div");
+  menu.id = "popover";
+  menu.style.cssText =
+    "position:fixed;background:#232733;border:1px solid #2a2e3a;" +
+    "border-radius:6px;z-index:50;min-width:120px;box-shadow:0 4px 16px #0008";
+  const rect = anchor.getBoundingClientRect();
+  menu.style.top = `${rect.bottom + 4}px`;
+  menu.style.right = `${window.innerWidth - rect.right}px`;
+  for (const option of options) {
+    const item = document.createElement("button");
+    item.textContent = option;
+    item.style.cssText =
+      "display:block;width:100%;text-align:left;background:none;border-radius:0";
+    item.addEventListener("click", () => { menu.remove(); onPick(option); });
+    menu.appendChild(item);
+  }
+  document.body.appendChild(menu);
+  setTimeout(() => document.addEventListener("click",
+    () => menu.remove(), { once: true }), 0);
+}
+
+function renderInspector() {
+  for (const button of document.querySelectorAll("#segments button")) {
+    button.classList.toggle("active", button.dataset.segment === selected.segment);
+  }
+  const items = itemsFor(selected.segment);
+  itemRow.hidden = selected.segment === "view";
+  itemSelect.innerHTML = "";
+  for (const item of items) {
+    const option = document.createElement("option");
+    option.value = item;
+    option.textContent = item;
+    option.selected = item === selected.name;
+    itemSelect.appendChild(option);
+  }
+  if (selected.segment !== "view" && !items.includes(selected.name)) {
+    selected.name = items[0] || null;
+    if (selected.name) itemSelect.value = selected.name;
+  }
+
+  fieldsDiv.innerHTML = "";
+  actionsDiv.innerHTML = "";
+  inspectorPlots = [];
+  if (selected.segment === "view") buildViewFields();
+  else if (!selected.name) hint("Nothing here yet — use + to add one.");
+  else if (selected.segment === "nodes") buildNodeFields(selected.name);
+  else if (selected.segment === "components") buildComponentFields(selected.name);
+  else buildRecorderFields(selected.name);
+
+  syncViewportSelection();
+}
+
+// -- field helpers ------------------------------------------------------
+
+function hint(text) {
+  const div = document.createElement("div");
+  div.className = "hint";
+  div.textContent = text;
+  fieldsDiv.appendChild(div);
+  return div;
+}
+
+function numberField(label, value, onCommit, step = 0.1) {
+  const row = document.createElement("div");
+  row.className = "field";
+  const labelEl = document.createElement("label");
+  labelEl.textContent = label;
+  row.appendChild(labelEl);
+  const inputs = [];
+  const values = Array.isArray(value) ? value : [value];
+  for (const v of values) {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.step = step;
+    input.value = Number((+v).toFixed(6));
+    input.addEventListener("change", () =>
+      onCommit(inputs.map((i) => parseFloat(i.value) || 0)));
+    inputs.push(input);
+    row.appendChild(input);
+  }
+  fieldsDiv.appendChild(row);
+}
+
+function selectField(label, value, options, onCommit) {
+  const row = document.createElement("div");
+  row.className = "field";
+  row.innerHTML = `<label>${label}</label>`;
+  const selectEl = document.createElement("select");
+  for (const option of options) {
+    const el = document.createElement("option");
+    el.value = option;
+    el.textContent = option;
+    el.selected = option === value;
+    selectEl.appendChild(el);
+  }
+  selectEl.addEventListener("change", () => onCommit(selectEl.value));
+  row.appendChild(selectEl);
+  fieldsDiv.appendChild(row);
+}
+
+function toggleField(label, value, onChange) {
+  const row = document.createElement("div");
+  row.className = "field";
+  row.innerHTML = `<label>${label}</label>`;
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = value;
+  input.addEventListener("change", () => onChange(input.checked));
+  row.appendChild(input);
+  fieldsDiv.appendChild(row);
+}
+
+function sliderField(label, value, min, max, step, title, onInput) {
+  const row = document.createElement("div");
+  row.className = "field";
+  row.innerHTML = `<label>${label}</label>`;
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.min = min; slider.max = max; slider.step = step;
+  slider.value = value;
+  slider.title = title;
+  slider.addEventListener("input", () => onInput(parseFloat(slider.value)));
+  row.appendChild(slider);
+  fieldsDiv.appendChild(row);
+}
+
+function actionButton(label, onClick, danger = false) {
+  const button = document.createElement("button");
+  button.textContent = label;
+  if (danger) button.className = "danger";
+  button.addEventListener("click", onClick);
+  actionsDiv.appendChild(button);
+}
+
+// -- segment bodies -----------------------------------------------------
+
+function buildViewFields() {
+  sliderField("opacity", view.opacity, 0.05, 1, 0.05,
+    "Geometry opacity, so ray paths inside objects stay visible",
+    (value) => {
+      view.opacity = value;
+      saveView();
+      for (const mesh of pickable) {
+        if (mesh.userData.kind === "node") {
+          mesh.material.depthWrite = value > 0.8;
+        }
+      }
+      applyLayer();
+    });
+  sliderField("contrast", view.decades, 0.5, 6, 0.25,
+    "Heatmap dynamic range in decades below the global maximum",
+    (value) => {
+      view.decades = value;
+      saveView();
+      refreshHeatmaps();
+    });
+  toggleField("world", view.showWorld, (checked) => {
+    view.showWorld = checked;
+    saveView();
+    if (rootMesh) rootMesh.visible = checked;
+  });
+  toggleField("grid", view.showGrid, (checked) => {
+    view.showGrid = checked;
+    saveView();
+    grid.visible = checked;
+  });
+  hint("Click an object or recorder face in the 3D view to inspect it.");
+}
+
+function geometryKey(nodeSpec) {
+  for (const key of ["box", "sphere", "cylinder", "mesh"]) {
+    if (nodeSpec[key]) return key;
+  }
+  return null;
+}
+
+function buildNodeFields(name) {
+  const nodeSpec = (spec().nodes || {})[name] || {};
+  const geometry = geometryKey(nodeSpec);
+  const isWorld = name === "world";
+
+  if (!isWorld) {
+    const nodeNames = Object.keys(spec().nodes).filter((n) => n !== name);
+    selectField("parent", nodeSpec.parent || "world", nodeNames, (value) =>
+      patch({ op: "set", path: ["nodes", name, "parent"], value }));
+    numberField("location", nodeSpec.location || [0, 0, 0], (v) =>
+      patch({ op: "set", path: ["nodes", name, "location"], value: v }));
+    if (nodeSpec.direction) {
+      numberField("direction", nodeSpec.direction, (v) =>
+        patch({ op: "set", path: ["nodes", name, "direction"], value: v }));
     }
   }
-  select(data.kind, data.name);
-});
+
+  if (geometry) {
+    const geomSpec = nodeSpec[geometry];
+    if (geometry === "box") {
+      numberField("size", geomSpec.size, (v) =>
+        patch({ op: "set", path: ["nodes", name, "box", "size"], value: v }));
+    } else if (geometry === "sphere") {
+      numberField("radius", geomSpec.radius, (v) =>
+        patch({ op: "set", path: ["nodes", name, "sphere", "radius"], value: v[0] }));
+    } else if (geometry === "cylinder") {
+      numberField("length", geomSpec.length, (v) =>
+        patch({ op: "set", path: ["nodes", name, "cylinder", "length"], value: v[0] }));
+      numberField("radius", geomSpec.radius, (v) =>
+        patch({ op: "set", path: ["nodes", name, "cylinder", "radius"], value: v[0] }));
+    }
+    const material = geomSpec.material || {};
+    numberField("refr. index", material["refractive-index"] ?? 1.0, (v) =>
+      patch({ op: "set",
+              path: ["nodes", name, geometry, "material", "refractive-index"],
+              value: v[0] }), 0.01);
+
+    // Components attached to this node's material
+    const attached = material.components || [];
+    const available = Object.keys(spec().components || {})
+      .filter((c) => !attached.includes(c));
+    const chips = document.createElement("div");
+    chips.className = "chips";
+    for (const component of attached) {
+      const chip = document.createElement("span");
+      chip.innerHTML = `${component}<b title="Detach">×</b>`;
+      chip.querySelector("b").addEventListener("click", () =>
+        patch({ op: "set",
+                path: ["nodes", name, geometry, "material", "components"],
+                value: attached.filter((c) => c !== component) }));
+      chips.appendChild(chip);
+    }
+    hint("components");
+    fieldsDiv.appendChild(chips);
+    if (available.length) {
+      selectField("attach", "", ["", ...available], (value) => {
+        if (value) {
+          patch({ op: "set",
+                  path: ["nodes", name, geometry, "material", "components"],
+                  value: [...attached, value] });
+        }
+      });
+    }
+
+    if (!isWorld) {
+      toggleField("record", !!nodeSpec.record, (checked) =>
+        patch({ op: "set", path: ["nodes", name, "record"], value: checked }));
+    }
+  }
+
+  if (nodeSpec.light) {
+    const lightSpec = nodeSpec.light;
+    numberField("λ (nm)", lightSpec.wavelength ?? 555, (v) =>
+      patch({ op: "set", path: ["nodes", name, "light", "wavelength"], value: v[0] }), 1);
+    const cone = lightSpec.mask?.direction?.cone;
+    if (cone && typeof cone["half-angle"] === "number") {
+      numberField("cone (°)", cone["half-angle"], (v) =>
+        patch({ op: "set",
+                path: ["nodes", name, "light", "mask", "direction", "cone", "half-angle"],
+                value: v[0] }), 1);
+    }
+  }
+
+  // Recorders on this node link into the recorders segment
+  const onNode = (lastScene?.recorders || []).filter((r) => r.node === name);
+  if (onNode.length) {
+    hint("recorders");
+    const chips = document.createElement("div");
+    chips.className = "chips";
+    for (const recorder of onNode) {
+      const chip = document.createElement("span");
+      chip.textContent = recorder.name;
+      chip.style.cursor = "pointer";
+      chip.addEventListener("click", () => select("recorders", recorder.name));
+      chips.appendChild(chip);
+    }
+    fieldsDiv.appendChild(chips);
+  }
+
+  if (!isWorld) {
+    actionButton("delete", () => {
+      select("nodes", null);
+      patch({ op: "delete-node", node: name });
+    }, true);
+  }
+}
+
+function buildComponentFields(name) {
+  const componentSpec = (spec().components || {})[name] || {};
+  const type = Object.keys(componentSpec)[0];
+  if (!type) { hint("Empty component."); return; }
+  const body = componentSpec[type];
+  hint(`type: ${type}`);
+
+  if (typeof body.coefficient === "number") {
+    numberField("coefficient", body.coefficient, (v) =>
+      patch({ op: "set", path: ["components", name, type, "coefficient"], value: v[0] }),
+      0.01);
+  }
+  if (type === "luminophore") {
+    const absorption = body.absorption || {};
+    if (typeof absorption.coefficient === "number") {
+      numberField("abs. coeff", absorption.coefficient, (v) =>
+        patch({ op: "set",
+                path: ["components", name, "luminophore", "absorption", "coefficient"],
+                value: v[0] }), 0.1);
+    }
+    const emission = body.emission || {};
+    if (typeof emission["quantum-yield"] === "number") {
+      numberField("q. yield", emission["quantum-yield"], (v) =>
+        patch({ op: "set",
+                path: ["components", name, "luminophore", "emission", "quantum-yield"],
+                value: v[0] }), 0.01);
+    }
+  }
+  hint("Spectra and advanced options are edited in the document.");
+
+  // Which nodes use it
+  const users = Object.entries(spec().nodes || {}).filter(([, s]) => {
+    const geometry = geometryKey(s);
+    return geometry
+      && ((s[geometry].material || {}).components || []).includes(name);
+  }).map(([n]) => n);
+  if (users.length) hint(`used by: ${users.join(", ")}`);
+
+  actionButton("delete", () => {
+    select("components", null);
+    patch({ op: "delete-component", component: name });
+  }, true);
+}
+
+function buildRecorderFields(name) {
+  const recorder = (lastScene?.recorders || []).find((r) => r.name === name);
+  if (!recorder) { hint("Unknown recorder."); return; }
+  if (recorder.auto) hint("automatic — from record: true on its node");
+
+  selectField("event", recorder.event,
+    ["entering", "escaping", "reflected", "lost", "reacted", "killed", "exit"],
+    async (value) => {
+      if (await patch({ op: "update-recorder", recorder: name,
+                        changes: { event: value } })) {
+        startRun();
+      }
+    });
+  if (recorder.facet) {
+    numberField("facet", recorder.facet, async (v) => {
+      if (await patch({ op: "update-recorder", recorder: name,
+                        changes: { facet: v } })) {
+        startRun();
+      }
+    }, 1);
+  }
+  const overlay = recorderOverlays[name];
+  if (overlay) {
+    toggleField("on face", !view.hiddenOverlays.includes(name), (checked) => {
+      view.hiddenOverlays = view.hiddenOverlays.filter((n) => n !== name);
+      if (!checked) view.hiddenOverlays.push(name);
+      saveView();
+      applyLayer();
+    });
+  }
+
+  buildRecorderPlots(recorder);
+
+  actionButton("owner: " + recorder.node, () => select("nodes", recorder.node));
+  if (!recorder.auto) {
+    actionButton("delete", () => {
+      select("recorders", null);
+      patch({ op: "delete-recorder", recorder: name });
+    }, true);
+  }
+}
+
+function buildRecorderPlots(recorder) {
+  const meta = histogramMeta[recorder.name];
+  const stats = latest[recorder.name];
+  const statsHint = hint("");
+  if (!meta || !stats) {
+    statsHint.textContent = "run the simulation to collect statistics";
+    return;
+  }
+  statsHint.textContent =
+    `${stats.rays.toLocaleString()} rays · ${stats.crossings.toLocaleString()} crossings`
+    + ` · ⟨λ⟩ ${stats.mean_wavelength.toFixed(1)} nm`
+    + ` · ⟨θ⟩ ${(stats.mean_angle * 180 / Math.PI).toFixed(1)}°`;
+
+  meta.histograms.forEach((histMeta, index) => {
+    const label = document.createElement("div");
+    label.className = "hint";
+    const canvas = document.createElement("canvas");
+    canvas.width = 300;
+    if (histMeta.kind === "heatmap") {
+      label.textContent = `${histMeta.prop_a} × ${histMeta.prop_b}`;
+      const spanA = histMeta.edges_a[histMeta.edges_a.length - 1] - histMeta.edges_a[0];
+      const spanB = histMeta.edges_b[histMeta.edges_b.length - 1] - histMeta.edges_b[0];
+      canvas.height = Math.round(
+        Math.min(300, Math.max(28, 300 * Math.abs(spanB / spanA))));
+    } else if (histMeta.prop === "angle") {
+      label.textContent = "angular distribution (normal up)";
+      canvas.height = 130;
+    } else {
+      label.textContent = histMeta.prop;
+      canvas.height = 100;
+    }
+    canvas.addEventListener("mousemove", (event) =>
+      inspectBin(event, recorder.name, index));
+    canvas.addEventListener("mouseleave", () => { binInfo.hidden = true; });
+    fieldsDiv.append(label, canvas);
+    inspectorPlots.push({ canvas, name: recorder.name, index });
+  });
+  drawInspectorPlots();
+}
+
+function drawInspectorPlots() {
+  for (const plot of inspectorPlots) {
+    const meta = histogramMeta[plot.name];
+    const data = latest[plot.name];
+    if (!meta || !data) continue;
+    const histMeta = meta.histograms[plot.index];
+    const values = data.histograms[plot.index].values;
+    if (histMeta.kind === "heatmap") {
+      drawHeatmapInto(plot.canvas.getContext("2d"),
+        plot.canvas.width, plot.canvas.height,
+        values, data.histograms[plot.index].shape);
+    } else if (histMeta.prop === "angle") {
+      drawPolar(plot.canvas, histMeta.edges, values);
+    } else {
+      drawBars(plot.canvas, histMeta.edges, values,
+        histMeta.prop === "wavelength");
+    }
+  }
+}
 
 // ----------------------------------------------------------------------
 // Ray paths
@@ -778,7 +951,7 @@ function clearPaths() {
 }
 
 // ----------------------------------------------------------------------
-// Canvas plots
+// Plot drawing
 
 const VIRIDIS = [
   [68, 1, 84], [71, 44, 122], [59, 81, 139], [44, 113, 142], [33, 144, 141],
@@ -812,8 +985,7 @@ function drawBars(canvas, edges, values, spectral) {
 
 function drawPolar(canvas, edges, values) {
   // Half-polar plot: radius proportional to counts per unit solid
-  // angle (values / sin(theta)), so an isotropic distribution reads as
-  // a circular arc. Normal direction points up.
+  // angle, so an isotropic distribution reads as a circular arc.
   const ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
   const cx = W / 2, cy = H - 8, R = Math.min(W / 2, H) - 12;
@@ -854,8 +1026,8 @@ let heatmapMax = 1;
 
 function heatmapT(value) {
   if (value <= 0) return 0;
-  const decades = view.decades || 3;
-  return Math.min(1, Math.max(0, 1 + Math.log10(value / heatmapMax) / decades));
+  return Math.min(1, Math.max(0,
+    1 + Math.log10(value / heatmapMax) / (view.decades || 3)));
 }
 
 function drawHeatmapInto(ctx, width, height, values, shape) {
@@ -876,102 +1048,12 @@ function drawHeatmapInto(ctx, width, height, values, shape) {
   ctx.drawImage(off, 0, 0, width, height);
 }
 
-// ----------------------------------------------------------------------
-// Recorder results panel
-
-const recordersDiv = document.getElementById("recorders");
-const binInfo = document.getElementById("bin-info");
 let histogramMeta = {};
 let latest = {};
 
-let activeByNode = {};
-
-function ensureCards(meta) {
-  recordersDiv.innerHTML = "";
-  // One card per instrumented object; chips switch between its recorders
-  const groups = {};
-  for (const [name, info] of Object.entries(meta)) {
-    (groups[info.node || "scene"] = groups[info.node || "scene"] || []).push(name);
-  }
-  for (const [nodeName, names] of Object.entries(groups)) {
-    if (!names.includes(activeByNode[nodeName])) {
-      activeByNode[nodeName] = names[0];
-    }
-    const card = document.createElement("div");
-    card.className = "recorder-card";
-    card.dataset.node = nodeName;
-    card.innerHTML = `<h3>${nodeName}</h3>`;
-    const chips = document.createElement("div");
-    chips.className = "rec-chips";
-    for (const name of names) {
-      const chip = document.createElement("button");
-      // Strip the owning node's prefix so auto-recorders read as faces
-      chip.textContent = name.startsWith(`${nodeName}-`)
-        ? name.slice(nodeName.length + 1) : name;
-      chip.dataset.recorder = name;
-      chip.classList.toggle("active", name === activeByNode[nodeName]);
-      chip.addEventListener("click", () => {
-        activeByNode[nodeName] = name;
-        renderCardPlots(card, nodeName);
-        updateCards(latest);
-        select("recorder", name);
-      });
-      chips.appendChild(chip);
-    }
-    card.appendChild(chips);
-    const meta_ = document.createElement("div");
-    meta_.className = "meta";
-    meta_.id = `meta-${cssId(nodeName)}`;
-    card.appendChild(meta_);
-    const plots = document.createElement("div");
-    plots.className = "card-plots";
-    card.appendChild(plots);
-    recordersDiv.appendChild(card);
-    renderCardPlots(card, nodeName);
-  }
-}
-
-function renderCardPlots(card, nodeName) {
-  const name = activeByNode[nodeName];
-  const info = histogramMeta[name];
-  const plots = card.querySelector(".card-plots");
-  plots.innerHTML = "";
-  for (const chip of card.querySelectorAll(".rec-chips button")) {
-    chip.classList.toggle("active", chip.dataset.recorder === name);
-  }
-  if (!info) return;
-  info.histograms.forEach((hist, index) => {
-    const label = document.createElement("div");
-    label.className = "plot-label";
-    label.textContent = hist.kind === "heatmap"
-      ? `${hist.prop_a} × ${hist.prop_b}` : hist.prop;
-    const canvas = document.createElement("canvas");
-    canvas.width = 320;
-    if (hist.kind === "heatmap") {
-      // Preserve the physical aspect ratio of the recorded surface
-      const spanA = hist.edges_a[hist.edges_a.length - 1] - hist.edges_a[0];
-      const spanB = hist.edges_b[hist.edges_b.length - 1] - hist.edges_b[0];
-      canvas.height = Math.round(
-        Math.min(320, Math.max(28, 320 * Math.abs(spanB / spanA))));
-    } else {
-      canvas.height = 110;
-    }
-    canvas.dataset.recorder = name;
-    canvas.dataset.index = index;
-    canvas.addEventListener("mousemove", (event) => inspectBin(event, name, index));
-    canvas.addEventListener("mouseleave", () => { binInfo.hidden = true; });
-    plots.append(label, canvas);
-  });
-}
-
-function cssId(s) { return s.replace(/[^a-z0-9]/gi, "-"); }
-
-function updateCards(recorders) {
-  latest = recorders;
-
-  // Global colour scale: maximum bin count over every heatmap
+function refreshHeatmaps() {
   heatmapMax = 1;
-  for (const data of Object.values(recorders)) {
+  for (const data of Object.values(latest)) {
     for (const entry of data.histograms) {
       if (!entry.shape) continue;
       for (const value of entry.values) {
@@ -979,34 +1061,7 @@ function updateCards(recorders) {
       }
     }
   }
-
-  // Panel: refresh the active recorder of each card
-  for (const card of recordersDiv.querySelectorAll(".recorder-card")) {
-    const nodeName = card.dataset.node;
-    const name = activeByNode[nodeName];
-    const data = recorders[name];
-    const info = histogramMeta[name];
-    if (!data || !info) continue;
-    const meta = card.querySelector(".meta");
-    meta.textContent =
-      `${data.rays.toLocaleString()} rays · ⟨λ⟩ ${data.mean_wavelength.toFixed(1)} nm` +
-      ` · ⟨θ⟩ ${(data.mean_angle * 180 / Math.PI).toFixed(1)}°`;
-    const canvases = card.querySelectorAll("canvas");
-    info.histograms.forEach((hist, index) => {
-      const canvas = canvases[index];
-      if (!canvas) return;
-      const values = data.histograms[index].values;
-      if (hist.kind === "heatmap") {
-        drawHeatmapInto(canvas.getContext("2d"), canvas.width, canvas.height,
-          values, data.histograms[index].shape);
-      } else {
-        drawBars(canvas, hist.edges, values, hist.prop === "wavelength");
-      }
-    });
-  }
-
-  // Viewport: live heatmap textures update for every recorder
-  for (const [name, data] of Object.entries(recorders)) {
+  for (const [name, data] of Object.entries(latest)) {
     const overlay = recorderOverlays[name];
     if (overlay && overlay.heatIndex >= 0 && data.histograms[overlay.heatIndex]) {
       const entry = data.histograms[overlay.heatIndex];
@@ -1015,6 +1070,7 @@ function updateCards(recorders) {
       overlay.texture.needsUpdate = true;
     }
   }
+  drawInspectorPlots();
 }
 
 function inspectBin(event, name, index) {
@@ -1022,6 +1078,7 @@ function inspectBin(event, name, index) {
   const data = latest[name];
   if (!info || !data) return;
   const hist = info.histograms[index];
+  if (hist.prop === "angle") return; // polar plot: no bin readout yet
   const values = data.histograms[index].values;
   const rect = event.target.getBoundingClientRect();
   const fx = (event.clientX - rect.left) / rect.width;
@@ -1080,7 +1137,7 @@ function scrollEditorTo(name, section) {
   if (sectionIndex < 0) return;
   const pattern = new RegExp(`^\\s{2}${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:`);
   for (let i = sectionIndex + 1; i < lines.length; i++) {
-    if (/^\S/.test(lines[i])) break; // left the section
+    if (/^\S/.test(lines[i])) break;
     if (pattern.test(lines[i])) {
       cm.scrollIntoView({ line: i, ch: 0 }, 80);
       cm.addLineClass(i, "background", "cm-flash");
@@ -1089,6 +1146,20 @@ function scrollEditorTo(name, section) {
     }
   }
 }
+
+const docToggle = document.getElementById("doc-toggle");
+
+function applyDocumentVisibility() {
+  document.querySelector("main").classList.toggle("no-document", !view.showDocument);
+  docToggle.classList.toggle("active", view.showDocument);
+  if (view.showDocument) cm.refresh();
+}
+
+docToggle.addEventListener("click", () => {
+  view.showDocument = !view.showDocument;
+  saveView();
+  applyDocumentVisibility();
+});
 
 async function loadDocument() {
   const response = await fetch("/api/document");
@@ -1125,10 +1196,14 @@ async function patch(operation) {
   if (payload.error) {
     docStatus.textContent = payload.error;
     docStatus.className = "err";
+    statusEl.textContent = payload.error;
+    statusEl.className = "err";
     return false;
   }
   docStatus.textContent = "scene ok";
   docStatus.className = "";
+  statusEl.textContent = "connected";
+  statusEl.className = "ok";
   setDocumentText(payload.text);
   renderScene(payload.scene);
   if (reactive.checked) startRun();
@@ -1160,14 +1235,9 @@ editorPane.addEventListener("drop", async (event) => {
     body: JSON.stringify({ name: file.name, content }),
   });
   const payload = await response.json();
-  if (payload.error) {
-    docStatus.textContent = payload.error;
-    docStatus.className = "err";
-  } else {
-    docStatus.textContent =
-      `saved ${payload.saved} — reference it with "spectrum: file: ${payload.saved}"`;
-    docStatus.className = "";
-  }
+  docStatus.textContent = payload.error ? payload.error
+    : `saved ${payload.saved} — reference it with "spectrum: file: ${payload.saved}"`;
+  docStatus.className = payload.error ? "err" : "";
 });
 
 let debounce = null;
@@ -1197,18 +1267,23 @@ function connect() {
     const message = JSON.parse(event.data);
     if (message.type === "started") {
       histogramMeta = message.histograms;
-      ensureCards(histogramMeta);
+      latest = {};
       clearPaths();
       progressFill.style.width = "0%";
+      if (selected.segment === "recorders") renderInspector();
     } else if (message.type === "bundle") {
       progressFill.style.width = `${(100 * message.traced / message.total).toFixed(1)}%`;
       runStatus.textContent =
         `${(message.rays_per_second / 1e6).toFixed(2)} M rays/s`;
-      updateCards(message.recorders);
+      const hadData = Object.keys(latest).length > 0;
+      latest = message.recorders;
+      refreshHeatmaps();
+      if (!hadData && selected.segment === "recorders") renderInspector();
       addPaths(message.paths);
     } else if (message.type === "done") {
       progressFill.style.width = "100%";
       runStatus.textContent += " · done";
+      if (selected.segment === "recorders") renderInspector();
     } else if (message.type === "error") {
       docStatus.textContent = message.message;
       docStatus.className = "err";
@@ -1231,6 +1306,7 @@ document.getElementById("stop").addEventListener("click", () => {
   socket.send(JSON.stringify({ cmd: "stop" }));
 });
 
-buildViewInspector();
+applyDocumentVisibility();
+renderInspector();
 connect();
 loadDocument();
