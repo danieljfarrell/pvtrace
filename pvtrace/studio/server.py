@@ -27,6 +27,20 @@ STATIC = Path(__file__).resolve().parent / "static"
 GEOM_NAMES = {0: "box", 1: "sphere", 2: "cylinder"}
 
 
+class NoCacheStaticFiles(StaticFiles):
+    """Serve the app's own JS/CSS with revalidation.
+
+    The studio changes frequently during development; without this the
+    browser serves stale cached assets after the code updates and the
+    page and server disagree in confusing ways.
+    """
+
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 class Studio:
     """Holds the current document and its parsed scene."""
 
@@ -259,7 +273,7 @@ def create_app(document_path=None):
             if task:
                 task.cancel()
 
-    app.mount("/static", StaticFiles(directory=STATIC), name="static")
+    app.mount("/static", NoCacheStaticFiles(directory=STATIC), name="static")
 
     # Parse the initial document so the viewport has content on load
     if text:

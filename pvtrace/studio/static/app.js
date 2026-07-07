@@ -531,6 +531,11 @@ function renderInspector() {
   fieldsDiv.innerHTML = "";
   actionsDiv.innerHTML = "";
   inspectorPlots = [];
+  if (lastScene && !lastScene.spec) {
+    hint("The studio server is older than this page — restart "
+      + "pvtrace-cli studio and reload.");
+    return;
+  }
   if (selected.segment === "view") buildViewFields();
   else if (!selected.name) hint("Nothing here yet — use + to add one.");
   else if (selected.segment === "nodes") buildNodeFields(selected.name);
