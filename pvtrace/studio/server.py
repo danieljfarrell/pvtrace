@@ -432,7 +432,11 @@ def _histogram_meta(compiled):
                     "edges": np.linspace(hist.start, hist.stop,
                                          hist.bins + 1).tolist(),
                 })
-        meta[spec.name] = {"event": spec.event, "histograms": entries}
+        meta[spec.name] = {
+            "event": spec.event,
+            "node": compiled.node_names[int(compiled.rec_node[r])],
+            "histograms": entries,
+        }
     return meta
 
 

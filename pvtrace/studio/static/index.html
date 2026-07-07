@@ -39,13 +39,18 @@
       <button data-add="cylinder" title="Add cylinder">+ cylinder</button>
       <button data-add="light" title="Add light">+ light</button>
     </div>
-    <div id="inspector">
-      <div class="inspector-head">
-        <b id="inspector-name">View</b>
-        <button id="inspector-close" title="Deselect">×</button>
-      </div>
-      <div id="inspector-fields"></div>
-      <div class="inspector-actions" id="inspector-actions"></div>
+    <div id="layerbar">
+      <select id="layer-event" title="Which recorder layer is painted on the scene">
+        <option value="all">all layers</option>
+        <option value="escaping" selected>escaping</option>
+        <option value="entering">entering</option>
+        <option value="reflected">reflected</option>
+        <option value="lost">lost</option>
+        <option value="exit">exit</option>
+      </select>
+      <input id="isolate" list="node-list" placeholder="isolate object…"
+             title="Focus one object; everything else is ghosted">
+      <datalist id="node-list"></datalist>
     </div>
     <div class="run-bar">
       <label title="Total number of rays to trace. Recorders tally every ray.">rays <input type="text" id="rays" value="500000" size="8" title="Total number of rays to trace. Recorders tally every ray."></label>
@@ -58,6 +63,14 @@
   </section>
 
   <section id="results-pane">
+    <div id="inspector">
+      <div class="inspector-head">
+        <b id="inspector-name">View</b>
+        <button id="inspector-close" title="Deselect">×</button>
+      </div>
+      <div id="inspector-fields"></div>
+      <div class="inspector-actions" id="inspector-actions"></div>
+    </div>
     <div class="pane-title">Recorders</div>
     <div id="recorders"></div>
     <div id="bin-info" hidden></div>

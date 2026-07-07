@@ -88,10 +88,25 @@ button.primary { background: var(--accent); color: #10131a; font-weight: 600; }
 #toolbar button { background: #232733ee; border: 1px solid var(--edge); }
 
 #inspector {
-  position: absolute; top: 10px; right: 10px; width: 230px;
-  background: #1c1f27f2; border: 1px solid var(--edge); border-radius: 8px;
-  padding: 10px 12px; backdrop-filter: blur(4px);
+  background: #20242e; border-bottom: 1px solid var(--edge);
+  padding: 10px 12px;
 }
+
+#layerbar {
+  position: absolute; top: 10px; right: 10px; display: flex; gap: 6px;
+}
+#layerbar select, #layerbar input {
+  background: #232733ee; border: 1px solid var(--edge); color: var(--text);
+  border-radius: 5px; padding: 5px 8px; font: inherit;
+}
+#layerbar input { width: 130px; }
+
+.rec-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 8px; }
+.rec-chips button {
+  padding: 2px 9px; font-size: 11px; border-radius: 10px;
+  background: var(--bg); border: 1px solid var(--edge);
+}
+.rec-chips button.active { background: var(--accent); color: #10131a; }
 .inspector-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .inspector-head button { padding: 0 8px; background: none; }
 #inspector-fields .field { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }

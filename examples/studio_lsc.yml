@@ -10,6 +10,9 @@ nodes:
   lsc:
     parent: world
     location: [0, 0, 0.5]
+    # One line instruments the object: every face gets an escaping
+    # recorder with a position heatmap, plus a volume loss recorder.
+    record: true
     box:
       size: [5, 5, 1]
       material:
@@ -54,6 +57,9 @@ components:
     absorber:
       coefficient: 0.05
 
+# Explicit recorders can be added alongside (or override) the automatic
+# ones from `record: true`. This one adds angle and time-of-flight
+# statistics to the east edge.
 recorders:
   edge-escape:
     node: lsc
@@ -63,17 +69,3 @@ recorders:
       wavelength: [500, 900, 80]
       angle: [0, 1.5708, 18]
       duration: [0, 1.0e-9, 60]
-
-  top-escape:
-    node: lsc
-    event: escaping
-    facet: [0, 0, 1]
-    histograms:
-      wavelength: [500, 900, 80]
-      position: [x, y, [-2.5, 2.5, 50], [-2.5, 2.5, 50]]
-
-  lost-in-lsc:
-    node: lsc
-    event: lost
-    histograms:
-      wavelength: [500, 900, 80]

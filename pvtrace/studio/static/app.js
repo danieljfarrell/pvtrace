@@ -302,8 +302,54 @@ function renderScene(payload) {
     }
   }
 
+  // Keep the isolate datalist in sync with the scene's objects
+  const datalist = document.getElementById("node-list");
+  datalist.innerHTML = "";
+  for (const node of payload.nodes) {
+    if (node.root) continue;
+    const option = document.createElement("option");
+    option.value = node.name;
+    datalist.appendChild(option);
+  }
+
+  applyLayer();
   if (selected) reselect();
 }
+
+// ----------------------------------------------------------------------
+// Information layers (weather-app style): one recorder layer is painted
+// on the scene at a time, and one object can be isolated.
+
+let isolateName = null;
+
+function applyLayer() {
+  const event = document.getElementById("layer-event").value;
+  for (const overlay of Object.values(recorderOverlays)) {
+    const recorder = overlay.mesh.userData;
+    const hiddenByUser = (view.hiddenOverlays || []).includes(recorder.name);
+    const ghosted = isolateName && recorder.node !== isolateName;
+    overlay.mesh.visible =
+      !hiddenByUser && !ghosted && (event === "all" || recorder.event === event);
+  }
+  for (const mesh of pickable) {
+    if (mesh.userData.kind !== "node") continue;
+    const ghosted = isolateName && mesh.userData.name !== isolateName;
+    mesh.material.opacity = ghosted ? 0.06 : view.opacity;
+    for (const extra of extrasByNode[mesh.userData.name] || []) {
+      if (extra.object.material) {
+        extra.object.material.opacity = ghosted ? 0.08 : 0.6;
+      }
+    }
+  }
+}
+
+document.getElementById("layer-event").addEventListener("change", applyLayer);
+document.getElementById("isolate").addEventListener("input", (event) => {
+  const value = event.target.value.trim();
+  isolateName = (lastScene?.nodes || []).some((n) => n.name === value)
+    ? value : null;
+  applyLayer();
+});
 
 // ----------------------------------------------------------------------
 // Selection and the context-aware inspector
@@ -363,6 +409,14 @@ function reselect() {
     selectionOutline.renderOrder = 10;
     scene3.add(selectionOutline);
     buildRecorderInspector(data);
+    // Mirror the selection into the results panel
+    const card = recordersDiv.querySelector(
+      `.recorder-card[data-node="${data.node}"]`);
+    if (card && activeByNode[data.node] !== data.name) {
+      activeByNode[data.node] = data.name;
+      renderCardPlots(card, data.node);
+      updateCards(latest);
+    }
   }
 }
 
@@ -434,10 +488,10 @@ function buildViewInspector() {
     saveView();
     for (const mesh of pickable) {
       if (mesh.userData.kind === "node") {
-        mesh.material.opacity = view.opacity;
         mesh.material.depthWrite = view.opacity > 0.8;
       }
     }
+    applyLayer();
   });
   row.appendChild(slider);
   inspectorFields.appendChild(row);
@@ -775,49 +829,97 @@ const binInfo = document.getElementById("bin-info");
 let histogramMeta = {};
 let latest = {};
 
+let activeByNode = {};
+
 function ensureCards(meta) {
   recordersDiv.innerHTML = "";
+  // One card per instrumented object; chips switch between its recorders
+  const groups = {};
   for (const [name, info] of Object.entries(meta)) {
+    (groups[info.node || "scene"] = groups[info.node || "scene"] || []).push(name);
+  }
+  for (const [nodeName, names] of Object.entries(groups)) {
+    if (!names.includes(activeByNode[nodeName])) {
+      activeByNode[nodeName] = names[0];
+    }
     const card = document.createElement("div");
     card.className = "recorder-card";
-    card.innerHTML = `<h3>${name}</h3><div class="meta" id="meta-${cssId(name)}"></div>`;
-    card.querySelector("h3").addEventListener("click", () => select("recorder", name));
-    info.histograms.forEach((hist, index) => {
-      const label = document.createElement("div");
-      label.className = "plot-label";
-      label.textContent = hist.kind === "heatmap"
-        ? `${hist.prop_a} × ${hist.prop_b}` : hist.prop;
-      const canvas = document.createElement("canvas");
-      canvas.width = 320;
-      canvas.height = hist.kind === "heatmap" ? 220 : 110;
-      canvas.dataset.recorder = name;
-      canvas.dataset.index = index;
-      canvas.addEventListener("mousemove", (event) => inspectBin(event, name, index));
-      canvas.addEventListener("mouseleave", () => { binInfo.hidden = true; });
-      card.append(label, canvas);
-    });
+    card.dataset.node = nodeName;
+    card.innerHTML = `<h3>${nodeName}</h3>`;
+    const chips = document.createElement("div");
+    chips.className = "rec-chips";
+    for (const name of names) {
+      const chip = document.createElement("button");
+      // Strip the owning node's prefix so auto-recorders read as faces
+      chip.textContent = name.startsWith(`${nodeName}-`)
+        ? name.slice(nodeName.length + 1) : name;
+      chip.dataset.recorder = name;
+      chip.classList.toggle("active", name === activeByNode[nodeName]);
+      chip.addEventListener("click", () => {
+        activeByNode[nodeName] = name;
+        renderCardPlots(card, nodeName);
+        updateCards(latest);
+        select("recorder", name);
+      });
+      chips.appendChild(chip);
+    }
+    card.appendChild(chips);
+    const meta_ = document.createElement("div");
+    meta_.className = "meta";
+    meta_.id = `meta-${cssId(nodeName)}`;
+    card.appendChild(meta_);
+    const plots = document.createElement("div");
+    plots.className = "card-plots";
+    card.appendChild(plots);
     recordersDiv.appendChild(card);
+    renderCardPlots(card, nodeName);
   }
+}
+
+function renderCardPlots(card, nodeName) {
+  const name = activeByNode[nodeName];
+  const info = histogramMeta[name];
+  const plots = card.querySelector(".card-plots");
+  plots.innerHTML = "";
+  for (const chip of card.querySelectorAll(".rec-chips button")) {
+    chip.classList.toggle("active", chip.dataset.recorder === name);
+  }
+  if (!info) return;
+  info.histograms.forEach((hist, index) => {
+    const label = document.createElement("div");
+    label.className = "plot-label";
+    label.textContent = hist.kind === "heatmap"
+      ? `${hist.prop_a} × ${hist.prop_b}` : hist.prop;
+    const canvas = document.createElement("canvas");
+    canvas.width = 320;
+    canvas.height = hist.kind === "heatmap" ? 220 : 110;
+    canvas.dataset.recorder = name;
+    canvas.dataset.index = index;
+    canvas.addEventListener("mousemove", (event) => inspectBin(event, name, index));
+    canvas.addEventListener("mouseleave", () => { binInfo.hidden = true; });
+    plots.append(label, canvas);
+  });
 }
 
 function cssId(s) { return s.replace(/[^a-z0-9]/gi, "-"); }
 
 function updateCards(recorders) {
   latest = recorders;
-  for (const [name, data] of Object.entries(recorders)) {
-    const meta = document.getElementById(`meta-${cssId(name)}`);
-    if (meta) {
-      meta.textContent =
-        `${data.rays.toLocaleString()} rays · ${data.crossings.toLocaleString()} crossings` +
-        ` · ⟨λ⟩ ${data.mean_wavelength.toFixed(1)} nm` +
-        ` · ⟨θ⟩ ${(data.mean_angle * 180 / Math.PI).toFixed(1)}°`;
-    }
+  // Panel: refresh the active recorder of each card
+  for (const card of recordersDiv.querySelectorAll(".recorder-card")) {
+    const nodeName = card.dataset.node;
+    const name = activeByNode[nodeName];
+    const data = recorders[name];
     const info = histogramMeta[name];
-    if (!info) continue;
-    const canvases = recordersDiv.querySelectorAll(
-      `canvas[data-recorder="${name}"]`);
+    if (!data || !info) continue;
+    const meta = card.querySelector(".meta");
+    meta.textContent =
+      `${data.rays.toLocaleString()} rays · ⟨λ⟩ ${data.mean_wavelength.toFixed(1)} nm` +
+      ` · ⟨θ⟩ ${(data.mean_angle * 180 / Math.PI).toFixed(1)}°`;
+    const canvases = card.querySelectorAll("canvas");
     info.histograms.forEach((hist, index) => {
       const canvas = canvases[index];
+      if (!canvas) return;
       const values = data.histograms[index].values;
       if (hist.kind === "heatmap") {
         drawHeatmapInto(canvas.getContext("2d"), canvas.width, canvas.height,
@@ -826,8 +928,10 @@ function updateCards(recorders) {
         drawBars(canvas, hist.edges, values, hist.prop === "wavelength");
       }
     });
+  }
 
-    // Live heatmap texture on the recorder's face in the viewport
+  // Viewport: live heatmap textures update for every recorder
+  for (const [name, data] of Object.entries(recorders)) {
     const overlay = recorderOverlays[name];
     if (overlay && overlay.heatIndex >= 0 && data.histograms[overlay.heatIndex]) {
       const entry = data.histograms[overlay.heatIndex];
