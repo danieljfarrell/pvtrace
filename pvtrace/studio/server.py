@@ -391,8 +391,29 @@ def _patch(studio, payload):
                 },
             }
 
+    elif operation == "update-recorder":
+        # Edits to auto recorders (from record: true) materialise them
+        # into the document first, then apply the changes.
+        name = payload["recorder"]
+        recorders = data.setdefault("recorders", {})
+        if name not in recorders:
+            recorders[name] = _recorder_to_spec(studio, name)
+        for key, value in payload["changes"].items():
+            if key not in ("event", "facet", "atol"):
+                raise ValueError(f"Cannot update recorder key {key!r}")
+            recorders[name][key] = _flow(value) if isinstance(value, list) else value
+
     elif operation == "delete-recorder":
-        del data["recorders"][payload["recorder"]]
+        recorders = data.setdefault("recorders", {})
+        if payload["recorder"] in recorders:
+            del recorders[payload["recorder"]]
+        else:
+            # Hide an auto recorder by materialising nothing: turn off
+            # record: on its node is the way; report it clearly instead.
+            raise ValueError(
+                "This recorder comes from record: true on its node; "
+                "set record: false to remove the automatic set."
+            )
 
     elif operation == "delete-node":
         name = payload["node"]
@@ -407,6 +428,33 @@ def _patch(studio, payload):
     buffer = io.StringIO()
     ryaml.dump(data, buffer)
     return buffer.getvalue()
+
+
+def _recorder_to_spec(studio, name):
+    """Serialise a live Recorder object back into a recorders entry."""
+    from anytree import PreOrderIter
+
+    for node in PreOrderIter(studio.scene.root):
+        for recorder in getattr(node, "recorders", []):
+            if recorder.name != name:
+                continue
+            histograms = {}
+            for hist in recorder.histograms:
+                if isinstance(hist, Heatmap):
+                    histograms["position"] = _flow([
+                        hist.a.prop, hist.b.prop,
+                        _flow([hist.a.start, hist.a.stop, hist.a.bins]),
+                        _flow([hist.b.start, hist.b.stop, hist.b.bins]),
+                    ])
+                else:
+                    histograms[hist.prop] = _flow(
+                        [hist.start, hist.stop, hist.bins])
+            spec = {"node": node.name, "event": recorder.event}
+            if recorder.facet is not None:
+                spec["facet"] = _flow(list(recorder.facet))
+            spec["histograms"] = histograms
+            return spec
+    raise ValueError(f"Unknown recorder {name!r}")
 
 
 def _histogram_meta(compiled):

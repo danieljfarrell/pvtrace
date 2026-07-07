@@ -18,7 +18,10 @@ function saveView() {
 // ----------------------------------------------------------------------
 // Wavelength (nm) to RGB, rough visible-spectrum approximation.
 
-function wavelengthToColor(nm) {
+function wavelengthToColor(nm, floor = 0.15) {
+  // Same approximation as pvtrace.light.utils.wavelength_to_rgb; the
+  // floor lifts colours so ray paths stay visible on a dark background
+  // (use floor = 0 for saturated histogram bins).
   let r = 0, g = 0, b = 0;
   if (nm < 380) nm = 380;
   if (nm > 780) nm = 780;
@@ -28,7 +31,8 @@ function wavelengthToColor(nm) {
   else if (nm < 580) { r = (nm - 510) / 70; g = 1; }
   else if (nm < 645) { r = 1; g = -(nm - 645) / 65; }
   else { r = 1; }
-  return new THREE.Color(0.15 + 0.85 * r, 0.15 + 0.85 * g, 0.15 + 0.85 * b);
+  return new THREE.Color(
+    floor + (1 - floor) * r, floor + (1 - floor) * g, floor + (1 - floor) * b);
 }
 
 // ----------------------------------------------------------------------
@@ -622,15 +626,24 @@ function buildRecorderInspector(recorder) {
     option.selected = event === recorder.event;
     selectEl.appendChild(option);
   }
-  selectEl.addEventListener("change", () =>
-    patch({ op: "set", path: ["recorders", recorder.name, "event"], value: selectEl.value }));
+  selectEl.addEventListener("change", async () => {
+    // Materialises auto recorders into the document, then re-runs so
+    // the plots always show data for the selected event.
+    if (await patch({ op: "update-recorder", recorder: recorder.name,
+                      changes: { event: selectEl.value } })) {
+      startRun();
+    }
+  });
   row.appendChild(selectEl);
   inspectorFields.appendChild(row);
 
   if (recorder.facet) {
-    field("facet", recorder.facet, (v) =>
-      patch({ op: "set", path: ["recorders", recorder.name, "facet"], value: v }),
-      { step: 1 });
+    field("facet", recorder.facet, async (v) => {
+      if (await patch({ op: "update-recorder", recorder: recorder.name,
+                        changes: { facet: v } })) {
+        startRun();
+      }
+    }, { step: 1 });
   }
   const overlay = recorderOverlays[recorder.name];
   if (overlay) {
@@ -651,10 +664,24 @@ function buildRecorderInspector(recorder) {
     : "run the simulation to collect statistics";
   inspectorFields.appendChild(hint);
 
-  // Polar plot of the angle-to-normal distribution: the normal points
-  // up, and each bin's count sets the radius at that angle (mirrored).
   const meta = histogramMeta[recorder.name];
   if (stats && meta) {
+    // Spectrum with true wavelength colours per bin
+    const wavelengthIndex = meta.histograms.findIndex(
+      (h) => h.kind === "hist" && h.prop === "wavelength");
+    if (wavelengthIndex >= 0) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 206; canvas.height = 80;
+      drawBars(canvas, meta.histograms[wavelengthIndex].edges,
+        stats.histograms[wavelengthIndex].values, true);
+      const label = document.createElement("div");
+      label.className = "hint";
+      label.textContent = "spectrum";
+      inspectorFields.append(label, canvas);
+    }
+
+    // Polar plot of the angle-to-normal distribution: the normal points
+    // up, and each bin's count sets the radius at that angle (mirrored).
     const angleIndex = meta.histograms.findIndex(
       (h) => h.kind === "hist" && h.prop === "angle");
     if (angleIndex >= 0) {
@@ -775,7 +802,7 @@ function drawBars(canvas, edges, values, spectral) {
     const h = (values[i] / max) * (H - 2 * pad);
     if (spectral) {
       const nm = (edges[i] + edges[i + 1]) / 2;
-      ctx.fillStyle = "#" + wavelengthToColor(nm).getHexString();
+      ctx.fillStyle = "#" + wavelengthToColor(nm, 0).getHexString();
     } else {
       ctx.fillStyle = "#6ea8fe";
     }

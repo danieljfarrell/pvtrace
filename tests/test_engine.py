@@ -368,7 +368,7 @@ def test_yaml_recorders_parse():
     auto = {"lsc-top", "lsc-bottom", "lsc-east", "lsc-west",
             "lsc-north", "lsc-south", "lsc-lost"}
     assert auto <= set(recorders)
-    assert len(recorders["lsc-top"].histograms) == 2
+    assert len(recorders["lsc-top"].histograms) == 3
 
 
 def test_record_shorthand_instruments_node(tmp_path):

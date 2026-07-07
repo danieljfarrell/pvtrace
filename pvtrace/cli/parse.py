@@ -504,6 +504,7 @@ def auto_recorders(node_name: str, node_spec: dict) -> dict:
                 "facet": facet,
                 "histograms": {
                     "wavelength": list(wavelength),
+                    "angle": list(angle),
                     "position": [
                         axes[u_axis], axes[v_axis],
                         [-half[u_axis], half[u_axis], bins_u],
