@@ -1,6 +1,6 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.592982.svg)](https://doi.org/10.5281/zenodo.592982)
 
-![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/logo.png)
+![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/mkdocs/docs/static/logo.png)
 
 > Optical ray tracing for luminescent materials and spectral converter photovoltaic devices
 
@@ -22,9 +22,9 @@ lsc.simulate(100)           # emit 100 rays
 lsc.report()                # print report
 ```
 
-This script will render the ray-tracing in real time,
+This script will render the ray-tracing in real time.
 
-![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/pvtrace-demo.gif)
+For much larger simulations pvtrace now ships a **compiled ray-tracing engine** which traces the same physics in native, multi-threaded code — hundreds of times faster — and **pvtrace studio**, a browser app for building scenes and exploring results. See [Fast ray tracing](#fast-ray-tracing) and [pvtrace studio](#pvtrace-studio) below.
 
 pvtrace has been validate against three other luminescent concentrator codes. For full details see [Validation.ipynb](https://github.com/danieljfarrell/pvtrace/blob/master/examples/Validation.ipynb) notebook
 
@@ -32,27 +32,47 @@ pvtrace has been validate against three other luminescent concentrator codes. Fo
 
 # Install
 
-## MacOS using pyenv
+*pvtrace* needs Python 3.10 or later.
 
-On MacOS *pvtrace* can be installed easily using [pyenv](https://github.com/pyenv/pyenv), the `pip` command and [homebrew](https://brew.sh). First install [homebrew](https://brew.sh), then install `spatialindex` for the RTree dependency,
+## Using pyenv (MacOS, Linux)
 
-    brew install spatialindex
+Create a clean virtual environment using [pyenv](https://github.com/pyenv/pyenv) and install from PyPI,
 
-Next, create a clean virtual environment for pvtrace
-
-    pyenv install 3.7.8
-    pyenv virtualenv 3.7.8 pvtrace-env
+    pyenv install 3.12.4
+    pyenv virtualenv 3.12.4 pvtrace-env
     pyenv activate pvtrace-env
     pip install pvtrace
 
-## Linux and Windows using Conda
+## Using conda (Windows, Linux, MacOS)
 
-On Linux and Windows you must use conda to create the python environment. Optionally you can also use this method on MacOS too if you prefer conda over pyenv.
-
-    conda create --name pvtrace-env python=3.7.8
+    conda create --name pvtrace-env python=3.12
     conda activate pvtrace-env
-    conda install Rtree
     pip install pvtrace
+
+This gives you the photon path tracer, the Python API and the `pvtrace-cli` command line tool. To go faster, or to use the studio app, read on.
+
+## The fast engine
+
+The compiled engine is built from source because it needs a C compiler. On MacOS install OpenMP first,
+
+    brew install libomp
+
+Then clone the repository, install the build dependencies and build the kernel,
+
+    git clone https://github.com/danieljfarrell/pvtrace.git
+    cd pvtrace
+    pip install -e ".[engine]"
+    python -m pvtrace.engine.build
+
+Check that it worked,
+
+    python -c "import pvtrace.engine as e; print(e.is_available())"
+
+## pvtrace studio
+
+Studio is the browser app for building scenes and exploring results. It needs the fast engine (above) plus a few extra packages,
+
+    pip install -e ".[studio]"
 
 # Run the example script and notebooks
 
@@ -114,6 +134,108 @@ Then launch the jupyter notebook,
 
     jupyter notebook
 
+# Fast ray tracing
+
+The original photon tracer follows one ray at a time in Python. The compiled engine traces the same physics — the same absorption, emission and Fresnel events — in native code across all of your CPU cores. For scenes built from boxes, spheres and cylinders it is hundreds of times faster.
+
+```python
+import time
+import functools
+import numpy as np
+from pvtrace import *
+from pvtrace.algorithm import photon_tracer
+import pvtrace.engine as engine
+
+# A glass sphere floating in air
+world = Node(name="world", geometry=Sphere(radius=10.0, material=Material(refractive_index=1.0)))
+sphere = Node(name="sphere", geometry=Sphere(radius=1.0, material=Material(refractive_index=1.5)), parent=world)
+sphere.location = (0, 0, 2)
+light = Node(name="light", light=Light(direction=functools.partial(cone, np.pi / 8)), parent=world)
+scene = Scene(world)
+
+# The photon path tracer: one ray at a time in Python
+tic = time.time()
+for ray in scene.emit(1000):
+    photon_tracer.follow(scene, ray)
+print(f"python tracer: {1000 / (time.time() - tic):>10,.0f} rays/s")
+
+# The compiled engine: the same scene, traced in native code
+result = engine.simulate(scene, 1_000_000)
+print(f"engine:        {1_000_000 / result.elapsed:>10,.0f} rays/s")
+```
+
+On a laptop this prints something like,
+
+    python tracer:      1,800 rays/s
+    engine:           460,000 rays/s
+
+about 250 times faster, and larger scenes reach millions of rays per second (see `benchmarks/benchmark_engine.py`).
+
+Rather than storing every ray, the engine tallies statistics on the surfaces and volumes you care about using *recorders*,
+
+```python
+from pvtrace.engine import Recorder, Histogram
+
+# Record the spectrum of rays leaving the scene
+world.recorders = [
+    Recorder("escaped", event="exit", histograms=[Histogram("wavelength", 400, 800, 40)])
+]
+result = engine.simulate(scene, 1_000_000)
+escaped = result.recorders["escaped"]
+print(escaped.rays, "rays escaped, mean wavelength", round(escaped.mean("wavelength"), 1), "nm")
+```
+
+The compiled engine understands the subset of pvtrace that the scene description language can express: box, sphere and cylinder shapes, Fresnel and null surfaces, and absorber, scatterer, luminophore and reactor components. Scenes that use meshes or custom Python surfaces fall back to the photon path tracer automatically.
+
+# Command line interface
+
+Scenes can be described in a YAML file and traced without writing any Python. Save this as `scene.yml`,
+
+```yaml
+version: "1.0"
+nodes:
+  world:
+    sphere:
+      radius: 10.0
+      material:
+        refractive-index: 1.0
+  ball-lens:
+    location: [0, 0, 2]
+    sphere:
+      radius: 1.0
+      material:
+        refractive-index: 1.5
+  green-laser:
+    light:
+      wavelength: 555
+      mask:
+        direction:
+          cone:
+            half-angle: 22.5
+```
+
+Trace it and query the results,
+
+    # Trace the scene; results are written to scene.sqlite3
+    pvtrace-cli simulate scene.yml
+
+    # How many rays entered the lens?
+    pvtrace-cli count entering ball-lens scene.sqlite3
+
+    # The spectrum and time-of-flight of those rays
+    pvtrace-cli spectrum entering ball-lens scene.sqlite3
+    pvtrace-cli time entering ball-lens scene.sqlite3
+
+Results are stored in a standard SQLite database, so you can also open them with any SQLite tool.
+
+# pvtrace studio
+
+Studio is a local web app for building scenes, running simulations and exploring the results as live spectra, angular distributions and heatmaps painted directly onto the geometry. Install the studio and engine dependencies (see [Install](#install)), then point it at a scene,
+
+    pvtrace-cli studio examples/studio_lsc.yml
+
+This opens a browser with a 3D view of the scene, an editable inspector and the scene document side by side. Press **Run** and the recorders fill in real time. Tick **real time** and drag an object to watch the results update as you move it.
+
 # Features
 
 ## Ray optics simulations
@@ -135,7 +257,7 @@ The optical properties of each shape can be customised,
 * surface reflection
 * surface scattering
 
-![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/example.png)
+![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/mkdocs/docs/static/ball-lens.png)
 
 ## High and low-level API
 
@@ -200,8 +322,6 @@ while True:
 
 *pvtrace* is designed in layers each with as limited scope as possible.
 
-![](https://raw.githubusercontent.com/danieljfarrell/pvtrace/master/docs/pvtrace-design.png)
-
 <dl>
   <dt>Scene</dt>
   <dd>Graph data structure of node and the thing that is ray-traced.</dd>
@@ -225,9 +345,9 @@ while True:
   <dd>The algorithm which spawns rays, computes intersections, samples probabilities and traverses the rays through the scene.</dd>
 </dl>
 
-## Ray-tracing engine
+## Ray-tracing engines
 
-Currently *pvtrace* supports only one ray-tracing engine: a photon path tracer. This is physically accurate, down to treating individual absorption and emission events, but is slow because the problem cannot be vectorised as each ray is followed individually.
+*pvtrace* has two ray-tracing engines. The **photon path tracer** is physically accurate down to individual absorption and emission events, and handles any geometry including meshes and custom surfaces, but follows rays one at a time in Python so it is slow. The **compiled engine** traces the same physics in native, multi-threaded code for the subset of scenes the description language can express, and is hundreds of times faster. See [Fast ray tracing](#fast-ray-tracing).
 
 # Documentation
 
@@ -278,11 +398,14 @@ You can get in contact with me directly at dan@excitonlabs.com or raise an issue
 
 # Dependencies
 
-Basic environment requires the following packages which will be installed with `pip` automatically
+Installed automatically with `pip install pvtrace`,
 
-* python >= 3.7.2
+* python >= 3.10
 * numpy
 * pandas
 * trimesh[easy]
-* meshcat >= 0.0.16
+* meshcat >= 0.1.1
 * anytree
+* typer, pyyaml, jsonschema, scipy, termplotlib (for the `pvtrace-cli` command line tool)
+
+The fast engine additionally needs `cython` and a C compiler (`pip install "pvtrace[engine]"`), and studio needs `fastapi`, `uvicorn`, `websockets` and `ruamel.yaml` (`pip install "pvtrace[studio]"`).
