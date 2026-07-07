@@ -85,8 +85,11 @@ gizmo.addEventListener("dragging-changed", (event) => {
 // refreshing the editor/viewport (the final drop reconciles the text).
 let lastRealtime = 0;
 gizmo.addEventListener("objectChange", async () => {
+  if (!gizmo.object) return;
+  // Recorder overlays, edges and light arrows travel with the object
+  syncNodeVisuals(gizmo.object.userData.name, gizmo.object);
   const realtime = document.getElementById("realtime");
-  if (!realtime || !realtime.checked || !gizmo.object) return;
+  if (!realtime || !realtime.checked) return;
   const now = performance.now();
   if (now - lastRealtime < 150) return;
   lastRealtime = now;
@@ -130,7 +133,23 @@ function buildGeometry(node) {
 const pickable = [];
 const recorderOverlays = {};
 let overlayStacks = {};
+let extrasByNode = {};
 let rootMesh = null;
+
+// Keep edges, light arrows and recorder overlays attached to a node
+// while the gizmo drags it (they are re-laid-out on the next render).
+function syncNodeVisuals(name, source) {
+  for (const extra of extrasByNode[name] || []) {
+    extra.object.position.copy(source.position);
+    if (extra.rotates) extra.object.quaternion.copy(source.quaternion);
+  }
+  for (const overlay of Object.values(recorderOverlays)) {
+    if (overlay.mesh.userData.node === name) {
+      overlay.mesh.position.copy(source.position);
+      overlay.mesh.quaternion.copy(source.quaternion);
+    }
+  }
+}
 
 const AXIS_INDEX = { x: 0, y: 1, z: 2 };
 
@@ -216,6 +235,7 @@ function renderScene(payload) {
   pickable.length = 0;
   Object.keys(recorderOverlays).forEach((k) => delete recorderOverlays[k]);
   overlayStacks = {};
+  extrasByNode = {};
   rootMesh = null;
   lastScene = payload;
 
@@ -238,9 +258,11 @@ function renderScene(payload) {
         new THREE.EdgesGeometry(geometry),
         new THREE.LineBasicMaterial({ color: 0x9fb6e8, transparent: true, opacity: 0.6 }),
       );
-      edges.matrixAutoUpdate = false;
-      edges.matrix.fromArray(node.matrix);
+      new THREE.Matrix4().fromArray(node.matrix)
+        .decompose(edges.position, edges.quaternion, edges.scale);
       geometryGroup.add(edges);
+      (extrasByNode[node.name] = extrasByNode[node.name] || [])
+        .push({ object: edges, rotates: true });
       pickable.push(mesh);
     }
     // Decomposed transform (not a frozen matrix) so the gizmo can move it
@@ -264,7 +286,10 @@ function renderScene(payload) {
       light.matrix[8], light.matrix[9], light.matrix[10]);
     const origin = new THREE.Vector3(
       light.matrix[12], light.matrix[13], light.matrix[14]);
-    geometryGroup.add(new THREE.ArrowHelper(direction, origin, 0.8, 0xffd54a, 0.2, 0.1));
+    const arrow = new THREE.ArrowHelper(direction, origin, 0.8, 0xffd54a, 0.2, 0.1);
+    geometryGroup.add(arrow);
+    (extrasByNode[light.name] = extrasByNode[light.name] || [])
+      .push({ object: arrow, rotates: false });
   }
 
   for (const recorder of payload.recorders) {
@@ -301,9 +326,15 @@ function select(kind, name) {
   scrollEditorTo(name, kind === "recorder" ? "recorders" : "nodes");
 }
 
+let selectionOutline = null;
+
 function reselect() {
   for (const mesh of pickable) {
     if (mesh.material.emissive) mesh.material.emissive.setHex(0x000000);
+  }
+  if (selectionOutline) {
+    scene3.remove(selectionOutline);
+    selectionOutline = null;
   }
   gizmo.detach();
   if (!selected) { buildViewInspector(); return; }
@@ -318,6 +349,19 @@ function reselect() {
     gizmo.attach(mesh);
     buildLightInspector(data);
   } else {
+    // Yellow outline around the selected recorder face. The quad's four
+    // vertices are already in ring order; drop the triangle index so the
+    // loop follows them without diagonals.
+    const outlineGeometry = mesh.geometry.clone();
+    outlineGeometry.setIndex(null);
+    selectionOutline = new THREE.LineLoop(
+      outlineGeometry,
+      new THREE.LineBasicMaterial({ color: 0xffd54a, linewidth: 2 }),
+    );
+    selectionOutline.position.copy(mesh.position);
+    selectionOutline.quaternion.copy(mesh.quaternion);
+    selectionOutline.renderOrder = 10;
+    scene3.add(selectionOutline);
     buildRecorderInspector(data);
   }
 }
@@ -535,6 +579,24 @@ function buildRecorderInspector(recorder) {
     : "run the simulation to collect statistics";
   inspectorFields.appendChild(hint);
 
+  // Polar plot of the angle-to-normal distribution: the normal points
+  // up, and each bin's count sets the radius at that angle (mirrored).
+  const meta = histogramMeta[recorder.name];
+  if (stats && meta) {
+    const angleIndex = meta.histograms.findIndex(
+      (h) => h.kind === "hist" && h.prop === "angle");
+    if (angleIndex >= 0) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 206; canvas.height = 120;
+      drawPolar(canvas, meta.histograms[angleIndex].edges,
+        stats.histograms[angleIndex].values);
+      const label = document.createElement("div");
+      label.className = "hint";
+      label.textContent = "angular distribution (normal up)";
+      inspectorFields.append(label, canvas);
+    }
+  }
+
   actionButton("owner: " + recorder.node, () => select("node", recorder.node));
   actionButton("delete", () => {
     const name = recorder.name;
@@ -568,14 +630,17 @@ renderer.domElement.addEventListener("pointerup", (event) => {
   const hits = raycaster.intersectObjects(pickable, false);
   if (!hits.length) { deselect(); return; }
   let data = hits[0].object.userData;
-  // A recorder face overlay can cover its whole node. First click on a
-  // covered node selects the node (so it can be moved); click the same
-  // overlay again to select the recorder itself.
-  if (data.kind === "recorder"
-      && !(selected && selected.kind === "recorder" && selected.name === data.name)) {
-    const nodeHit = hits.find((h) => h.object.userData.kind === "node");
-    if (nodeHit) data = nodeHit.object.userData;
-    else data = { kind: "node", name: data.node };
+  // A recorder face overlay can cover its whole node. The first click
+  // selects the node (so it can be moved); clicking again while its
+  // owner is selected drills into the recorder itself.
+  if (data.kind === "recorder") {
+    const ownerSelected = selected
+      && ((selected.kind === "node" && selected.name === data.node)
+          || (selected.kind === "recorder" && selected.name === data.name));
+    if (!ownerSelected) {
+      const nodeHit = hits.find((h) => h.object.userData.kind === "node");
+      data = nodeHit ? nodeHit.object.userData : { kind: "node", name: data.node };
+    }
   }
   select(data.kind, data.name);
 });
@@ -644,6 +709,43 @@ function drawBars(canvas, edges, values, spectral) {
     }
     ctx.fillRect(pad + i * bw, H - pad - h, Math.max(1, bw - 1), h);
   }
+}
+
+function drawPolar(canvas, edges, values) {
+  // Half-polar plot: radius proportional to counts per unit solid
+  // angle (values / sin(theta)), so an isotropic distribution reads as
+  // a circular arc. Normal direction points up.
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H - 8, R = Math.min(W / 2, H) - 12;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = "#2a2e3a";
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, Math.PI, 2 * Math.PI);
+  ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
+  ctx.stroke();
+
+  const density = values.map((v, i) => {
+    const mid = (edges[i] + edges[i + 1]) / 2;
+    return v / Math.max(Math.sin(mid), 0.05);
+  });
+  const max = Math.max(1e-9, ...density);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  for (let side = -1; side <= 1; side += 2) {
+    const start = side === -1 ? density.length - 1 : 0;
+    const end = side === -1 ? -1 : density.length;
+    for (let i = start; i !== end; i += side) {
+      const mid = (edges[i] + edges[i + 1]) / 2;
+      const r = (density[i] / max) * R;
+      ctx.lineTo(cx + side * r * Math.sin(mid), cy - r * Math.cos(mid));
+    }
+  }
+  ctx.closePath();
+  ctx.fillStyle = "#6ea8fe55";
+  ctx.strokeStyle = "#6ea8fe";
+  ctx.fill();
+  ctx.stroke();
 }
 
 function drawHeatmapInto(ctx, width, height, values, shape) {
