@@ -362,9 +362,13 @@ def test_yaml_recorders_parse():
         for node in PreOrderIter(scene.root)
         for recorder in node.recorders
     }
-    assert set(recorders) == {"edge-escape", "top-escape", "lost-in-lsc"}
+    # The explicit recorder plus the record: true auto-instrumentation
+    assert "edge-escape" in recorders
     assert recorders["edge-escape"].facet == (1.0, 0.0, 0.0)
-    assert len(recorders["top-escape"].histograms) == 2
+    auto = {"lsc-top", "lsc-bottom", "lsc-east", "lsc-west",
+            "lsc-north", "lsc-south", "lsc-lost"}
+    assert auto <= set(recorders)
+    assert len(recorders["lsc-top"].histograms) == 2
 
 
 def test_record_shorthand_instruments_node(tmp_path):
