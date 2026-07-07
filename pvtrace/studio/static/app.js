@@ -81,6 +81,26 @@ gizmo.addEventListener("dragging-changed", (event) => {
     dragStart = null;
   }
 });
+// Real-time mode: re-run the simulation while dragging, without
+// refreshing the editor/viewport (the final drop reconciles the text).
+let lastRealtime = 0;
+gizmo.addEventListener("objectChange", async () => {
+  const realtime = document.getElementById("realtime");
+  if (!realtime || !realtime.checked || !gizmo.object) return;
+  const now = performance.now();
+  if (now - lastRealtime < 150) return;
+  lastRealtime = now;
+  await fetch("/api/patch", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      op: "move",
+      node: gizmo.object.userData.name,
+      world_position: gizmo.object.position.toArray(),
+    }),
+  });
+  startRun();
+});
 scene3.add(gizmo);
 
 function resize() {
@@ -546,12 +566,18 @@ renderer.domElement.addEventListener("pointerup", (event) => {
   );
   raycaster.setFromCamera(pointer, camera);
   const hits = raycaster.intersectObjects(pickable, false);
-  if (hits.length) {
-    const data = hits[0].object.userData;
-    select(data.kind, data.name);
-  } else {
-    deselect();
+  if (!hits.length) { deselect(); return; }
+  let data = hits[0].object.userData;
+  // A recorder face overlay can cover its whole node. First click on a
+  // covered node selects the node (so it can be moved); click the same
+  // overlay again to select the recorder itself.
+  if (data.kind === "recorder"
+      && !(selected && selected.kind === "recorder" && selected.name === data.name)) {
+    const nodeHit = hits.find((h) => h.object.userData.kind === "node");
+    if (nodeHit) data = nodeHit.object.userData;
+    else data = { kind: "node", name: data.node };
   }
+  select(data.kind, data.name);
 });
 
 // ----------------------------------------------------------------------
