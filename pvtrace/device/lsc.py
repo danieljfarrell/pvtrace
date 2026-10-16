@@ -350,7 +350,7 @@ class LSC(object):
             history = photon_tracer.follow(scene, ray, emit_method=emit_method)
             rays, events = zip(*history)
             store["entrance_rays"].append((rays[1], events[1]))
-            if events[-1] in (Event.ABSORB, Event.KILL):
+            if events[-1] in (Event.NONRADIATIVE, Event.KILL):
                 # final event is a lost store path information at final event
                 store["exit_rays"].append((rays[-1], events[-1]))
             elif events[-1] == Event.EXIT:
@@ -379,22 +379,23 @@ class LSC(object):
     def _make_dataframe(self):
 
         # to-do: Only need to process additional rays not whole dataframe! Optimise!
-        df = pd.DataFrame()
+        records = []
 
         # Rays entering the scene
         for ray, event in self._store["entrance_rays"]:
             rep = asdict(ray)
             rep["kind"] = "entrance"
             rep["event"] = event.name.lower()
-            df = df.append(rep, ignore_index=True)
+            records.append(rep)
 
         # Rays exiting the scene
         for ray, event in self._store["exit_rays"]:
             rep = asdict(ray)
             rep["kind"] = "exit"
             rep["event"] = event.name.lower()
-            df = df.append(rep, ignore_index=True)
+            records.append(rep)
 
+        df = pd.DataFrame(records)
         self._df = df
         return df
 
@@ -592,7 +593,7 @@ class LSC(object):
         for facet in all_facets:
             incident += counts["Solar In"][facet]
 
-        lost = self.spectrum(source="all", events={"absorb"}, kind="last").shape[0]
+        lost = self.spectrum(source="all", events={"nonradiative"}, kind="last").shape[0]
 
         optical_efficiency = lum_collected / incident
         waveguide_efficiency = lum_collected / (lum_collected + lum_escaped)
