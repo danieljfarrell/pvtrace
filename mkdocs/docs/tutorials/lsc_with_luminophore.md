@@ -253,7 +253,7 @@ If you know the number of cores on your system set that as the number of workers
 To increase the speed of the simulation live rendering has been disabled.
 
 !!! tip
-    If you _do not_ specify the number of workers pvtrace will use the number of cores on your system minus one.
+    If you _do not_ specify the number of workers pvtrace will use half the number of CPU cores on your system (at least one worker).
 
 ```bash
 {!lsc_lumogen_red_cli/tutorial008.sh!}
@@ -341,7 +341,7 @@ $$
 Using ray statistics we find approximately the same result,
 
 $$
-a = 38/962 \approx 96\%%
+a = (962 - 27)/962 \approx 97\%%
 $$
 
 !!! tip
@@ -436,7 +436,7 @@ Use `--nz -1.0` option to get the count escaping the bottom surface,
 {!lsc_lumogen_red_cli/tutorial020.sh!}
 ```
 
-and `--nx 1.0` option for the top surface,
+and `--nz 1.0` option for the top surface,
 
 ```bash hl_lines="1"
 {!lsc_lumogen_red_cli/tutorial021.sh!}
