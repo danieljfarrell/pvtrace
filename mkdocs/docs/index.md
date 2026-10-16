@@ -24,6 +24,7 @@ Scenes can be described in Python or YAML.
     ``` python
     from pvtrace import *
     import functools
+    import math
 
     world = Node(
         name="world",
@@ -46,7 +47,7 @@ Scenes can be described in Python or YAML.
     green_laser = Node(
         name="green-laser",
         light=Light(
-            direction=functools.partial(cone, 22.5),
+            direction=functools.partial(cone, math.radians(22.5)),
             name="green-laser"
         ),
         parent=world,
@@ -138,8 +139,8 @@ Use the `brew` command to install spatialindex,
 
 Next, create a clean virtual environment for pvtrace
 
-    pyenv install 3.7.8
-    pyenv virtualenv 3.7.8 pvtrace-env
+    pyenv install 3.12.4
+    pyenv virtualenv 3.12.4 pvtrace-env
     pyenv activate pvtrace-env
     pip install pvtrace
 
@@ -147,7 +148,7 @@ Next, create a clean virtual environment for pvtrace
 
 On Linux and Windows [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) can be used to create python environment and also install C/C++ dependencies. Optionally, you can also use this method on MacOS too if you prefer conda over pyenv.
 
-    conda create --name pvtrace-env python=3.7.8
+    conda create --name pvtrace-env python=3.12
     conda activate pvtrace-env
     conda install Rtree
     pip install pvtrace

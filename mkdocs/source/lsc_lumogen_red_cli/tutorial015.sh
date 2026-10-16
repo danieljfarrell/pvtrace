@@ -1,3 +1,3 @@
 pvtrace-cli count escaping \
---source my-lumogen-dye 
+--source my-lumogen-dye \
 lsc scene.sqlite3

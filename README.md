@@ -361,7 +361,7 @@ If you are considering contributing to pvtrace, first fork the project. This wil
 
 ## Creating a development environment
 
-1. First create a new development environment using [MacOS instructions](#macos-using-pyenv) or [Linux and Windows instructions](#linux-and-windows-using-conda), but do not install pvtrace using pip! You will need to clone your own copy of the source code in the following steps.
+1. First create a new development environment using [MacOS instructions](#using-pyenv-macos-linux) or [Linux and Windows instructions](#using-conda-windows-linux-macos), but do not install pvtrace using pip! You will need to clone your own copy of the source code in the following steps.
 2. Use the GitHub fork button to make your own fork of the project. This will make it easy to include your changes in pvtrace using a pull request.
 3. Follow the steps below to clone and install the development dependencies
 
